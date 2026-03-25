@@ -1,0 +1,45 @@
+# vsim -c -do "run 150 us; quit -f" work.ADC_tb 
+# Start time: 23:56:57 on Mar 24,2026
+# ** Note: (vsim-3813) Design is being optimized due to module recompilation...
+# 
+# //  ModelSim SE-64 10.4 Dec  3 2014 
+# //
+# //  Copyright 1991-2014 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  THIS WORK CONTAINS TRADE SECRET AND PROPRIETARY INFORMATION
+# //  WHICH IS THE PROPERTY OF MENTOR GRAPHICS CORPORATION OR ITS
+# //  LICENSORS AND IS SUBJECT TO LICENSE TERMS.
+# //  THIS DOCUMENT CONTAINS TRADE SECRETS AND COMMERCIAL OR FINANCIAL
+# //  INFORMATION THAT ARE PRIVILEGED, CONFIDENTIAL, AND EXEMPT FROM
+# //  DISCLOSURE UNDER THE FREEDOM OF INFORMATION ACT, 5 U.S.C. SECTION 552.
+# //  FURTHERMORE, THIS INFORMATION IS PROHIBITED FROM DISCLOSURE UNDER
+# //  THE TRADE SECRETS ACT, 18 U.S.C. SECTION 1905.
+# //
+# Loading work.ADC_tb(fast)
+# run 150 us
+# [9430000] PASS: frame 0 V1=b75a V2=6ea5
+# [15910000] PASS: frame 1 V1=b66b V2=6ce7
+# [22390000] PASS: frame 2 V1=b138 V2=6221
+# [28870000] PASS: frame 3 V1=b0c9 V2=6063
+# [35350000] PASS: frame 4 V1=b39e V2=67ad
+# [41830000] PASS: frame 5 V1=b2af V2=65ef
+# [48310000] PASS: frame 6 V1=bc7c V2=1b29
+# [54790000] PASS: frame 7 V1=bf0d V2=196b
+# [61270000] PASS: frame 8 V1=bed2 V2=1cb5
+# [67750000] PASS: frame 9 V1=b9e3 V2=12f7
+# [74230000] PASS: frame 10 V1=b8b0 V2=1031
+# [80710000] PASS: frame 11 V1=ba41 V2=1673
+# [87190000] PASS: frame 12 V1=8516 V2=15bd
+# [93670000] PASS: frame 13 V1=8427 V2=0bff
+# [100150000] PASS: frame 14 V1=87f4 V2=0939
+# [106630000] PASS: frame 15 V1=8685 V2=0f7b
+# [113110000] PASS: frame 16 V1=804a V2=0285
+# [119590000] PASS: frame 17 V1=831b V2=00c7
+# [126070000] PASS: frame 18 V1=8228 V2=0601
+# [132550000] PASS: frame 19 V1=8df9 V2=0443
+# [139030000] PASS: frame 20 V1=8c8e V2=3b8d
+# [145510000] PASS: frame 21 V1=8e5f V2=39cf
+#  quit -f
+# End time: 23:56:58 on Mar 24,2026, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0

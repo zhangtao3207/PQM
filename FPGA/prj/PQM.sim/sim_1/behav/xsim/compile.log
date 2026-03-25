@@ -1,0 +1,8 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/AD7606_Drive.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module AD7606_Driver
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/AD7606_SPI.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module AD7606_SPI
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/ADC_CLK_DIV.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module ADC_CLK_DIV
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/sim/ADC_DRIVER_TB.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module ADC_DRIVER_TB

@@ -1,0 +1,16 @@
+file_name,role,size_bytes,line_count,g_cmd_count,d_code_count,coord_count,aperture_count
+Gerber_TopLayer.GTL,top_copper,22287,919,890,0,831,20
+Gerber_BottomLayer.GBL,bottom_copper,14632,615,594,0,552,12
+Gerber_TopSilkscreenLayer.GTO,top_silk,31407,1302,1286,0,1246,6
+Gerber_BottomSilkscreenLayer.GBO,bottom_silk,375,17,9,0,1,2
+Gerber_TopSolderMaskLayer.GTS,top_mask,2779,116,89,0,58,19
+Gerber_BottomSolderMaskLayer.GBS,bottom_mask,1662,72,54,0,33,10
+Gerber_TopPasteMaskLayer.GTP,top_paste,1247,61,45,0,26,9
+Gerber_BoardOutlineLayer.GKO,board_outline,680,29,20,0,11,2
+Gerber_DocumentLayer.GDL,other,3341,,,,,
+Gerber_DrillDrawingLayer.GDD,other,192410,,,,,
+Drill_PTH_Through.DRL,drill,2394,138,2,0,0,0
+Drill_NPTH_Through.DRL,drill,214,14,2,0,0,0
+Drill_PTH_Through_Via.DRL,drill,1470,82,2,0,0,0
+FlyingProbeTesting.json,flying_probe,21186,285,0,0,0,0
+PCB下单必读.txt,notes,94,4,0,0,0,0

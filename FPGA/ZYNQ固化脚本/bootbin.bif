@@ -1,0 +1,5 @@
+the_ROM_image:
+{
+ [bootloader] zynq_fsbl.elf
+ ..\prj\PQM.runs\impl_1\main.bit
+}

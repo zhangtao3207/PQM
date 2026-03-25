@@ -1,0 +1,47 @@
+[
+  {
+    "part": "MPN:XT30APW-M",
+    "status": "exists_cached",
+    "file": "C:\\Users\\zhangtao\\Desktop\\PQM\\HARDWARE\\POWER\\pcb_data\\datasheet\\MPN_XT30APW-M.pdf"
+  },
+  {
+    "part": "MPN:XH2.54-3P",
+    "status": "missing_cached",
+    "note": "no valid datasheet link found"
+  },
+  {
+    "part": "MPN:SS34",
+    "status": "missing_cached",
+    "note": "no valid datasheet link found"
+  },
+  {
+    "part": "MPN:SMAJ5.0CA",
+    "status": "missing_cached",
+    "note": "no valid datasheet link found"
+  },
+  {
+    "part": "MPN:SMAJ3.3A",
+    "status": "exists_cached",
+    "file": "C:\\Users\\zhangtao\\Desktop\\PQM\\HARDWARE\\POWER\\pcb_data\\datasheet\\MPN_SMAJ3.3A.pdf"
+  },
+  {
+    "part": "MPN:HLK-10M05",
+    "status": "exists_cached",
+    "file": "C:\\Users\\zhangtao\\Desktop\\PQM\\HARDWARE\\POWER\\pcb_data\\datasheet\\MPN_HLK-10M05.pdf"
+  },
+  {
+    "part": "MPN:XL1509-3.3E1",
+    "status": "missing_cached",
+    "note": "no valid datasheet link found"
+  },
+  {
+    "part": "MPN:MOV14D471K206RV080",
+    "status": "missing_cached",
+    "note": "no valid datasheet link found"
+  },
+  {
+    "part": "MPN:2RM230L-8/B",
+    "status": "missing_cached",
+    "note": "no valid datasheet link found"
+  }
+]

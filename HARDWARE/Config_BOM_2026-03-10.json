@@ -1,0 +1,1156 @@
+{
+	"BOM": {
+		"FILTER": [
+			{
+				"attr": "Add into BOM",
+				"rule": "no",
+				"checked": true,
+				"isForbidDel": true,
+				"selected": false
+			},
+			{
+				"attr": "Convert to PCB",
+				"rule": "no",
+				"checked": false,
+				"isForbidDel": true,
+				"selected": false
+			}
+		],
+		"ATTR": [
+			{
+				"title": "No.",
+				"value": "Number",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Quantity",
+				"value": "Quantity",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 1
+			},
+			{
+				"title": "Comment",
+				"value": "Comment",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 2
+			},
+			{
+				"title": "Designator",
+				"value": "Designator",
+				"order": 1,
+				"key": 2,
+				"orderWeight": 3
+			},
+			{
+				"title": "Footprint",
+				"value": "Footprint",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 4
+			},
+			{
+				"title": "Value",
+				"value": "Value",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 5
+			},
+			{
+				"title": "Manufacturer Part",
+				"value": "Manufacturer Part",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 6
+			},
+			{
+				"title": "Manufacturer",
+				"value": "Manufacturer",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 7
+			},
+			{
+				"title": "Supplier Part",
+				"value": "Supplier Part",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 8
+			},
+			{
+				"title": "Supplier",
+				"value": "Supplier",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 9
+			},
+			{
+				"title": "LCSC Price",
+				"value": "LCSC Price",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 0
+			},
+			{
+				"title": "JLCPCB Stock",
+				"value": "JLCPCB Stock",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 0
+			},
+			{
+				"title": "JLCPCB Price",
+				"value": "JLCPCB Price",
+				"order": 0,
+				"key": 1,
+				"orderWeight": 0
+			},
+			{
+				"title": "Category",
+				"value": "Category",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Primary Category",
+				"value": "Primary Category",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Secondary Category",
+				"value": "Secondary Category",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Pin Count",
+				"value": "Pin Count",
+				"order": 0,
+				"key": 2,
+				"orderWeight": 0
+			},
+			{
+				"title": "Add into BOM",
+				"value": "Add into BOM",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Convert to PCB",
+				"value": "Convert to PCB",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "3D Model Title",
+				"value": "3D Model Title",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Device",
+				"value": "Device",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Name",
+				"value": "Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Symbol",
+				"value": "Symbol",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Unique ID",
+				"value": "Unique ID",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "3D Model Transform",
+				"value": "3D Model Transform",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Amplifier Type",
+				"value": "Amplifier Type",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Check",
+				"value": "Check",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Channel ID",
+				"value": "Channel ID",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Capacitive Load(Max)",
+				"value": "Capacitive Load(Max)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Clamping Voltage",
+				"value": "Clamping Voltage",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Color",
+				"value": "Color",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Common Mode Rejection Ratio(CMRR)",
+				"value": "Common Mode Rejection Ratio(CMRR)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Contact Material",
+				"value": "Contact Material",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Conversion Efficiency",
+				"value": "Conversion Efficiency",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Contact Plating",
+				"value": "Contact Plating",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Current Rating",
+				"value": "Current Rating",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Datasheet",
+				"value": "Datasheet",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "DCR Primary Side (Max)",
+				"value": "DCR Primary Side (Max)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Description",
+				"value": "Description",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "DCR Secondary Side (Max)",
+				"value": "DCR Secondary Side (Max)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Diameter",
+				"value": "Diameter",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Dual Supply",
+				"value": "Dual Supply",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Equivalent Series Resistance(ESR)",
+				"value": "Equivalent Series Resistance(ESR)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Energy",
+				"value": "Energy",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Features",
+				"value": "Features",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Flame Retardant Rating",
+				"value": "Flame Retardant Rating",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Frequency Range",
+				"value": "Frequency Range",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Gain Bandwidth Product",
+				"value": "Gain Bandwidth Product",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Gain Bandwidth Product(GBP)",
+				"value": "Gain Bandwidth Product(GBP)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "LCSC Part Name",
+				"value": "LCSC Part Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "JLCPCB Part Class",
+				"value": "JLCPCB Part Class",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Isolation Voltage(Vrms)",
+				"value": "Isolation Voltage(Vrms)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "inter-electrode capacitance",
+				"value": "inter-electrode capacitance",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Input Offset Voltage Drift(Vos TC)",
+				"value": "Input Offset Voltage Drift(Vos TC)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Input Offset Current(Ios)",
+				"value": "Input Offset Current(Ios)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Input offset current drift(Ios TC)",
+				"value": "Input offset current drift(Ios TC)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Impulse Discharge Current",
+				"value": "Impulse Discharge Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Height - Seated (Max)",
+				"value": "Height - Seated (Max)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Group ID",
+				"value": "Group ID",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Ib - Input Bias Current",
+				"value": "Ib - Input Bias Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Global Net Name",
+				"value": "Global Net Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Linearity",
+				"value": "Linearity",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Maximum AC Volts",
+				"value": "Maximum AC Volts",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Lifetime",
+				"value": "Lifetime",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Maximum DC Volts",
+				"value": "Maximum DC Volts",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Maximum Power Supply Range (Vdd-Vss)",
+				"value": "Maximum Power Supply Range (Vdd-Vss)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Minimum Cathode Current for Regulation",
+				"value": "Minimum Cathode Current for Regulation",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Noise - 1/10Hz to 10Hz",
+				"value": "Noise - 1/10Hz to 10Hz",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Mounting Type",
+				"value": "Mounting Type",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Noise - 10Hz to 10kHz",
+				"value": "Noise - 10Hz to 10kHz",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Noise density(eN)",
+				"value": "Noise density(eN)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Number of Channels",
+				"value": "Number of Channels",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Number of Circuits",
+				"value": "Number of Circuits",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Number of Pins",
+				"value": "Number of Pins",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Number of PINs Per Row",
+				"value": "Number of PINs Per Row",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Number of Poles",
+				"value": "Number of Poles",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Number of Rows",
+				"value": "Number of Rows",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Number of Resistors",
+				"value": "Number of Resistors",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Operating Temperature Range",
+				"value": "Operating Temperature Range",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Output Current",
+				"value": "Output Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Operating Temperature",
+				"value": "Operating Temperature",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Output Current(Max)",
+				"value": "Output Current(Max)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Output Type",
+				"value": "Output Type",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Output Power",
+				"value": "Output Power",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Output Voltage",
+				"value": "Output Voltage",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Overload Voltage (Max)",
+				"value": "Overload Voltage (Max)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Peak Current",
+				"value": "Peak Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Peak Pulse Current (Ipp)",
+				"value": "Peak Pulse Current (Ipp)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Pin Spacing",
+				"value": "Pin Spacing",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Pins Structure",
+				"value": "Pins Structure",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Peak Pulse Power Dissipation (Ppp)",
+				"value": "Peak Pulse Power Dissipation (Ppp)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Pitch",
+				"value": "Pitch",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Polarity",
+				"value": "Polarity",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Power(Watts)",
+				"value": "Power(Watts)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Plastic Material",
+				"value": "Plastic Material",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Rail to Rail",
+				"value": "Rail to Rail",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Rated input Current",
+				"value": "Rated input Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Quiescent Current",
+				"value": "Quiescent Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Rated Output Current",
+				"value": "Rated Output Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Rated Wattage",
+				"value": "Rated Wattage",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Reference Series",
+				"value": "Reference Series",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Reference Type",
+				"value": "Reference Type",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Relevance",
+				"value": "Relevance",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Reuse Block",
+				"value": "Reuse Block",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Reverse Leakage Current (Ir)",
+				"value": "Reverse Leakage Current (Ir)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Reverse Stand-Off Voltage (Vrwm)",
+				"value": "Reverse Stand-Off Voltage (Vrwm)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Ripple Current",
+				"value": "Ripple Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Row Spacing",
+				"value": "Row Spacing",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Secondary Side Inductance",
+				"value": "Secondary Side Inductance",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Single supply",
+				"value": "Single supply",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Slew Rate",
+				"value": "Slew Rate",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Slew Rate(SR)",
+				"value": "Slew Rate(SR)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Supplementary Features",
+				"value": "Supplementary Features",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Supplier Footprint",
+				"value": "Supplier Footprint",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Supply Current",
+				"value": "Supply Current",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Supply Voltage",
+				"value": "Supply Voltage",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Turns Ratio",
+				"value": "Turns Ratio",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Tolerance",
+				"value": "Tolerance",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Temperature Coefficient",
+				"value": "Temperature Coefficient",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Type",
+				"value": "Type",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Voltage - Breakdown",
+				"value": "Voltage - Breakdown",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Voltage - DC Spark Over (Nom)",
+				"value": "Voltage - DC Spark Over (Nom)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Voltage - Supply",
+				"value": "Voltage - Supply",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Varistor Voltage",
+				"value": "Varistor Voltage",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Voltage Rating",
+				"value": "Voltage Rating",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Vos - Input Offset Voltage",
+				"value": "Vos - Input Offset Voltage",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "X-Length of Bottom Edge on Board (Spacing Line)",
+				"value": "X-Length of Bottom Edge on Board (Spacing Line)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Y-Width of Bottom Edge on Board",
+				"value": "Y-Width of Bottom Edge on Board",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Z-Height of the Board",
+				"value": "Z-Height of the Board",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "Voltage-Supply(Max)",
+				"value": "Voltage-Supply(Max)",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Board Name",
+				"value": "drawing:@Board Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Create Date",
+				"value": "drawing:@Create Date",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Assembly Variant",
+				"value": "drawing:@Assembly Variant",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Create Time",
+				"value": "drawing:@Create Time",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Page Count",
+				"value": "drawing:@Page Count",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Page Name",
+				"value": "drawing:@Page Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Page No",
+				"value": "drawing:@Page No",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Project Name",
+				"value": "drawing:@Project Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Schematic Name",
+				"value": "drawing:@Schematic Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Update Date",
+				"value": "drawing:@Update Date",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:@Update Time",
+				"value": "drawing:@Update Time",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Blade Width",
+				"value": "drawing:Blade Width",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Border",
+				"value": "drawing:Border",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Company",
+				"value": "drawing:Company",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Description",
+				"value": "drawing:Description",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Device",
+				"value": "drawing:Device",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Drawed",
+				"value": "drawing:Drawed",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Color",
+				"value": "drawing:Color",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Height",
+				"value": "drawing:Height",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Name",
+				"value": "drawing:Name",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Page Size",
+				"value": "drawing:Page Size",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Part Number",
+				"value": "drawing:Part Number",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Region Start",
+				"value": "drawing:Region Start",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Reviewed",
+				"value": "drawing:Reviewed",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Size",
+				"value": "drawing:Size",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Symbol",
+				"value": "drawing:Symbol",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Title Block",
+				"value": "drawing:Title Block",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Title Block Position",
+				"value": "drawing:Title Block Position",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Width",
+				"value": "drawing:Width",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:X Region Count",
+				"value": "drawing:X Region Count",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Y Region Count",
+				"value": "drawing:Y Region Count",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			},
+			{
+				"title": "drawing:Version",
+				"value": "drawing:Version",
+				"order": 0,
+				"key": 0,
+				"orderWeight": 0
+			}
+		]
+	}
+}
