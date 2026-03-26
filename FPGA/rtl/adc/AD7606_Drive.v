@@ -12,29 +12,47 @@ module AD7606_Driver (
     output reg convst_A,
     output reg convst_B,
     output reg spi_cs,
-    output spi_clk_rd,
+    output wire spi_clk_rd,
 
     output [15:0] rddata,
 
     //
-    output wire [3:0] state_t
+    output wire [3:0] state_t,
+    output wire [4:0] cnt_t,
+    output reg start
 );
 
 
 
-assign range = 1'b0; // 0: ±5V, 1: ±10V
-assign os = 3'b000;  //过采�?
+assign range = 1'b0;
+assign os = 3'b000;
 assign ad_rst = ~rst_n;
-assign spi_clk_rd = spi_cs;
 
 
-wire clk_25;
+wire clk_div_6;
 ADC_CLK_DIV clk_div (
     .clk(clk),
     .rst_n(rst_n),
-    .div(12'd20),
-    .clk_out(clk_25)
+    .div(12'd6),
+    .clk_out(clk_div_6)
 );
+
+reg sclk_en;
+reg sclk_wait;
+always @(negedge clk_div_6 or negedge rst_n) begin
+    if(!rst_n) begin
+        sclk_en <= 1'b0;
+        sclk_wait <= 1'b0;
+    end
+    else if(state != READDATA) begin
+        sclk_en <= 1'b0;
+        sclk_wait <= 1'b1;
+    end
+    else if(sclk_wait)
+        sclk_wait <= 1'b0;
+    else
+        sclk_en <= 1'b1;
+end
 
 
 
@@ -60,13 +78,14 @@ always @(posedge clk or negedge rst_n) begin
     else read_done_r <= {read_done_r[0],read_done};
 end
 
-assign read_done_pos = (!is_busy_r[0]) & read_done;
+assign read_done_pos = read_done_r[0] & ~read_done_r[1];
 
 
 
 
 reg [3:0] state;
 parameter IDLE = 4'b0001,CONVST = 4'b0010,CONVSTING = 4'b0100,READDATA = 4'b1000;
+localparam [15:0] READDATA_CLK_CYCLES = 16'd120;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
@@ -83,7 +102,7 @@ end
 
 
 reg [15:0] cnt;
-reg start;
+// reg start;
 always @(posedge clk or negedge rst_n) begin 
     if(!rst_n)  begin
         spi_cs <= 1'b1;
@@ -106,7 +125,7 @@ always @(posedge clk or negedge rst_n) begin
                 convst_A <= 1'b1;
                 convst_B <= 1'b1;
                 cnt <= 16'd0;
-                start <= 1'b1;
+                start <= 1'b0;
             end
             CONVSTING: begin
                 spi_cs <= 1'b1;
@@ -116,11 +135,10 @@ always @(posedge clk or negedge rst_n) begin
                 start <= 1'b0;
             end
             READDATA: begin
-                if(cnt < 16'd40)begin
+                if(cnt < READDATA_CLK_CYCLES)begin
                     cnt <= cnt + 1;
                     start <= 1;
-                    if(cnt[0] == 0) spi_cs <= 1'b0;
-                    else if (cnt[0] == 1'b1) spi_cs <= 1'b1;
+                    spi_cs <= 1'b0;
                 end
                 else begin
                     start <= 1'b0;
@@ -130,18 +148,20 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-wire clk_spi;
-assign clk_spi = (state == READDATA) ? spi_cs : clk_25;
 
 assign state_t = state;
+assign spi_clk_rd = sclk_en ? clk_div_6 : 1'b0;
+
 AD7606_SPI u_AD7606_SPI (
-    .clk(clk_spi),
+    .clk(clk_div_6),
     .rst_n(rst_n),
     .start(start),
+    .sclk_en(sclk_en),
     .data_in(data_in),
 
     .rddata(rddata),
-    .read_done(read_done)
+    .read_done(read_done),
+    .cnt_t(cnt_t)
 );
 
 endmodule
