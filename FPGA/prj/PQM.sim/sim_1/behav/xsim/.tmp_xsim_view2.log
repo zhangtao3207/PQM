@@ -1,0 +1,34 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:27:41 2026
+# Process ID: 13144
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_view2.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_view2.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -view {{ADC_DRIVER_TB_behav.wdb}} -tclbatch {.tmp_xsim_view.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+open_wave_config ADC_DRIVER_TB_behav.wdb
+ERROR: [Wavedata 42-472] WCFG parsing ERROR: 
+Fatal Error at file , line 0, char 0
+  Message: unable to open primary document entity 'C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/ADC_DRIVER_TB_behav.wdb'
+
+ERROR: [Wavedata 42-472] WCFG parsing ERROR: 
+Fatal Error at file , line 0, char 0
+  Message: unable to open primary document entity 'C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/ADC_DRIVER_TB_behav.wdb'
+
+ERROR: [Common 17-39] 'open_wave_config' failed due to earlier errors.
+source .tmp_xsim_view.tcl
+## puts "OPENED"
+OPENED
+## puts "CURRENT_TIME=[current_time]"
+CURRENT_TIME=0 fs
+## puts "TOPS=[get_scopes]"
+TOPS=/ADC_DRIVER_TB/u_AD7606_Driver /ADC_DRIVER_TB/Initial29_0 /ADC_DRIVER_TB/Always50_1 /ADC_DRIVER_TB/Always53_2 /ADC_DRIVER_TB/Always80_3 /ADC_DRIVER_TB/Always105_4
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:27:50 2026...

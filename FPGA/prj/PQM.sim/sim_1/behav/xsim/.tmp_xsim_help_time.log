@@ -1,0 +1,74 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:29:08 2026
+# Process ID: 16936
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_help_time.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_help_time.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_help_time.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_help_time.tcl
+## catch {current_time -help} msg
+## puts $msg
+current_time
+
+Description: 
+Report current simulation time
+
+Syntax: 
+current_time  [-s] [-quiet] [-verbose]
+
+Returns: 
+Prints the current simulation time on the console in textual format
+
+Usage: 
+  Name        Description
+  -----------------------
+  [-s]        Short -- suppress the space between numeric part and unit part
+  [-quiet]    Ignore command errors
+  [-verbose]  Suspend message limits during command execution
+
+Categories: 
+Simulation
+
+Description:
+
+  Returns the current simulation time to the Tcl Console or Vivado Design
+  Suite Tcl shell.
+
+Arguments:
+
+  -quiet - (Optional) Execute the command quietly, returning no messages from
+  the command. The command also returns TCL_OK regardless of any errors
+  encountered during execution.
+
+  Note: Any errors encountered on the command-line, while launching the
+  command, will be returned. Only errors occurring inside the command will be
+  trapped.
+
+  -verbose - (Optional) Temporarily override any message limits and return
+  all messages from this command.
+
+  Note: Message limits can be defined with the set_msg_config command.
+
+Examples:
+
+  The following example returns the current time of the current simulation:
+
+    current_time 
+    
+
+See Also:
+
+   *  restart
+   *  run
+   *  stop
+
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:29:13 2026...

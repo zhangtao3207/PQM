@@ -1,0 +1,63 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:33:32 2026
+# Process ID: 30088
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_getobjs.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_getobjs.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_getobjs.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_getobjs.tcl
+## set objs [get_objects -r /ADC_DRIVER_TB/*]
+## puts "COUNT=[llength $objs]"
+COUNT=62
+## foreach obj [lrange $objs 0 40] { puts $obj }
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_div/clk
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_div/rst_n
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_div/div
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_div/clk_out
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_div/cnt
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_div/clk_out_reg
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/clk
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/rst_n
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/start
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/data_in
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/rddata
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/read_done
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/cnt
+/ADC_DRIVER_TB/u_AD7606_Driver/u_AD7606_SPI/rddata_r
+/ADC_DRIVER_TB/u_AD7606_Driver/clk
+/ADC_DRIVER_TB/u_AD7606_Driver/rst_n
+/ADC_DRIVER_TB/u_AD7606_Driver/data_in
+/ADC_DRIVER_TB/u_AD7606_Driver/is_busy
+/ADC_DRIVER_TB/u_AD7606_Driver/AD_ENABLE
+/ADC_DRIVER_TB/u_AD7606_Driver/range
+/ADC_DRIVER_TB/u_AD7606_Driver/os
+/ADC_DRIVER_TB/u_AD7606_Driver/ad_rst
+/ADC_DRIVER_TB/u_AD7606_Driver/convst_A
+/ADC_DRIVER_TB/u_AD7606_Driver/convst_B
+/ADC_DRIVER_TB/u_AD7606_Driver/spi_cs
+/ADC_DRIVER_TB/u_AD7606_Driver/spi_clk_rd
+/ADC_DRIVER_TB/u_AD7606_Driver/rddata
+/ADC_DRIVER_TB/u_AD7606_Driver/state_t
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_25
+/ADC_DRIVER_TB/u_AD7606_Driver/is_busy_r
+/ADC_DRIVER_TB/u_AD7606_Driver/is_busy_neg
+/ADC_DRIVER_TB/u_AD7606_Driver/read_done
+/ADC_DRIVER_TB/u_AD7606_Driver/read_done_pos
+/ADC_DRIVER_TB/u_AD7606_Driver/read_done_r
+/ADC_DRIVER_TB/u_AD7606_Driver/state
+/ADC_DRIVER_TB/u_AD7606_Driver/cnt
+/ADC_DRIVER_TB/u_AD7606_Driver/start
+/ADC_DRIVER_TB/u_AD7606_Driver/clk_spi
+/ADC_DRIVER_TB/u_AD7606_Driver/IDLE
+/ADC_DRIVER_TB/u_AD7606_Driver/CONVST
+/ADC_DRIVER_TB/u_AD7606_Driver/CONVSTING
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:33:38 2026...

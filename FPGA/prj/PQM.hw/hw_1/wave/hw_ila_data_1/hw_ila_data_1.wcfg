@@ -9,131 +9,136 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="55700001fs"></ZoomEndTime>
-      <Cursor1Time time="12400000fs"></Cursor1Time>
+      <ZoomStartTime time="441000fs"></ZoomStartTime>
+      <ZoomEndTime time="1193001fs"></ZoomEndTime>
+      <Cursor1Time time="741000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="231"></NameColumnWidth>
-      <ValueColumnWidth column_width="128"></ValueColumnWidth>
+      <NameColumnWidth column_width="323"></NameColumnWidth>
+      <ValueColumnWidth column_width="72"></ValueColumnWidth>
    </column_width_setting>
    <WVObjectSize size="16" />
    <wave_markers>
    </wave_markers>
-   <wvobject fp_name="u_adc/FPGA_BUSY" type="logic">
+   <wvobject fp_name="ad_busy_IBUF" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_BUSY</obj_property>
-      <obj_property name="ObjectShortName">FPGA_BUSY</obj_property>
+      <obj_property name="ElementShortName">ad_busy_IBUF</obj_property>
+      <obj_property name="ObjectShortName">ad_busy_IBUF</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/FPGA_CONVST" type="logic">
+   <wvobject fp_name="ad_convst_OBUF" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_CONVST</obj_property>
-      <obj_property name="ObjectShortName">FPGA_CONVST</obj_property>
+      <obj_property name="ElementShortName">ad_convst_OBUF</obj_property>
+      <obj_property name="ObjectShortName">ad_convst_OBUF</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/FPGA_CS" type="logic">
+   <wvobject fp_name="ad_rd_n_OBUF" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_CS</obj_property>
-      <obj_property name="ObjectShortName">FPGA_CS</obj_property>
+      <obj_property name="ElementShortName">ad_rd_n_OBUF</obj_property>
+      <obj_property name="ObjectShortName">ad_rd_n_OBUF</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/FPGA_DATA_VALID" type="logic">
+   <wvobject fp_name="ad_rst_OBUF" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_DATA_VALID</obj_property>
-      <obj_property name="ObjectShortName">FPGA_DATA_VALID</obj_property>
+      <obj_property name="ElementShortName">ad_rst_OBUF</obj_property>
+      <obj_property name="ObjectShortName">ad_rst_OBUF</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/FPGA_DOUTA" type="logic">
+   <wvobject fp_name="ad_cs_n_OBUF" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_DOUTA</obj_property>
-      <obj_property name="ObjectShortName">FPGA_DOUTA</obj_property>
+      <obj_property name="ElementShortName">ad_cs_n_OBUF</obj_property>
+      <obj_property name="ObjectShortName">ad_cs_n_OBUF</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/FPGA_DOUTB" type="logic">
+   <wvobject fp_name="AD_STATE" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_DOUTB</obj_property>
-      <obj_property name="ObjectShortName">FPGA_DOUTB</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="u_adc/FPGA_FRSTDATA" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_FRSTDATA</obj_property>
-      <obj_property name="ObjectShortName">FPGA_FRSTDATA</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="u_adc/FPGA_RESET" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_RESET</obj_property>
-      <obj_property name="ObjectShortName">FPGA_RESET</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="u_adc/FPGA_SCLK" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_SCLK</obj_property>
-      <obj_property name="ObjectShortName">FPGA_SCLK</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="u_adc/FPGA_V1_DATA" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_V1_DATA[15:0]</obj_property>
-      <obj_property name="ObjectShortName">FPGA_V1_DATA[15:0]</obj_property>
+      <obj_property name="ElementShortName">AD_STATE[2:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_STATE[2:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/FPGA_V2_DATA" type="array">
+   <wvobject fp_name="AD_CHANNAL" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/FPGA_V2_DATA[15:0]</obj_property>
-      <obj_property name="ObjectShortName">FPGA_V2_DATA[15:0]</obj_property>
+      <obj_property name="ElementShortName">AD_CHANNAL[3:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_CHANNAL[3:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/busy_sync" type="logic">
+   <wvobject fp_name="AD_DATA_1" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/busy_sync</obj_property>
-      <obj_property name="ObjectShortName">busy_sync</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="u_adc/state_reg_1" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/state_reg_1[0:0]</obj_property>
-      <obj_property name="ObjectShortName">state_reg_1[0:0]</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_1[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_1[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/state_reg" type="array">
+   <wvobject fp_name="AD_DATA_2" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/state_reg[2:2]</obj_property>
-      <obj_property name="ObjectShortName">state_reg[2:2]</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_2[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_2[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/state_reg_2" type="array">
+   <wvobject fp_name="AD_DATA_3" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/state_reg_2[1:1]</obj_property>
-      <obj_property name="ObjectShortName">state_reg_2[1:1]</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_3[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_3[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="u_adc/rst_n" type="logic">
+   <wvobject fp_name="AD_DATA_4" type="array">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">u_adc/rst_n</obj_property>
-      <obj_property name="ObjectShortName">rst_n</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_4[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_4[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject fp_name="AD_DATA_5" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_5[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_5[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject fp_name="AD_DATA_6" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_6[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_6[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject fp_name="AD_DATA_7" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_7[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_7[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject fp_name="AD_DATA_8" type="array">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">AD_DATA_8[15:0]</obj_property>
+      <obj_property name="ObjectShortName">AD_DATA_8[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject fp_name="ad_frstdata_IBUF" type="logic">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">ad_frstdata_IBUF</obj_property>
+      <obj_property name="ObjectShortName">ad_frstdata_IBUF</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>

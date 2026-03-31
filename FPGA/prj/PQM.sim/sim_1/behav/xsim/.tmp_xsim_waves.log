@@ -1,0 +1,19 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:31:22 2026
+# Process ID: 11352
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_waves.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_waves.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_waves.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_waves.tcl
+## add_wave /ADC_DRIVER_TB/clk /ADC_DRIVER_TB/rst_n /ADC_DRIVER_TB/rddata
+ERROR: [Common 17-163] Missing value for option 'patterns', please type 'get_waves -help' for usage info.
+xsim% INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:31:25 2026...

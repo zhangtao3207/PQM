@@ -1,0 +1,25 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:30:42 2026
+# Process ID: 10964
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_navcmds.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_navcmds.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_navcmds.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_navcmds.tcl
+## foreach cmd [lsort [info commands *cursor*]] { puts $cmd }
+## foreach cmd [lsort [info commands *goto*]] { puts "G:$cmd" }
+## foreach cmd [lsort [info commands *seek*]] { puts "S:$cmd" }
+S:seek
+## foreach cmd [lsort [info commands *jump*]] { puts "J:$cmd" }
+## foreach cmd [lsort [info commands *marker*]] { puts "M:$cmd" }
+M:add_wave_marker
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:30:48 2026...

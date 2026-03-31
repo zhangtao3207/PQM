@@ -1,0 +1,19 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:30:15 2026
+# Process ID: 8580
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_openwdb.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_openwdb.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_openwdb.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_openwdb.tcl
+## open_wave_database {C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/ADC_DRIVER_TB_behav.wdb}
+ERROR: [Wavedata 42-25] The waveform database 'C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/ADC_DRIVER_TB_behav.wdb' could not be opened for the following reason: The wdb file is not compatible with this version of the software..
+xsim% INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:30:17 2026...

@@ -1,0 +1,25 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:32:35 2026
+# Process ID: 26260
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_waveobj3.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_waveobj3.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_waveobj3.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_waveobj3.tcl
+## create_wave_config mycfg
+## add_wave /ADC_DRIVER_TB/clk
+## add_wave /ADC_DRIVER_TB/rddata
+## set waves [get_waves *]
+## puts "WAVES=$waves"
+WAVES=/ADC_DRIVER_TB/clk /ADC_DRIVER_TB/rddata
+## report_wave_props $waves
+ERROR: [Common 17-161] Invalid option value '/ADC_DRIVER_TB/clk /ADC_DRIVER_TB/rddata' specified for 'item'.
+xsim% INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:32:38 2026...

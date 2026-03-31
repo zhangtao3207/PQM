@@ -1,0 +1,11 @@
+puts "CMD_LOG_WAVE [llength [info commands log_wave]]"
+puts "CMD_ADD_WAVE [llength [info commands add_wave]]"
+puts "CMD_GET_WAVES [llength [info commands get_waves]]"
+puts "CMD_CURRENT_TIME [llength [info commands current_time]]"
+puts "CMD_RUN [llength [info commands run]]"
+puts "CMD_RESTART [llength [info commands restart]]"
+puts "CMD_WRITE_CSV [llength [info commands write_csv]]"
+puts "CMD_WRITE_VCD [llength [info commands write_vcd]]"
+puts "CMD_OPEN_VCD [llength [info commands open_vcd]]"
+puts "CMD_CLOSE_VCD [llength [info commands close_vcd]]"
+quit

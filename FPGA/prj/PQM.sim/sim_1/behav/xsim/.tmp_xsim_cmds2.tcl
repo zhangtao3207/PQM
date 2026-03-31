@@ -1,0 +1,10 @@
+puts "CMD_EXAMINE [llength [info commands examine]]"
+puts "CMD_GET_VALUE [llength [info commands get_value]]"
+puts "CMD_GET_OBJECTS [llength [info commands get_objects]]"
+puts "CMD_REPORT_VALUES [llength [info commands report_values]]"
+puts "CMD_CURRENT_SCOPE [llength [info commands current_scope]]"
+puts "CMD_GET_SCOPES [llength [info commands get_scopes]]"
+puts "CMD_FIND [llength [info commands find]]"
+puts "CMD_GET_SIGNALS [llength [info commands get_signals]]"
+puts "CMD_LIST [llength [info commands list]]"
+quit

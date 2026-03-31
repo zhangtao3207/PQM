@@ -1,105 +1,106 @@
 //============================================================================
-// 模块名称: main
+// Module Name: main
 //============================================================================
 module main(
-    input            sys_clk,     // 系统时钟输入
-    input            sys_rst_n,   // 系统复位输入，低有效
+    input            sys_clk,
+    input            sys_rst_n,
 
-    input            uart_rxd,    // UART接收引脚
-    output           uart_txd,    // UART发送引脚
+    input            uart_rxd,
+    output           uart_txd,
+    inout            touch_sda,
+    output           touch_scl,
+    inout            touch_int,
+    output           touch_rst_n,
 
-    input            adc_busy,    // ADC忙信号
-    input            adc_frstdata,// ADC首通道标志
-    input            adc_douta,   // ADC串行数据输出A
-    input            adc_doutb,   // ADC串行数据输出B
-    output           adc_reset,   // ADC复位信号
-    output           adc_convst,  // ADC启动转换信号
-    output           adc_sclk,    // ADC串行时钟
-    output           adc_cs,      // ADC片选信号
+    output           lcd_de,
+    output           lcd_hs,
+    output           lcd_vs,
+    output           lcd_bl,
+    output           lcd_clk,
+    output           lcd_rst_n,
+    inout   [23:0]   lcd_rgb,
 
-    inout            touch_sda,   // 触摸I2C数据线
-    output           touch_scl,   // 触摸I2C时钟线
-    inout            touch_int,   // 触摸中断/握手引脚
-    output           touch_rst_n, // 触摸复位引脚，低有效
-
-    output           lcd_de,      // LCD数据使能
-    output           lcd_hs,      // LCD行同步
-    output           lcd_vs,      // LCD场同步
-    output           lcd_bl,      // LCD背光控制
-    output           lcd_clk,     // LCD像素时钟
-    output           lcd_rst_n,   // LCD复位引脚，低有效
-    inout   [23:0]   lcd_rgb     // LCD RGB数据总线/读ID复用总线
-
+    input            ad_busy,
+    input            ad_frstdata,
+    input   [15:0]   ad_data,
+    output           ad_rst,
+    output wire      ad_convst,
+    output wire      ad_cs_n,
+    output wire      ad_rd_n
 );
 
 //==========================================================================
-// 参数定义
+// Parameters
 //==========================================================================
-localparam integer CLK_FREQ               = 50_000_000; // 系统时钟频率
-localparam integer UART_BPS               = 115200;     // UART波特率
-localparam integer ADC_RST_RELEASE_CYCLES = CLK_FREQ / 1000;
+localparam integer CLK_FREQ               = 50_000_000;
+localparam integer UART_BPS               = 115200;
 
-//==========================================================================
-// 内部信号
-//==========================================================================
-wire  [15:0]  lcd_id;              // LCD屏ID
-wire  [31:0]  data;                // 触摸坐标BCD数据
-wire          touch_pressed;       // 按下脉冲
-wire          touch_unpressed;     // 松开脉冲
-wire          touch_click;         // 单击脉冲
-wire          touch_long_press;    // 长按脉冲
-wire          touch_drag;          // 拖动脉冲
-wire          touch_click_state;   // 单击状态
-wire          touch_long_state;    // 长按状态
-wire          touch_drag_state;    // 拖动状态
-wire  [15:0]  touch_start_x;       // 触摸起始X坐标
-wire  [15:0]  touch_start_y;       // 触摸起始Y坐标
-wire  [15:0]  touch_end_x;         // 触摸结束X坐标
-wire  [15:0]  touch_end_y;         // 触摸结束Y坐标
-wire  [15:0]  touch_press_time_ms; // 按压时长
-wire  [4:0]   touch_state_bits;    // 触摸状态打包位
-wire  [7:0]   uart_rx_data;        // UART接收字节
-wire          uart_rx_done;        // UART接收完成脉冲
-wire          uart_tx_busy;        // UART发送忙标志
-reg   [7:0]   uart_tx_data;        // UART发送数据
-reg           uart_tx_en;          // UART发送使能
-reg   [127:0] rx_line_ascii;       // LCD显示的接收ASCII缓存
-reg   [3:0]   rx_pos;              // 接收缓存写入位置
-wire  [15:0]  adc_v1_data;         // ADC通道V1数据
-wire  [15:0]  adc_v2_data;         // ADC通道V2数据
-wire          adc_data_valid;      // ADC数据有效脉冲
-
-wire        clk_50m;         // PLL输出50MHz
-wire        clk_25m;         // PLL输出25MHz
-wire        clk_25m_deg120;  // PLL输出25MHz相移时钟
-wire        locked;          // PLL锁定标志
-wire        rst_n;           // 锁定后的系统复位
-reg         adc_rst_n;
-reg  [31:0] adc_rst_cnt;
-
-assign rst_n = sys_rst_n & locked;
-
-always @(posedge sys_clk or negedge rst_n) begin
-    if(!rst_n) begin
-        adc_rst_n   <= 1'b0;
-        adc_rst_cnt <= 32'd0;
-    end
-    else if(adc_rst_cnt >= ADC_RST_RELEASE_CYCLES - 1) begin
-        adc_rst_n <= 1'b1;
-    end
-    else begin
-        adc_rst_n   <= 1'b0;
-        adc_rst_cnt <= adc_rst_cnt + 32'd1;
-    end
-end
+localparam integer ADC_RESET_HIGH_CYCLES   = 500;
+localparam integer ADC_CONVST_LOW_CYCLES   = 20;
+localparam integer ADC_RD_LOW_CYCLES       = 16;
+localparam integer ADC_RD_HIGH_CYCLES      = 16;
+localparam integer ADC_BUSY_TIMEOUT_CYCLES = 100000;
+localparam integer ADC_STARTUP_WAIT_CYCLES = 50000;
 
 //==========================================================================
-// 函数：sanitize_char
+// Internal signals
+//==========================================================================
+wire  [15:0] lcd_id;
+wire  [31:0] data;
+wire         touch_pressed;
+wire         touch_unpressed;
+wire         touch_click;
+wire         touch_long_press;
+wire         touch_drag;
+wire         touch_click_state;
+wire         touch_long_state;
+wire         touch_drag_state;
+wire  [15:0] touch_start_x;
+wire  [15:0] touch_start_y;
+wire  [15:0] touch_end_x;
+wire  [15:0] touch_end_y;
+wire  [15:0] touch_press_time_ms;
+wire  [4:0]  touch_state_bits;
+wire  [7:0]  uart_rx_data;
+wire         uart_rx_done;
+wire         uart_tx_busy;
+reg   [7:0]  uart_tx_data;
+reg          uart_tx_en;
+reg   [127:0] rx_line_ascii;
+reg   [3:0]  rx_pos;
+
+wire         clk_50m;
+wire         clk_25m;
+wire         clk_25m_deg120;
+wire         locked;
+wire         rst_n;
+
+wire [15:0]  AD_DATA_1;
+wire [15:0]  AD_DATA_2;
+wire [15:0]  AD_DATA_3;
+wire [15:0]  AD_DATA_4;
+wire [15:0]  AD_DATA_5;
+wire [15:0]  AD_DATA_6;
+wire [15:0]  AD_DATA_7;
+wire [15:0]  AD_DATA_8;
+wire [3:0]   AD_CHANNAL;
+wire [2:0]   AD_STATE;
+wire         adc_sample_active;
+reg          adc_start;
+reg          adc_idle_seen;
+reg  [15:0]  adc_startup_wait_cnt;
+wire         adc_startup_wait_done;
+
+assign rst_n                  = sys_rst_n & locked;
+assign adc_startup_wait_done  = (adc_startup_wait_cnt >= ADC_STARTUP_WAIT_CYCLES - 1);
+
+//==========================================================================
+// Function: sanitize_char
 //==========================================================================
 function [7:0] sanitize_char;
     input [7:0] c;
     begin
-        if(c < 8'h20 || c > 8'h7E)
+        if (c < 8'h20 || c > 8'h7E)
             sanitize_char = 8'h20;
         else
             sanitize_char = c;
@@ -107,47 +108,47 @@ function [7:0] sanitize_char;
 endfunction
 
 //==========================================================================
-// UART模块实例化
+// UART instance
 //==========================================================================
 uart #(
     .CLK_FREQ(CLK_FREQ),
     .UART_BPS(UART_BPS)
 ) u_uart (
-    .clk         (sys_clk),
-    .rst_n       (sys_rst_n),
-    .uart_rxd    (uart_rxd),
-    .uart_txd    (uart_txd),
-    .tx_en       (uart_tx_en),
-    .tx_data     (uart_tx_data),
-    .tx_busy     (uart_tx_busy),
-    .rx_data     (uart_rx_data),
-    .rx_done     (uart_rx_done)
+    .clk      (sys_clk),
+    .rst_n    (sys_rst_n),
+    .uart_rxd (uart_rxd),
+    .uart_txd (uart_txd),
+    .tx_en    (uart_tx_en),
+    .tx_data  (uart_tx_data),
+    .tx_busy  (uart_tx_busy),
+    .rx_data  (uart_rx_data),
+    .rx_done  (uart_rx_done)
 );
 
 //==========================================================================
-// Touch模块实例化
+// Touch instance
 //==========================================================================
-touch_top  u_touch_top(
-    .clk              (sys_clk),
-    .rst_n            (sys_rst_n),
-    .touch_rst_n      (touch_rst_n),
-    .touch_int        (touch_int),
-    .touch_scl        (touch_scl),
-    .touch_sda        (touch_sda),
-    .lcd_id           (lcd_id),
-    .data             (data),
-    .touch_pressed    (touch_pressed),
-    .touch_unpressed  (touch_unpressed),
-    .touch_click      (touch_click),
-    .touch_long_press (touch_long_press),
-    .touch_drag       (touch_drag),
-    .touch_click_state(touch_click_state),
-    .touch_long_state (touch_long_state),
-    .touch_drag_state (touch_drag_state),
-    .touch_start_x    (touch_start_x),
-    .touch_start_y    (touch_start_y),
-    .touch_end_x      (touch_end_x),
-    .touch_end_y      (touch_end_y),
+touch_top u_touch_top (
+    .clk               (sys_clk),
+    .rst_n             (sys_rst_n),
+    .touch_rst_n       (touch_rst_n),
+    .touch_int         (touch_int),
+    .touch_scl         (touch_scl),
+    .touch_sda         (touch_sda),
+    .lcd_id            (lcd_id),
+    .data              (data),
+    .touch_pressed     (touch_pressed),
+    .touch_unpressed   (touch_unpressed),
+    .touch_click       (touch_click),
+    .touch_long_press  (touch_long_press),
+    .touch_drag        (touch_drag),
+    .touch_click_state (touch_click_state),
+    .touch_long_state  (touch_long_state),
+    .touch_drag_state  (touch_drag_state),
+    .touch_start_x     (touch_start_x),
+    .touch_start_y     (touch_start_y),
+    .touch_end_x       (touch_end_x),
+    .touch_end_y       (touch_end_y),
     .touch_press_time_ms(touch_press_time_ms)
 );
 
@@ -160,24 +161,22 @@ assign touch_state_bits = {
 };
 
 //==========================================================================
-// UART接收行缓冲
+// UART receive line buffer
 //==========================================================================
 always @(posedge sys_clk or negedge sys_rst_n) begin
-    if(!sys_rst_n) begin
+    if (!sys_rst_n) begin
         rx_line_ascii <= {16{8'h20}};
         rx_pos        <= 4'd0;
-    end
-    else if(uart_rx_done) begin
-        if(uart_rx_data == 8'h0D || uart_rx_data == 8'h0A) begin
+    end else if (uart_rx_done) begin
+        if (uart_rx_data == 8'h0D || uart_rx_data == 8'h0A) begin
             rx_line_ascii <= {16{8'h20}};
             rx_pos        <= 4'd0;
-        end
-        else begin
-            case(rx_pos)
+        end else begin
+            case (rx_pos)
                 4'd0 : rx_line_ascii[127:120] <= sanitize_char(uart_rx_data);
                 4'd1 : rx_line_ascii[119:112] <= sanitize_char(uart_rx_data);
                 4'd2 : rx_line_ascii[111:104] <= sanitize_char(uart_rx_data);
-                4'd3 : rx_line_ascii[103:96]    <= sanitize_char(uart_rx_data);
+                4'd3 : rx_line_ascii[103:96]  <= sanitize_char(uart_rx_data);
                 4'd4 : rx_line_ascii[95:88]   <= sanitize_char(uart_rx_data);
                 4'd5 : rx_line_ascii[87:80]   <= sanitize_char(uart_rx_data);
                 4'd6 : rx_line_ascii[79:72]   <= sanitize_char(uart_rx_data);
@@ -191,50 +190,147 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
                 4'd14: rx_line_ascii[15:8]    <= sanitize_char(uart_rx_data);
                 default: rx_line_ascii[7:0]   <= sanitize_char(uart_rx_data);
             endcase
-            if(rx_pos != 4'd15)
+
+            if (rx_pos != 4'd15)
                 rx_pos <= rx_pos + 4'd1;
         end
     end
 end
 
 //==========================================================================
-// ADC模块实例化
+// ADC start generator
 //==========================================================================
+always @(posedge sys_clk or negedge rst_n) begin
+    if (!rst_n) begin
+        adc_start            <= 1'b0;
+        adc_idle_seen        <= 1'b0;
+        adc_startup_wait_cnt <= 16'd0;
+    end else begin
+        adc_start <= 1'b0;
 
+        if (!adc_startup_wait_done) begin
+            adc_startup_wait_cnt <= adc_startup_wait_cnt + 16'd1;
+            adc_idle_seen        <= 1'b0;
+        end else if (!adc_sample_active && !adc_idle_seen) begin
+            adc_start     <= 1'b1;
+            adc_idle_seen <= 1'b1;
+        end else if (adc_sample_active) begin
+            adc_idle_seen <= 1'b0;
+        end
+    end
+end
 
 //==========================================================================
-// LCD显示模块
+// ADC instance: switched to parallel mode
 //==========================================================================
-lcd_rgb_char  u_lcd_rgb_char(
-   .sys_clk           (sys_clk),
-   .sys_rst_n         (sys_rst_n),
-   .data              (data),
-   .touch_state_bits  (touch_state_bits),
-   .touch_start_x     (touch_start_x),
-   .touch_start_y     (touch_start_y),
-   .touch_press_time_ms(touch_press_time_ms),
-   .rx_line_ascii     (rx_line_ascii),
-   .lcd_id            (lcd_id),
-   .lcd_hs            (lcd_hs),
-   .lcd_vs            (lcd_vs),
-   .lcd_de            (lcd_de),
-   .lcd_rgb           (lcd_rgb),
-   .lcd_bl            (lcd_bl),
-   .lcd_rst_n         (lcd_rst_n),
-   .lcd_clk           (lcd_clk)
+AD7606_Parallel_DRIVER #(
+    .RESET_HIGH_CYCLES  (ADC_RESET_HIGH_CYCLES),
+    .CONVST_LOW_CYCLES  (ADC_CONVST_LOW_CYCLES),
+    .RD_LOW_CYCLES      (ADC_RD_LOW_CYCLES),
+    .RD_HIGH_CYCLES     (ADC_RD_HIGH_CYCLES),
+    .BUSY_TIMEOUT_CYCLES(ADC_BUSY_TIMEOUT_CYCLES)
+) u_AD7606_Parallel_DRIVER (
+    .clk          (sys_clk),
+    .rst_n        (rst_n),
+    .start        (adc_start),
+    .soft_reset   (1'b0),
+    .ad_busy      (ad_busy),
+    .ad_frstdata  (ad_frstdata),
+    .ad_data      (ad_data),
+    .ad_reset     (ad_rst),
+    .ad_convst    (ad_convst),
+    .ad_cs_n      (ad_cs_n),
+    .ad_rd_n      (ad_rd_n),
+    .ch1_data     (AD_DATA_1),
+    .ch2_data     (AD_DATA_2),
+    .ch3_data     (AD_DATA_3),
+    .ch4_data     (AD_DATA_4),
+    .ch5_data     (AD_DATA_5),
+    .ch6_data     (AD_DATA_6),
+    .ch7_data     (AD_DATA_7),
+    .ch8_data     (AD_DATA_8),
+    .data_frame   (),
+    .data_valid   (),
+    .sample_active(adc_sample_active),
+    .timeout      (),
+    .ad_channal   (AD_CHANNAL),
+    .ad_state     (AD_STATE)
 );
 
 //==========================================================================
-// PLL时钟向导
+// ILA debug instance
+// Probe order for the reconfigured ILA_ADC_DRIVER:
+// probe0  -> ad_rst
+// probe1  -> ad_convst
+// probe2  -> ad_rd_n
+// probe3  -> ad_cs_n
+// probe4  -> ad_busy
+// probe5  -> ad_frstdata
+// probe6  -> AD_DATA_1
+// probe7  -> AD_DATA_2
+// probe8  -> AD_DATA_3
+// probe9  -> AD_DATA_4
+// probe10 -> AD_DATA_5
+// probe11 -> AD_DATA_6
+// probe12 -> AD_DATA_7
+// probe13 -> AD_DATA_8
+// probe14 -> AD_CHANNAL
+// probe15 -> AD_STATE
+// Note:
+//   AD_CHANNAL is the dynamic binary channel number currently being read.
+//   AD_STATE uses 3 bits because the parallel controller currently has 7 states.
 //==========================================================================
-clk_wiz_0 u_clk_wiz_0(
-    .clk_out1  (clk_50m),
-    .clk_out2  (clk_25m),
-    .clk_out3  (clk_25m_deg120),
-    .locked    (locked),
-    .clk_in1   (sys_clk)
+ILA_ADC_DRIVER u_ila_adc_driver (
+    .clk    (sys_clk),
+    .probe0 (ad_rst),
+    .probe1 (ad_convst),
+    .probe2 (ad_rd_n),
+    .probe3 (ad_cs_n),
+    .probe4 (ad_busy),
+    .probe5 (ad_frstdata),
+    .probe6 (AD_DATA_1),
+    .probe7 (AD_DATA_2),
+    .probe8 (AD_DATA_3),
+    .probe9 (AD_DATA_4),
+    .probe10(AD_DATA_5),
+    .probe11(AD_DATA_6),
+    .probe12(AD_DATA_7),
+    .probe13(AD_DATA_8),
+    .probe14(AD_CHANNAL),
+    .probe15(AD_STATE)
 );
 
+//==========================================================================
+// LCD display
+//==========================================================================
+lcd_rgb_char u_lcd_rgb_char (
+    .sys_clk            (sys_clk),
+    .sys_rst_n          (sys_rst_n),
+    .data               (data),
+    .touch_state_bits   (touch_state_bits),
+    .touch_start_x      (touch_start_x),
+    .touch_start_y      (touch_start_y),
+    .touch_press_time_ms(touch_press_time_ms),
+    .rx_line_ascii      (rx_line_ascii),
+    .lcd_id             (lcd_id),
+    .lcd_hs             (lcd_hs),
+    .lcd_vs             (lcd_vs),
+    .lcd_de             (lcd_de),
+    .lcd_rgb            (lcd_rgb),
+    .lcd_bl             (lcd_bl),
+    .lcd_rst_n          (lcd_rst_n),
+    .lcd_clk            (lcd_clk)
+);
 
+//==========================================================================
+// PLL
+//==========================================================================
+clk_wiz_0 u_clk_wiz_0 (
+    .clk_out1 (clk_50m),
+    .clk_out2 (clk_25m),
+    .clk_out3 (clk_25m_deg120),
+    .locked   (locked),
+    .clk_in1  (sys_clk)
+);
 
 endmodule

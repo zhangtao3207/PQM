@@ -15,7 +15,7 @@
                     },
                     {
                         "type": "ILA_V3",
-                        "name": "u_adc/u_ila_0",
+                        "name": "u_ila_adc_driver",
                         "spec": "labtools_ila_v6",
                         "ipName": "ila",
                         "core_location": {
@@ -23,12 +23,12 @@
                             "slave_index": 0,
                             "bscan_switch_index": 0
                         },
-                        "uuid": "8626DE7F680F58E0947C771974954B35",
+                        "uuid": "B8901B81C7B85277A418CF32979D13DC",
                         "pins": [
                             {
                                 "name": "probe0",
                                 "id": 0,
-                                "type": "DATA_TRIGGER",
+                                "type": "DATA",
                                 "direction": "IN",
                                 "isVector": false,
                                 "leftIndex": 0,
@@ -36,7 +36,7 @@
                                 "portIndex": 0,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_BUSY",
+                                        "name": "ad_rst_OBUF",
                                         "isBus": false
                                     }
                                 ]
@@ -52,7 +52,7 @@
                                 "portIndex": 1,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_FRSTDATA",
+                                        "name": "ad_convst_OBUF",
                                         "isBus": false
                                     }
                                 ]
@@ -68,7 +68,7 @@
                                 "portIndex": 2,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_DOUTA",
+                                        "name": "ad_rd_n_OBUF",
                                         "isBus": false
                                     }
                                 ]
@@ -84,7 +84,7 @@
                                 "portIndex": 3,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_DOUTB",
+                                        "name": "ad_cs_n_OBUF",
                                         "isBus": false
                                     }
                                 ]
@@ -100,7 +100,7 @@
                                 "portIndex": 4,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_RESET",
+                                        "name": "ad_busy_IBUF",
                                         "isBus": false
                                     }
                                 ]
@@ -116,7 +116,7 @@
                                 "portIndex": 5,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_CONVST",
+                                        "name": "ad_frstdata_IBUF",
                                         "isBus": false
                                     }
                                 ]
@@ -126,14 +126,64 @@
                                 "id": 6,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 15,
                                 "portIndex": 6,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_SCLK",
-                                        "isBus": false
+                                        "name": "AD_DATA_1",
+                                        "isBus": true,
+                                        "subnets": [
+                                            {
+                                                "name": "AD_DATA_1[15]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[14]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[13]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[12]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[11]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[10]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[9]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[8]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[7]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[6]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[5]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[4]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[3]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[2]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[1]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_1[0]"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -142,14 +192,64 @@
                                 "id": 7,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 15,
                                 "portIndex": 7,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_CS",
-                                        "isBus": false
+                                        "name": "AD_DATA_2",
+                                        "isBus": true,
+                                        "subnets": [
+                                            {
+                                                "name": "AD_DATA_2[15]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[14]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[13]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[12]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[11]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[10]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[9]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[8]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[7]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[6]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[5]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[4]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[3]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[2]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[1]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_2[0]"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -164,56 +264,56 @@
                                 "portIndex": 8,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_V1_DATA",
+                                        "name": "AD_DATA_3",
                                         "isBus": true,
                                         "subnets": [
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[15]"
+                                                "name": "AD_DATA_3[15]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[14]"
+                                                "name": "AD_DATA_3[14]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[13]"
+                                                "name": "AD_DATA_3[13]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[12]"
+                                                "name": "AD_DATA_3[12]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[11]"
+                                                "name": "AD_DATA_3[11]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[10]"
+                                                "name": "AD_DATA_3[10]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[9]"
+                                                "name": "AD_DATA_3[9]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[8]"
+                                                "name": "AD_DATA_3[8]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[7]"
+                                                "name": "AD_DATA_3[7]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[6]"
+                                                "name": "AD_DATA_3[6]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[5]"
+                                                "name": "AD_DATA_3[5]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[4]"
+                                                "name": "AD_DATA_3[4]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[3]"
+                                                "name": "AD_DATA_3[3]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[2]"
+                                                "name": "AD_DATA_3[2]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[1]"
+                                                "name": "AD_DATA_3[1]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V1_DATA[0]"
+                                                "name": "AD_DATA_3[0]"
                                             }
                                         ]
                                     }
@@ -230,56 +330,56 @@
                                 "portIndex": 9,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_V2_DATA",
+                                        "name": "AD_DATA_4",
                                         "isBus": true,
                                         "subnets": [
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[15]"
+                                                "name": "AD_DATA_4[15]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[14]"
+                                                "name": "AD_DATA_4[14]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[13]"
+                                                "name": "AD_DATA_4[13]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[12]"
+                                                "name": "AD_DATA_4[12]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[11]"
+                                                "name": "AD_DATA_4[11]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[10]"
+                                                "name": "AD_DATA_4[10]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[9]"
+                                                "name": "AD_DATA_4[9]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[8]"
+                                                "name": "AD_DATA_4[8]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[7]"
+                                                "name": "AD_DATA_4[7]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[6]"
+                                                "name": "AD_DATA_4[6]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[5]"
+                                                "name": "AD_DATA_4[5]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[4]"
+                                                "name": "AD_DATA_4[4]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[3]"
+                                                "name": "AD_DATA_4[3]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[2]"
+                                                "name": "AD_DATA_4[2]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[1]"
+                                                "name": "AD_DATA_4[1]"
                                             },
                                             {
-                                                "name": "u_adc/FPGA_V2_DATA[0]"
+                                                "name": "AD_DATA_4[0]"
                                             }
                                         ]
                                     }
@@ -290,14 +390,64 @@
                                 "id": 10,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 15,
                                 "portIndex": 10,
                                 "nets": [
                                     {
-                                        "name": "u_adc/FPGA_DATA_VALID",
-                                        "isBus": false
+                                        "name": "AD_DATA_5",
+                                        "isBus": true,
+                                        "subnets": [
+                                            {
+                                                "name": "AD_DATA_5[15]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[14]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[13]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[12]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[11]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[10]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[9]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[8]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[7]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[6]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[5]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[4]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[3]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[2]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[1]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_5[0]"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -306,14 +456,64 @@
                                 "id": 11,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 15,
                                 "portIndex": 11,
                                 "nets": [
                                     {
-                                        "name": "u_adc/rst_n",
-                                        "isBus": false
+                                        "name": "AD_DATA_6",
+                                        "isBus": true,
+                                        "subnets": [
+                                            {
+                                                "name": "AD_DATA_6[15]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[14]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[13]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[12]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[11]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[10]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[9]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[8]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[7]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[6]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[5]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[4]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[3]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[2]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[1]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_6[0]"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -322,14 +522,64 @@
                                 "id": 12,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 15,
                                 "portIndex": 12,
                                 "nets": [
                                     {
-                                        "name": "u_adc/busy_sync",
-                                        "isBus": false
+                                        "name": "AD_DATA_7",
+                                        "isBus": true,
+                                        "subnets": [
+                                            {
+                                                "name": "AD_DATA_7[15]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[14]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[13]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[12]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[11]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[10]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[9]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[8]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[7]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[6]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[5]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[4]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[3]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[2]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[1]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_7[0]"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -338,17 +588,62 @@
                                 "id": 13,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 15,
                                 "portIndex": 13,
                                 "nets": [
                                     {
-                                        "name": "u_adc/state_reg_1",
+                                        "name": "AD_DATA_8",
                                         "isBus": true,
                                         "subnets": [
                                             {
-                                                "name": "u_adc/state_reg_1[0]"
+                                                "name": "AD_DATA_8[15]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[14]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[13]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[12]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[11]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[10]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[9]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[8]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[7]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[6]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[5]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[4]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[3]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[2]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[1]"
+                                            },
+                                            {
+                                                "name": "AD_DATA_8[0]"
                                             }
                                         ]
                                     }
@@ -359,17 +654,26 @@
                                 "id": 14,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 3,
                                 "portIndex": 14,
                                 "nets": [
                                     {
-                                        "name": "u_adc/state_reg_2",
+                                        "name": "AD_CHANNAL",
                                         "isBus": true,
                                         "subnets": [
                                             {
-                                                "name": "u_adc/state_reg_2[1]"
+                                                "name": "AD_CHANNAL[3]"
+                                            },
+                                            {
+                                                "name": "AD_CHANNAL[2]"
+                                            },
+                                            {
+                                                "name": "AD_CHANNAL[1]"
+                                            },
+                                            {
+                                                "name": "AD_CHANNAL[0]"
                                             }
                                         ]
                                     }
@@ -380,17 +684,23 @@
                                 "id": 15,
                                 "type": "DATA_TRIGGER",
                                 "direction": "IN",
-                                "isVector": false,
+                                "isVector": true,
                                 "leftIndex": 0,
-                                "rightIndex": 0,
+                                "rightIndex": 2,
                                 "portIndex": 15,
                                 "nets": [
                                     {
-                                        "name": "u_adc/state_reg",
+                                        "name": "AD_STATE",
                                         "isBus": true,
                                         "subnets": [
                                             {
-                                                "name": "u_adc/state_reg[2]"
+                                                "name": "AD_STATE[2]"
+                                            },
+                                            {
+                                                "name": "AD_STATE[1]"
+                                            },
+                                            {
+                                                "name": "AD_STATE[0]"
                                             }
                                         ]
                                     }

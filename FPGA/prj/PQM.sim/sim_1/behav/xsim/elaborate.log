@@ -3,14 +3,14 @@ Copyright 1986-1999, 2001-2018 Xilinx, Inc. All Rights Reserved.
 Running: D:/zt/Xilinx/Vivado/2018.3/bin/unwrapped/win64.o/xelab.exe -wto 9097c18c8e294b9a8f571e4acb6b2268 --incr --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip -L xpm --snapshot ADC_DRIVER_TB_behav xil_defaultlib.ADC_DRIVER_TB xil_defaultlib.glbl -log elaborate.log 
 Using 2 slave threads.
 Starting static elaboration
-WARNING: [VRFC 10-3091] actual bit length 1 differs from formal bit length 3 for port 'os' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/sim/ADC_DRIVER_TB.v:66]
+WARNING: [VRFC 10-3091] actual bit length 4 differs from formal bit length 1 for port 'probe6' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/AD7606_Drive.v:250]
 Completed static elaboration
 Starting simulation data flow analysis
-WARNING: [XSIM 43-4100] "C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
 Compiling module xil_defaultlib.ADC_CLK_DIV
 Compiling module xil_defaultlib.AD7606_SPI
+Compiling module xil_defaultlib.ILA_ADC_DRIVER
 Compiling module xil_defaultlib.AD7606_Driver
 Compiling module xil_defaultlib.ADC_DRIVER_TB
 Compiling module xil_defaultlib.glbl

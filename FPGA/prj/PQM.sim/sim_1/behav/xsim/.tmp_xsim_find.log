@@ -1,0 +1,29 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:31:03 2026
+# Process ID: 16920
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_find.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_find.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_find.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_find.tcl
+## add_wave /ADC_DRIVER_TB/clk /ADC_DRIVER_TB/rst_n /ADC_DRIVER_TB/rddata
+## run 500 ns
+## puts "TIME0=[current_time -s]"
+TIME0=500ns
+## set hit [find_next_wave_value -wave /ADC_DRIVER_TB/clk -time 0ns 0]
+## puts "HIT=$hit"
+HIT=
+## puts "TIME1=[current_time -s]"
+TIME1=500ns
+## puts "CLKVAL=[get_value /ADC_DRIVER_TB/clk]"
+CLKVAL=0
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:31:08 2026...

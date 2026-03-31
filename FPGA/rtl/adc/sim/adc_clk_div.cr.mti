@@ -1,8 +1,0 @@
-C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/sim/ADC_CLK_DIV_TB.v {1 {vlog -work work -vopt -stats=none C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/sim/ADC_CLK_DIV_TB.v
-Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
--- Compiling module ADC_CLK_DIV_TB
-
-Top level modules:
-	ADC_CLK_DIV_TB
-
-} {} {}}

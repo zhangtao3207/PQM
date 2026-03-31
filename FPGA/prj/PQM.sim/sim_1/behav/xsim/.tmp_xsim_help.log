@@ -1,0 +1,216 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:27:07 2026
+# Process ID: 11064
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_help.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_help.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_help.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_help.tcl
+## catch {get_value -help} msg1
+## puts "GET_VALUE_HELP_START"
+GET_VALUE_HELP_START
+## puts $msg1
+get_value
+
+Description: 
+Get current value of the selected HDL object (variable, signal, wire, reg)
+
+Syntax: 
+get_value  [-radix <arg>] [-quiet] [-verbose] <hdl_object>
+
+Returns: 
+Returns a string representation of value of a hdl_object
+
+Usage: 
+  Name          Description
+  -------------------------
+  [-radix]      radix specifies the radix to use for printing the values of the
+                hdl_objects. Allowed values are: default, dec, bin, oct,hex, 
+                unsigned, ascii, smag
+  [-quiet]      Ignore command errors
+  [-verbose]    Suspend message limits during command execution
+  <hdl_object>  The hdl_object to retrieve the current value
+
+Categories: 
+Simulation
+
+Description:
+
+  Get the value of a single HDL object at the current simulation run time.
+
+  Note: Use the report_values command to return the values of more than one
+  HDL objects.
+
+  HDL objects include HDL signals, variables, or constants as defined in the
+  Verilog or VHDL test bench and source files. An HDL signal includes Verilog
+  wire or reg entities, and VHDL signals. Examples of HDL variables include
+  Verilog real, realtime, time, and event.
+
+  HDL constants include Verilog parameters and localparams, and VHDL generic
+  and constants. The HDL scope, or scope, is defined by a declarative region
+  in the HDL code such as a module, function, task, process, or begin-end
+  blocks in Verilog. VHDL scopes include entity/architecture definitions,
+  block, function, procedure, and process blocks.
+
+Arguments:
+
+  -radix <arg> - (Optional) Specifies the radix to use when returning the
+  value of the specified object. Allowed values are: default, dec, bin, oct,
+  hex, unsigned, ascii, or smag.
+
+  Note: The radix dec indicates a signed decimal. Specify the radix unsigned
+  when dealing with unsigned data.
+
+  -quiet - (Optional) Execute the command quietly, returning no messages from
+  the command. The command also returns TCL_OK regardless of any errors
+  encountered during execution.
+
+  Note: Any errors encountered on the command-line, while launching the
+  command, will be returned. Only errors occurring inside the command will be
+  trapped.
+
+  -verbose - (Optional) Temporarily override any message limits and return
+  all messages from this command.
+
+  Note: Message limits can be defined with the set_msg_config command.
+
+  <hdl_object> - (Required) Specifies a single HDL object to get the value
+  of. The object can be specified by name, or can be returned as an object
+  from the get_objects command.
+
+Examples:
+
+  The following example gets the value of the sysClk signal:
+
+    get_value sysClk  
+       Z 
+    
+
+  This example shows the difference between the bin, dec, and unsigned radix
+  on the value returned from the specified bus:
+
+    get_value -radix bin /test/bench_VStatus_pad_0_i[7:0]  
+       10100101  
+    get_value -radix unsigned /test/bench_VStatus_pad_0_i[7:0]  
+       165  
+    get_value -radix dec /test/bench_VStatus_pad_0_i[7:0]  
+       -91 
+    
+
+See Also:
+
+   *  current_time
+   *  get_objects
+   *  set_value
+   *  report_values
+
+## puts "GET_VALUE_HELP_END"
+GET_VALUE_HELP_END
+## catch {report_values -help} msg2
+## puts "REPORT_VALUES_HELP_START"
+REPORT_VALUES_HELP_START
+## puts $msg2
+report_values
+
+Description: 
+Print current simulated value of given HDL objects (variable, signal, wire, or reg)
+
+Syntax: 
+report_values  [-radix <arg>] [-quiet] [-verbose] [<hdl_objects>...]
+
+Returns: 
+Print name and value of HDL objects on the console in textual format
+
+Usage: 
+  Name             Description
+  ----------------------------
+  [-radix]         The radix specifies the radix to use for printing the values
+                   of the hdl_objects. Allowed values are: default, dec, bin, 
+                   oct, hex, unsigned, ascii, smag.
+  [-quiet]         Ignore command errors
+  [-verbose]       Suspend message limits during command execution
+  [<hdl_objects>]  The hdl_objects to report.  Default is report_objects 
+                   [get_objects *]
+
+Categories: 
+Simulation
+
+Description:
+
+  Report the values of the specified HDL objects at the current simulation
+  run time.
+
+  HDL objects include HDL signals, variables, or constants as defined in the
+  Verilog or VHDL test bench and source files. An HDL signal includes Verilog
+  wire or reg entities, and VHDL signals. Examples of HDL variables include
+  Verilog real, realtime, time, and event.
+
+  HDL constants include Verilog parameters and localparams, and VHDL generic
+  and constants. The HDL scope, or scope, is defined by a declarative region
+  in the HDL code such as a module, function, task, process, or begin-end
+  blocks in Verilog. VHDL scopes include entity/architecture definitions,
+  block, function, procedure, and process blocks.
+
+Arguments:
+
+  -radix <arg> - (Optional) Specifies the radix to use when returning the
+  value of the specified objects. Allowed values are: default, dec, bin, oct,
+  hex, unsigned, ascii, or smag.
+
+  Note: The radix dec indicates a signed decimal. Specify the radix unsigned
+  when dealing with unsigned data.
+
+  -quiet - (Optional) Execute the command quietly, returning no messages from
+  the command. The command also returns TCL_OK regardless of any errors
+  encountered during execution.
+
+  Note: Any errors encountered on the command-line, while launching the
+  command, will be returned. Only errors occurring inside the command will be
+  trapped.
+
+  -verbose - (Optional) Temporarily override any message limits and return
+  all messages from this command.
+
+  Note: Message limits can be defined with the set_msg_config command.
+
+  <hdl_objects> - (Required) Specifies one or more HDL objects to return the
+  values of. The object can be specified by name, or can be returned as an
+  object from the get_objects command.
+
+Examples:
+
+  The following example reports the value of all objects at the current time:
+
+    report_values [get_objects] 
+    
+
+  This example shows the difference between the bin, dec, and unsigned radix
+  on the value returned from the specified bus:
+
+    report_values -radix bin /test/bench_VStatus_pad_0_i[7:0]  
+      Declared: {/test/bench_VStatus_pad_0_i[7:0]} Verilog 10100101  
+    report_values -radix unsigned /test/bench_VStatus_pad_0_i[7:0]  
+      Declared: {/test/bench_VStatus_pad_0_i[7:0]} Verilog 165  
+    report_values -radix dec /test/bench_VStatus_pad_0_i[7:0]  
+      Declared: {/test/bench_VStatus_pad_0_i[7:0]} Verilog -91 
+    
+
+See Also:
+
+   *  current_time
+   *  get_objects
+   *  get_value
+   *  set_value
+
+## puts "REPORT_VALUES_HELP_END"
+REPORT_VALUES_HELP_END
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:27:13 2026...

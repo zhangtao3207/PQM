@@ -1,0 +1,38 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:26:15 2026
+# Process ID: 1492
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_cmds.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_cmds.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_cmds.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_cmds.tcl
+## puts "CMD_LOG_WAVE [llength [info commands log_wave]]"
+CMD_LOG_WAVE 1
+## puts "CMD_ADD_WAVE [llength [info commands add_wave]]"
+CMD_ADD_WAVE 1
+## puts "CMD_GET_WAVES [llength [info commands get_waves]]"
+CMD_GET_WAVES 1
+## puts "CMD_CURRENT_TIME [llength [info commands current_time]]"
+CMD_CURRENT_TIME 1
+## puts "CMD_RUN [llength [info commands run]]"
+CMD_RUN 1
+## puts "CMD_RESTART [llength [info commands restart]]"
+CMD_RESTART 1
+## puts "CMD_WRITE_CSV [llength [info commands write_csv]]"
+CMD_WRITE_CSV 0
+## puts "CMD_WRITE_VCD [llength [info commands write_vcd]]"
+CMD_WRITE_VCD 0
+## puts "CMD_OPEN_VCD [llength [info commands open_vcd]]"
+CMD_OPEN_VCD 1
+## puts "CMD_CLOSE_VCD [llength [info commands close_vcd]]"
+CMD_CLOSE_VCD 1
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:26:26 2026...

@@ -1,0 +1,39 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:42:57 2026
+# Process ID: 13548
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_props.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_props.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_props.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_props.tcl
+## report_property [get_objects /ADC_DRIVER_TB/clk]
+Property  Type    Read-only  Value
+CLASS     string  true       xsim_hdl_object
+NAME      string  true       /ADC_DRIVER_TB/clk
+RADIX     string  false      default
+TYPE      enum    true       reg
+VALUE     string  false      X
+## report_property [get_objects /ADC_DRIVER_TB/sample_mem]
+Property  Type    Read-only  Value
+CLASS     string  true       xsim_hdl_object
+NAME      string  true       /ADC_DRIVER_TB/sample_mem
+RADIX     string  false      default
+TYPE      enum    true       reg
+VALUE     string  false      XXXX,XXXX,XXXX
+## report_property [get_objects /ADC_DRIVER_TB/CONV_BUSY_CYCLES]
+Property  Type    Read-only  Value
+CLASS     string  true       xsim_hdl_object
+NAME      string  true       /ADC_DRIVER_TB/CONV_BUSY_CYCLES
+RADIX     string  false      default
+TYPE      enum    true       unknown
+VALUE     string  false      40
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:43:01 2026...

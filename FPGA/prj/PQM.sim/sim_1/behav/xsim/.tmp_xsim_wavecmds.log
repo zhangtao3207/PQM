@@ -1,0 +1,45 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:28:07 2026
+# Process ID: 15160
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_wavecmds.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_wavecmds.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_wavecmds.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_wavecmds.tcl
+## foreach cmd [lsort [info commands *wave*]] { puts $cmd }
+add_wave
+add_wave_divider
+add_wave_group
+add_wave_marker
+add_wave_virtual_bus
+close_wave_config
+create_wave_config
+current_wave_config
+find_next_wave_value
+get_wave_configs
+get_waves
+log_wave
+move_wave
+open_wave_config
+open_wave_database
+remove_wave
+report_wave_props
+resume_wave_config_updates
+save_wave_config
+select_wave_objects
+set_wave_prop
+suspend_wave_config_updates
+## foreach cmd [lsort [info commands *db*]] { puts "DB:$cmd" }
+DB:close_msg_db
+DB:create_msg_db
+DB:load_msg_db
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:28:14 2026...

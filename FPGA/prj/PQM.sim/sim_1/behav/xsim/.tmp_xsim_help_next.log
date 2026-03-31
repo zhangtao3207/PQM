@@ -1,0 +1,45 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:28:49 2026
+# Process ID: 3508
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_help_next.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_help_next.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_help_next.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_help_next.tcl
+## catch {find_next_wave_value -help} msg
+## puts $msg
+find_next_wave_value
+
+Description: 
+Find next waveform value
+
+Syntax: 
+find_next_wave_value  [-wave <arg>] [-radix <arg>] [-match <arg>] [-time <arg>]
+                      [-quiet] [-verbose] [<pattern>]
+
+Usage: 
+  Name         Description
+  ------------------------
+  [-wave]      the wave object to search for value
+  [-radix]     radix specifies the radix to use for the value pattern. Allowed
+               values are: dec, bin, oct,hex, unsigned
+  [-match]     match specifies the match location to use for the value 
+               pattern. Allowed values are: exact, beginning, end
+  [-time]      starting time. The defaul time unit is ns.
+  [-quiet]     Ignore command errors
+  [-verbose]   Suspend message limits during command execution
+  [<pattern>]  value pattern to be search
+
+Categories: 
+Waveform
+
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:28:56 2026...

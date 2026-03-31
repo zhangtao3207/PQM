@@ -1,0 +1,80 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:40:05 2026
+# Process ID: 29456
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log wdb_to_csv.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/wdb_to_csv.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/sim/wdb_to_csv.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/adc/sim/wdb_to_csv.tcl
+## proc csv_escape {value} {
+##     set text [string map {\" \"\"} $value]
+##     return "\"$text\""
+## }
+## proc dump_row {fp objects} {
+##     set fields [list [csv_escape [current_time -s]]]
+##     foreach obj $objects {
+##         if {[catch {get_value $obj} value]} {
+##             set value ""
+##         }
+##         lappend fields [csv_escape $value]
+##     }
+##     puts $fp [join $fields ","]
+## }
+## set csv_out [expr {[info exists ::env(CSV_OUT)] ? $::env(CSV_OUT) : "sim_all.csv"}]
+## set scope   [expr {[info exists ::env(CSV_SCOPE)] ? $::env(CSV_SCOPE) : "/ADC_DRIVER_TB"}]
+## set step    [expr {[info exists ::env(CSV_STEP)] ? $::env(CSV_STEP) : "10ns"}]
+## set objects [lsort [get_objects -r ${scope}/*]]
+## if {[llength $objects] == 0} {
+##     puts "ERROR: no HDL objects found under $scope"
+##     quit 1
+## }
+## set fp [open $csv_out "w"]
+## set header [list [csv_escape "time"]]
+## foreach obj $objects {
+##     lappend header [csv_escape $obj]
+## }
+## puts $fp [join $header ","]
+## restart
+INFO: [Simtcl 6-17] Simulation restarted
+## dump_row $fp $objects
+## set prev_time [current_time -s]
+## while {1} {
+##     run $step
+##     set now_time [current_time -s]
+##     if {$now_time eq $prev_time} {
+##         break
+##     }
+## 
+##     dump_row $fp $objects
+##     set prev_time $now_time
+## }
+[1630000] FAIL sample[0] expected=1357 actual=0000
+[3250000] FAIL sample[1] expected=89ab actual=26aZ
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 219.730 ; gain = 0.000
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 219.730 ; gain = 0.000
+[4870000] FAIL sample[2] expected=fedc actual=135Z
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 219.730 ; gain = 0.000
+[6490000] FAIL sample[2] expected=fedc actual=fdbZ
+[8110000] FAIL sample[2] expected=fedc actual=fdbZ
+[9730000] FAIL sample[2] expected=fedc actual=fdbZ
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 219.730 ; gain = 0.000
+[11350000] FAIL sample[2] expected=fedc actual=fdbZ
+[12970000] FAIL sample[2] expected=fedc actual=fdbZ
+[14590000] FAIL sample[2] expected=fedc actual=fdbZ
+[16210000] FAIL sample[2] expected=fedc actual=fdbZ
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 219.730 ; gain = 0.000
+[17830000] FAIL sample[2] expected=fedc actual=fdbZ
+[19450000] FAIL sample[2] expected=fedc actual=fdbZ
+[21070000] FAIL sample[2] expected=fedc actual=fdbZ
+[22690000] FAIL sample[2] expected=fedc actual=fdbZ
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 219.730 ; gain = 0.000
+[24310000] FAIL sample[2] expected=fedc actual=fdbZ
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 219.730 ; gain = 0.000

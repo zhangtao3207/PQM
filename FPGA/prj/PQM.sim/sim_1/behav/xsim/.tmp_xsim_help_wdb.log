@@ -1,0 +1,118 @@
+#-----------------------------------------------------------
+# xsim v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:38:27 MST 2018
+# IP Build 2404404 on Fri Dec  7 01:43:56 MST 2018
+# Start of session at: Thu Mar 26 17:28:24 2026
+# Process ID: 6792
+# Current directory: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim
+# Command line: xsim.exe -log .tmp_xsim_help_wdb.log -mode tcl -source {xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl}
+# Log file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim/.tmp_xsim_help_wdb.log
+# Journal file: C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.sim/sim_1/behav/xsim\xsim.jou
+#-----------------------------------------------------------
+source xsim.dir/ADC_DRIVER_TB_behav/xsim_script.tcl
+# xsim {ADC_DRIVER_TB_behav} -autoloadwcfg -tclbatch {.tmp_xsim_help_wdb.tcl}
+Vivado Simulator 2018.3
+Time resolution is 1 ps
+source .tmp_xsim_help_wdb.tcl
+## catch {open_wave_database -help} msg
+## puts $msg
+open_wave_database
+
+Description: 
+Open Waveform Database (WDB) file produced by a prior simulation run and return a simulation object
+
+Syntax: 
+open_wave_database  [-noautoloadwcfg] [-protoinst <args>] [-quiet] [-verbose]
+                    <wdb>
+
+Usage: 
+  Name               Description
+  ------------------------------
+  [-noautoloadwcfg]  Do not automatically open associated WCFG files
+  [-protoinst]       Specify a .protoinst file for protocol analysis
+  [-quiet]           Ignore command errors
+  [-verbose]         Suspend message limits during command execution
+  <wdb>              file name
+
+Categories: 
+Simulation
+
+Description:
+
+  The open_wave_database command opens an existing static simulator database
+  file (WDB) and associated wave config file (WCFG). This simulation is a
+  static simulation, not live, and can only be used to review prior results.
+
+  Note: Many of the commands for running and resetting the simulation are not
+  available in a static simulation.
+
+  Vivado simulator uses a simulation debug data model to allow users to debug
+  HDL source files using source code stepping, breakpoints, conditions, and
+  waveform viewing tools. The debug data model contains HDL object and scope
+  names, and maps them to memory addresses to let you examine the changing
+  values of signals, variables and constants during the simulation. When the
+  simulation completes, the simulation is written to a static simulator
+  database file (WDB).
+
+  HDL objects can be added to the simulation waveform database using the
+  log_wave command which enables logging of waveform activity for the
+  specified objects to the Vivado simulator waveform database.
+
+  The waveform database is associated with a Wave Config file that stores the
+  waveform activity for the simulation. The Wave Config file contains just
+  the list of wave objects (signals, dividers, groups, virtual buses) to
+  display, and their display properties, plus markers. The waveform database
+  (WDB) contains the event data, values changing over time, for all traced
+  signals, whether displayed or not.
+
+  A Wave Config file is written to disk by the use of the save_wave_config
+  command, and can be opened with the open_wave_config command.
+
+  Use the open_wave_database command with the open_wave_config command to
+  open a previously completed simulation for review in the Vivado IDE.
+
+  Note: Objects that were logged in the simulation waveform database, with
+  the log_wave command, can be added posthumously to the wave configuration
+  in a static simulation using the add_wave command.
+
+Arguments:
+
+  -noautoloadwcfg - (Optional) Do not automatically open wave config files
+  (WCFG) associated with the waveform database.
+
+  -quiet - (Optional) Execute the command quietly, returning no messages from
+  the command. The command also returns TCL_OK regardless of any errors
+  encountered during execution.
+
+  Note: Any errors encountered on the command-line, while launching the
+  command, will be returned. Only errors occurring inside the command will be
+  trapped.
+
+  -verbose - (Optional) Temporarily override any message limits and return
+  all messages from this command.
+
+  Note: Message limits can be defined with the set_msg_config command.
+
+  <wbd> - specifies the path and filename of the WDB file to open.
+
+Examples:
+
+  The following example opens a WDB file with the specified name, then opens
+  an associated Wave Config file, and finally uses the current_fileset
+  command to open the simulation database in the Vivado IDE:
+
+    open_wave_database {C:/Data/project_xsim/testbench_behav.wdb}  
+    open_wave_config {C:/Data/project_xsim/testbench_behav.wcfg}  
+    current_fileset 
+    
+
+See Also:
+
+   *  create_wave_config
+   *  current_fileset
+   *  get_wave_config
+   *  open_wave_config
+   *  save_wave_config
+
+## quit
+INFO: [Common 17-206] Exiting xsim at Thu Mar 26 17:28:36 2026...
