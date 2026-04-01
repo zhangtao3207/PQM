@@ -2,7 +2,8 @@
  * Module: lcd_rgb_char
  * 概述:
  *   显示子系统封装：ID 读取、像素时钟分频、数值BCD转换、字符栅格渲染与LCD驱动。
- *   第四行用于显示 UART 接收文本（rx_line_ascii），长度 16 字符。
+ *   当前版本额外接收 ADC_TEMP 输出的电压数字，并转发给 lcd_display
+ *   用于右侧参数区 Voltage 条目的实时显示。
  */
 module lcd_rgb_char(
     input              sys_clk,
@@ -13,6 +14,17 @@ module lcd_rgb_char(
     input      [15:0]  touch_start_y,
     input      [15:0]  touch_press_time_ms,
     input      [127:0] rx_line_ascii,
+    input              wave_clk,
+    input      [7:0]   wave_avg_code,
+    input              wave_avg_valid,
+    input      [7:0]   wave_zero_code,
+    input              wave_zero_valid,
+    input      [7:0]   voltage_tens,
+    input      [7:0]   voltage_units,
+    input      [7:0]   voltage_decile,
+    input      [7:0]   voltage_percentiles,
+    input              voltage_symbol,
+    input              voltage_digits_valid,
 
     output             lcd_hs,
     output             lcd_vs,
@@ -97,6 +109,17 @@ lcd_display u_lcd_display(
     .start_y_bcd    (bcd_start_y),
     .press_time_bcd (bcd_time_ms),
     .rx_line_ascii  (rx_line_ascii),
+    .wave_clk       (wave_clk),
+    .wave_avg_code  (wave_avg_code),
+    .wave_avg_valid (wave_avg_valid),
+    .wave_zero_code (wave_zero_code),
+    .wave_zero_valid(wave_zero_valid),
+    .voltage_tens   (voltage_tens),
+    .voltage_units  (voltage_units),
+    .voltage_decile (voltage_decile),
+    .voltage_percentiles(voltage_percentiles),
+    .voltage_symbol (voltage_symbol),
+    .voltage_digits_valid(voltage_digits_valid),
     .pixel_xpos     (pixel_xpos_w),
     .pixel_ypos     (pixel_ypos_w),
     .pixel_data     (pixel_data_w)

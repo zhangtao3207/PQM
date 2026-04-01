@@ -7,7 +7,7 @@
 - `clk_div.v`：按 LCD ID 选择像素时钟
 - `binary2bcd.v`：二进制转 BCD
 - `lcd_display.v`：字符/触摸信息渲染
-- `font_rom.v`：16x32 字模 ROM
+- `font_rom_16x32.v`：16x32 字模 ROM
 - `lcd_driver.v`：LCD 时序驱动
 
 整体功能是：读取 LCD 面板 ID，生成匹配的像素时钟，把触摸坐标、状态和 UART 文本组织成字符图像，再输出为 LCD 并口时序信号。
@@ -29,7 +29,7 @@ flowchart LR
 
         subgraph DISP[lcd_display.v]
             direction TB
-            FONT[font_rom.v<br/>4 instances]
+            FONT[font_rom_16x32.v<br/>4 instances]
         end
 
         DRV[lcd_driver.v]
@@ -62,7 +62,7 @@ flowchart LR
 - `clk_div.v` 根据 `lcd_id` 生成合适的 `lcd_pclk`。
 - `binary2bcd.v` 把坐标和时间数据转为 BCD，便于字符显示。
 - `lcd_display.v` 根据像素坐标输出当前像素颜色。
-- `font_rom.v` 为 `lcd_display.v` 提供字模数据。
+- `font_rom_16x32.v` 为 `lcd_display.v` 提供字模数据。
 - `lcd_driver.v` 负责产生像素扫描坐标和 LCD 输出时序。
 
 ## 2. lcd_rgb_char.v
@@ -224,7 +224,7 @@ flowchart TD
 
 ### 内部关系
 
-- 内含 4 个 `font_rom.v` 实例，分别用于 4 行字符的字模读取。
+- 内含 4 个 `font_rom_16x32.v` 实例，分别用于 4 行字符的字模读取。
 - 把 ASCII 文本转成字库索引后，再逐像素读取字模。
 - 用 `drag_bitmap` 记录拖动轨迹并优先显示为黑色像素。
 
@@ -234,18 +234,18 @@ flowchart TD
 flowchart TD
     A[输入像素坐标和显示数据] --> B[计算当前像素属于哪一行哪一列]
     B --> C[生成字符索引 idx1 idx2 idx3 idx4]
-    C --> D[font_rom 输出对应字模]
+    C --> D[font_rom_16x32 输出对应字模]
     A --> E[维护拖动轨迹 drag_bitmap]
     D --> F[判断当前像素是否落在字符点阵上]
     E --> F
     F --> G[输出黑色或白色 pixel_data]
 ```
 
-## 7. font_rom.v
+## 7. font_rom_16x32.v
 
 ### 功能
 
-`font_rom.v` 是字模查找表模块，输入字符索引，输出对应的 `16x32` 字形点阵。
+`font_rom_16x32.v` 是字模查找表模块，输入字符索引，输出对应的 `16x32` 字形点阵。
 
 ### 输入输出
 
@@ -257,7 +257,7 @@ flowchart TD
 ### 简短说明
 
 - 本模块是纯组合查表结构。
-- `lcd_display.v` 中会并行实例化 4 个 `font_rom.v`，分别服务 4 行字符渲染。
+- `lcd_display.v` 中会并行实例化 4 个 `font_rom_16x32.v`，分别服务 4 行字符渲染。
 
 ## 8. lcd_driver.v
 
@@ -306,7 +306,7 @@ flowchart LR
     A --> C[lcd_display]
     D[LCD ID] --> E[clk_div]
     B --> C
-    F[font_rom] --> C
+    F[font_rom_16x32] --> C
     C --> G[lcd_driver]
     E --> G
     G --> H[LCD并口时序输出]
@@ -317,5 +317,5 @@ flowchart LR
 - `lcd_rgb_char.v` 负责把多个显示相关子模块拼成完整显示链路。
 - `rd_id.v` 和 `clk_div.v` 决定当前面板及其像素时钟。
 - `binary2bcd.v` 负责把数值变成适合文本显示的格式。
-- `lcd_display.v` 和 `font_rom.v` 负责“画什么”。
+- `lcd_display.v` 和 `font_rom_16x32.v` 负责“画什么”。
 - `lcd_driver.v` 负责“按什么时序送到屏上”。

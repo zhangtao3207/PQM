@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LCD Preview</title>
+  <style>
+    :root {
+      --page-bg: #09111c;
+      --frame-bg: #0b1524;
+      --frame-border: #28445f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at top, #173b63 0%, transparent 35%),
+        linear-gradient(180deg, #09111c 0%, #05080d 100%);
+      font-family: Consolas, "Courier New", monospace;
+      color: #f2f6fa;
+    }
+
+    .frame {
+      padding: 18px;
+      border: 1px solid var(--frame-border);
+      background: rgba(11, 21, 36, 0.92);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    canvas {
+      width: min(100vw - 48px, 1000px);
+      height: auto;
+      display: block;
+      background: var(--frame-bg);
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <canvas id="lcd" width="800" height="480"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("lcd");
+    const ctx = canvas.getContext("2d");
+
+    const C = {
+      bg: "#0B1524",
+      titleBg: "#173B63",
+      panelBg: "#142235",
+      panelDark: "#101A28",
+      panelBorder: "#4F6D8F",
+      graphBg: "#020406",
+      graphGrid: "#243645",
+      graphAxis: "#8EA7BF",
+      graphYAxis: "#EAF3FF",
+      textWhite: "#F2F6FA",
+      textSoft: "#C6D3E2",
+      textDim: "#95A9BE",
+      buttonBg: "#49617E",
+      buttonBorder: "#DEE9F5",
+      waveU: "#39E46F",
+      waveI: "#FFD84E",
+      accent: "#58B6FF"
+    };
+
+    const L = {
+      titleBarH: 44,
+      leftX: 0,
+      leftY: 64,
+      leftW: 480,
+      leftH: 392,
+      rightX: 500,
+      rightY: 64,
+      rightW: 276,
+      rightH: 392,
+      dividerX: 486,
+      dividerW: 4,
+      graphX: 36,
+      graphY: 144,
+      graphW: 384,
+      graphH: 240,
+      graphCY: 264,
+      plotTitleX: 68,
+      plotTitleY: 72,
+      axisLeftX: 40,
+      axisRightX: 306,
+      axisLabelY: 118,
+      axisTick0X: 36,
+      axisTick1X: 117,
+      axisTick2X: 213,
+      axisTick3X: 309,
+      axisTick4X: 389,
+      axisTickY: 392,
+      axisTimeX: 336,
+      axisTimeY: 416,
+      voltageTickX: 12,
+      currentTickX: 424,
+      voltageTickY0: 134,
+      voltageTickStep: 24,
+      currentTickY0: 134,
+      currentTickStep: 40,
+      titleTextX: 32,
+      titleTextY: 6,
+      buttonX: 572,
+      buttonY: 6,
+      buttonW: 102,
+      buttonH: 32,
+      buttonTextX: 578,
+      buttonTextY: 6,
+      autoButtonX: 692,
+      autoButtonY: 6,
+      autoButtonW: 80,
+      autoButtonH: 32,
+      autoButtonTextX: 700,
+      autoButtonTextY: 6,
+      rightTitleX: 520,
+      rightTitleY: 76,
+      legend1X: 560,
+      legend1Y: 112,
+      legend2X: 676,
+      legend2Y: 112,
+      lineX: 516,
+      lineY0: 144,
+      lineStep: 30
+    };
+
+    function text(str, x, y, color, size = 28) {
+      ctx.fillStyle = color;
+      ctx.font = `${size}px Consolas, "Courier New", monospace`;
+      ctx.textBaseline = "top";
+      ctx.fillText(str, x, y);
+    }
+
+    function rect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function strokeRect(x, y, w, h, color, lineWidth = 1) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.strokeRect(x, y, w, h);
+    }
+
+    function drawGrid() {
+      rect(L.graphX, L.graphY, L.graphW, L.graphH, C.graphBg);
+
+      ctx.strokeStyle = C.graphGrid;
+      ctx.lineWidth = 1;
+
+      for (let x = L.graphX + 96; x < L.graphX + L.graphW - 1; x += 96) {
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, L.graphY + 1);
+        ctx.lineTo(x + 0.5, L.graphY + L.graphH - 1);
+        ctx.stroke();
+      }
+
+      for (let y = L.graphY + 40; y < L.graphY + L.graphH - 1; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(L.graphX + 1, y + 0.5);
+        ctx.lineTo(L.graphX + L.graphW - 1, y + 0.5);
+        ctx.stroke();
+      }
+
+      strokeRect(L.graphX + 0.5, L.graphY + 0.5, L.graphW - 1, L.graphH - 1, C.panelBorder, 1);
+
+      ctx.strokeStyle = C.graphYAxis;
+      ctx.beginPath();
+      ctx.moveTo(L.graphX + 0.5, L.graphY + 1);
+      ctx.lineTo(L.graphX + 0.5, L.graphY + L.graphH - 1);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(L.graphX + 1, L.graphCY + 0.5);
+      ctx.lineTo(L.graphX + L.graphW - 1, L.graphCY + 0.5);
+      ctx.stroke();
+
+      ctx.strokeStyle = C.graphYAxis;
+      ctx.beginPath();
+      ctx.moveTo(L.graphX + L.graphW - 0.5, L.graphY + 1);
+      ctx.lineTo(L.graphX + L.graphW - 0.5, L.graphY + L.graphH - 1);
+      ctx.stroke();
+    }
+
+    function drawWave() {
+      const top = L.graphY + 1;
+      const bottom = L.graphY + L.graphH - 2;
+      const mid = L.graphCY;
+
+      ctx.strokeStyle = C.waveU;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      for (let x = 0; x < L.graphW; x += 1) {
+        const t = -0.04 + (x / (L.graphW - 1)) * 0.04;
+        const fundamental = Math.sin(2 * Math.PI * 50 * t);
+        const harmonic3 = 0.06 * Math.sin(2 * Math.PI * 150 * t);
+        const harmonic5 = 0.03 * Math.sin(2 * Math.PI * 250 * t);
+        const wave = fundamental + harmonic3 + harmonic5;
+        const y = Math.max(top, Math.min(bottom, mid - wave * 96));
+
+        if (x === 0)
+          ctx.moveTo(L.graphX + x + 0.5, y + 0.5);
+        else
+          ctx.lineTo(L.graphX + x + 0.5, y + 0.5);
+      }
+
+      ctx.stroke();
+    }
+
+    function drawRightPanel() {
+      const lines = [
+        "Sampling: 5 (KPS)",
+        "Voltage: 220.0 (V)",
+        "Current: 0.03 (A)",
+        "Phase Diff: 0.49 (rad)",
+      ];
+
+      text("Parameterss", L.rightTitleX, L.rightTitleY, C.accent, 24);
+
+      rect(522, 125, 28, 4, C.waveU);
+      rect(638, 125, 28, 4, C.waveI);
+      text("U", L.legend1X, L.legend1Y, C.waveU);
+      text("I", L.legend2X, L.legend2Y, C.waveI);
+
+      lines.forEach((line, index) => {
+        const y = L.lineY0 + index * L.lineStep;
+        const color =
+          index === 1 ? C.waveU :
+          index === 2 ? C.waveI :
+          index === 0 ? C.textSoft :
+          C.textWhite;
+
+        text(line, L.lineX, y, color, 20);
+
+        if (index < lines.length - 1) {
+          rect(L.rightX + 12, y + 24, L.rightW - 24, 1, "#243243");
+        }
+      });
+    }
+
+    function draw() {
+      rect(0, 0, 800, 480, C.bg);
+
+      rect(0, 0, 800, L.titleBarH, C.titleBg);
+      rect(0, L.titleBarH - 1, 800, 1, C.accent);
+
+      rect(L.leftX, L.leftY, L.leftW, L.leftH, C.panelBg);
+      rect(L.rightX, L.rightY, L.rightW, L.rightH, C.panelDark);
+      rect(L.dividerX, L.leftY, L.dividerW, L.leftH, C.panelBorder);
+
+      strokeRect(L.rightX + 0.5, L.rightY + 0.5, L.rightW - 1, L.rightH - 1, C.panelBorder);
+
+      rect(L.buttonX, L.buttonY, L.buttonW, L.buttonH, C.buttonBg);
+      strokeRect(L.buttonX + 0.5, L.buttonY + 0.5, L.buttonW - 1, L.buttonH - 1, C.buttonBorder);
+      rect(L.autoButtonX, L.autoButtonY, L.autoButtonW, L.autoButtonH, C.buttonBg);
+      strokeRect(L.autoButtonX + 0.5, L.autoButtonY + 0.5, L.autoButtonW - 1, L.autoButtonH - 1, C.buttonBorder);
+
+      drawGrid();
+      drawWave();
+      text("MODE: Single - TIime", L.titleTextX, L.titleTextY, C.textWhite);
+      text("Freeze", L.buttonTextX, L.buttonTextY, C.textWhite);
+      text("Auto", L.autoButtonTextX, L.autoButtonTextY, C.textWhite);
+      text("Time Domain Analysis", L.plotTitleX, L.plotTitleY, C.textSoft);
+      text("Voltage ( V)", L.axisLeftX, L.axisLabelY, C.waveU, 20);
+      text("Current (A)", L.axisRightX, L.axisLabelY, C.waveI, 20);
+      text("Time(ms)", L.axisTimeX, L.axisTimeY, C.textDim, 20);
+
+      ["+5", "+4", "+3", "+2", "+1", " 0", "-1", "-2", "-3", "-4", "-5"].forEach((label, index) => {
+        text(label, L.voltageTickX, L.voltageTickY0 + index * L.voltageTickStep, C.waveU, 20);
+      });
+
+      ["+0.3", "+0.2", "+0.1", " 0.0", "-0.1", "-0.2", "-0.3"].forEach((label, index) => {
+        text(label, L.currentTickX, L.currentTickY0 + index * L.currentTickStep, C.waveI, 20);
+      });
+
+      text("-40", L.axisTick0X, L.axisTickY, C.textDim, 20);
+      text("-30", L.axisTick1X, L.axisTickY, C.textDim, 20);
+      text("-20", L.axisTick2X, L.axisTickY, C.textDim, 20);
+      text("-10", L.axisTick3X, L.axisTickY, C.textDim, 20);
+      text("  0", L.axisTick4X, L.axisTickY, C.textDim, 20);
+
+      drawRightPanel();
+    }
+
+    draw();
+  </script>
+</body>
+</html>
