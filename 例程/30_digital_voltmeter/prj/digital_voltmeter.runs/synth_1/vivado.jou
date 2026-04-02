@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Vivado v2020.2 (64-bit)
+# SW Build 3064766 on Wed Nov 18 09:12:45 MST 2020
+# IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
+# Start of session at: Wed Dec 10 17:43:10 2025
+# Process ID: 20344
+# Current directory: G:/navigator_v3/doc_check/7020/30_digital_voltmeter/prj/digital_voltmeter.runs/synth_1
+# Command line: vivado.exe -log top_dvm.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source top_dvm.tcl
+# Log file: G:/navigator_v3/doc_check/7020/30_digital_voltmeter/prj/digital_voltmeter.runs/synth_1/top_dvm.vds
+# Journal file: G:/navigator_v3/doc_check/7020/30_digital_voltmeter/prj/digital_voltmeter.runs/synth_1\vivado.jou
+#-----------------------------------------------------------
+source top_dvm.tcl -notrace

@@ -78,25 +78,8 @@ wire         clk_25m;
 wire         clk_25m_deg120;
 wire         locked;
 wire         rst_n;
-wire  [7:0]  adc_avg_code;
-wire         adc_avg_valid;
 wire  [7:0]  adc_zero_code;
 wire         adc_zero_code_valid;
-wire  [31:0] adc_voltage_mv;
-wire         adc_voltage_valid;
-wire         adc_over_range;
-wire         adc_data_symbol;
-wire  [7:0]  adc_data_tens;
-wire  [7:0]  adc_data_units;
-wire  [7:0]  adc_data_decile;
-wire  [7:0]  adc_data_percentiles;
-wire         adc_digits_valid;
-reg   [7:0]  lcd_voltage_tens;
-reg   [7:0]  lcd_voltage_units;
-reg   [7:0]  lcd_voltage_decile;
-reg   [7:0]  lcd_voltage_percentiles;
-reg          lcd_voltage_symbol;
-reg          lcd_voltage_digits_valid;
 
 // wire [15:0]  AD_DATA_1;
 // wire [15:0]  AD_DATA_2;
@@ -234,41 +217,20 @@ adc_abs_voltage_top #(
     .ad_data          (ad_data),
     .ad_otr           (ad_otr),
     .ad_clk           (ad_clk),
-    .avg_code         (adc_avg_code),
-    .avg_valid        (adc_avg_valid),
-    .voltage_mv       (adc_voltage_mv),
-    .voltage_valid    (adc_voltage_valid),
-    .over_range       (adc_over_range),
-    .data_symbol      (adc_data_symbol),
-    .data_tens        (adc_data_tens),
-    .data_units       (adc_data_units),
-    .data_decile      (adc_data_decile),
-    .data_percentiles (adc_data_percentiles),
-    .digits_valid     (adc_digits_valid),
+    .avg_code         (),
+    .avg_valid        (),
+    .voltage_mv       (),
+    .voltage_valid    (),
+    .over_range       (),
+    .data_symbol      (),
+    .data_tens        (),
+    .data_units       (),
+    .data_decile      (),
+    .data_percentiles (),
+    .digits_valid     (),
     .zero_code_out    (adc_zero_code),
     .zero_code_valid_out(adc_zero_code_valid)
 );
-
-//==========================================================================
-// Latch ADC_TEMP display digits into the LCD system-clock domain
-//==========================================================================
-always @(posedge sys_clk or negedge rst_n) begin
-    if (!rst_n) begin
-        lcd_voltage_tens         <= 8'd0;
-        lcd_voltage_units        <= 8'd0;
-        lcd_voltage_decile       <= 8'd0;
-        lcd_voltage_percentiles  <= 8'd0;
-        lcd_voltage_symbol       <= 1'b0;
-        lcd_voltage_digits_valid <= 1'b0;
-    end else if (adc_digits_valid) begin
-        lcd_voltage_tens         <= adc_data_tens;
-        lcd_voltage_units        <= adc_data_units;
-        lcd_voltage_decile       <= adc_data_decile;
-        lcd_voltage_percentiles  <= adc_data_percentiles;
-        lcd_voltage_symbol       <= adc_data_symbol;
-        lcd_voltage_digits_valid <= 1'b1;
-    end
-end
 
 //==========================================================================
 // ADC disabled temporarily
@@ -396,16 +358,9 @@ lcd_rgb_char u_lcd_rgb_char (
     .touch_press_time_ms(touch_press_time_ms),
     .rx_line_ascii      (rx_line_ascii),
     .wave_clk           (ad_clk),
-    .wave_avg_code      (adc_avg_code),
-    .wave_avg_valid     (adc_avg_valid),
+    .wave_sample_code   (ad_data),
     .wave_zero_code     (adc_zero_code),
     .wave_zero_valid    (adc_zero_code_valid),
-    .voltage_tens       (lcd_voltage_tens),
-    .voltage_units      (lcd_voltage_units),
-    .voltage_decile     (lcd_voltage_decile),
-    .voltage_percentiles(lcd_voltage_percentiles),
-    .voltage_symbol     (lcd_voltage_symbol),
-    .voltage_digits_valid(lcd_voltage_digits_valid),
     .lcd_id             (lcd_id),
     .lcd_hs             (lcd_hs),
     .lcd_vs             (lcd_vs),

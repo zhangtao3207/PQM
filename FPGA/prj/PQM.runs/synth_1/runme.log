@@ -14,19 +14,13 @@ Starting synth_design
 Attempting to get a license for feature 'Synthesis' and/or device 'xc7z020'
 INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7z020'
 INFO: Launching helper process for spawning children vivado processes
-INFO: Helper process launched with PID 30152 
+INFO: Helper process launched with PID 22860 
 ---------------------------------------------------------------------------------
-Starting RTL Elaboration : Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 412.926 ; gain = 97.602
+Starting RTL Elaboration : Time (s): cpu = 00:00:01 ; elapsed = 00:00:02 . Memory (MB): peak = 392.305 ; gain = 101.875
 ---------------------------------------------------------------------------------
 INFO: [Synth 8-6157] synthesizing module 'main' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:4]
 	Parameter CLK_FREQ bound to: 50000000 - type: integer 
 	Parameter UART_BPS bound to: 115200 - type: integer 
-	Parameter ADC_RESET_HIGH_CYCLES bound to: 500 - type: integer 
-	Parameter ADC_CONVST_LOW_CYCLES bound to: 20 - type: integer 
-	Parameter ADC_RD_LOW_CYCLES bound to: 16 - type: integer 
-	Parameter ADC_RD_HIGH_CYCLES bound to: 16 - type: integer 
-	Parameter ADC_BUSY_TIMEOUT_CYCLES bound to: 100000 - type: integer 
-	Parameter ADC_STARTUP_WAIT_CYCLES bound to: 50000 - type: integer 
 INFO: [Synth 8-6157] synthesizing module 'uart' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/uart/uart.v:4]
 	Parameter CLK_FREQ bound to: 50000000 - type: integer 
 	Parameter UART_BPS bound to: 115200 - type: integer 
@@ -93,65 +87,249 @@ INFO: [Synth 8-6157] synthesizing module 'touch_state' [C:/Users/zhangtao/Deskto
 	Parameter LONG_PRESS_TICKS bound to: 750 - type: integer 
 INFO: [Synth 8-6155] done synthesizing module 'touch_state' (6#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/touch/touch_state.v:10]
 INFO: [Synth 8-6155] done synthesizing module 'touch_top' (7#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/touch/touch_top.v:9]
-INFO: [Synth 8-6157] synthesizing module 'AD7606_Parallel_DRIVER' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_PARALLEL/AD7606_Parallel_DRIVER.v:12]
-	Parameter RESET_HIGH_CYCLES bound to: 500 - type: integer 
-	Parameter CONVST_LOW_CYCLES bound to: 20 - type: integer 
-	Parameter RD_LOW_CYCLES bound to: 16 - type: integer 
-	Parameter RD_HIGH_CYCLES bound to: 16 - type: integer 
-	Parameter BUSY_TIMEOUT_CYCLES bound to: 100000 - type: integer 
-INFO: [Synth 8-6157] synthesizing module 'ad7606_parallel_ctrl' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_PARALLEL/ad7606_parallel_ctrl.v:15]
-	Parameter RESET_HIGH_CYCLES bound to: 500 - type: integer 
-	Parameter CONVST_LOW_CYCLES bound to: 20 - type: integer 
-	Parameter RD_LOW_CYCLES bound to: 16 - type: integer 
-	Parameter RD_HIGH_CYCLES bound to: 16 - type: integer 
-	Parameter BUSY_TIMEOUT_CYCLES bound to: 100000 - type: integer 
-	Parameter ST_RESET bound to: 3'b000 
-	Parameter ST_IDLE bound to: 3'b001 
-	Parameter ST_CONV_LOW bound to: 3'b010 
-	Parameter ST_WAIT_BUSY_HIGH bound to: 3'b011 
-	Parameter ST_WAIT_BUSY_LOW bound to: 3'b100 
-	Parameter ST_RD_LOW bound to: 3'b101 
-	Parameter ST_RD_HIGH bound to: 3'b110 
-INFO: [Synth 8-6155] done synthesizing module 'ad7606_parallel_ctrl' (8#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_PARALLEL/ad7606_parallel_ctrl.v:15]
-INFO: [Synth 8-6155] done synthesizing module 'AD7606_Parallel_DRIVER' (9#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_PARALLEL/AD7606_Parallel_DRIVER.v:12]
-WARNING: [Synth 8-4446] all outputs are unconnected for this instance and logic may be removed [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:283]
-INFO: [Synth 8-6157] synthesizing module 'ILA_ADC_DRIVER' [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-28872-DESKTOP-6DUCG5H/realtime/ILA_ADC_DRIVER_stub.v:6]
-INFO: [Synth 8-6155] done synthesizing module 'ILA_ADC_DRIVER' (10#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-28872-DESKTOP-6DUCG5H/realtime/ILA_ADC_DRIVER_stub.v:6]
-INFO: [Synth 8-6157] synthesizing module 'lcd_rgb_char' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_rgb_char.v:7]
+INFO: [Synth 8-6157] synthesizing module 'adc_abs_voltage_top' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_abs_voltage_top.v:41]
+	Parameter WIDTH bound to: 8 - type: integer 
+	Parameter AVERAGE_SHIFT bound to: 6 - type: integer 
+	Parameter ZERO_CAL_SHIFT bound to: 10 - type: integer 
+	Parameter FULL_SCALE_MV bound to: 5000 - type: integer 
+	Parameter ZERO_CODE_DEFAULT bound to: 127 - type: integer 
+	Parameter ZERO_CODE_TOLERANCE bound to: 32 - type: integer 
+INFO: [Synth 8-6157] synthesizing module 'adc_zero_calibrator' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_zero_calibrator.v:3]
+	Parameter WIDTH bound to: 8 - type: integer 
+	Parameter CAL_SHIFT bound to: 10 - type: integer 
+	Parameter ZERO_CODE_DEFAULT bound to: 127 - type: integer 
+	Parameter ACCEPT_TOLERANCE bound to: 32 - type: integer 
+	Parameter CAL_SAMPLE_COUNT bound to: 1024 - type: integer 
+	Parameter CAL_COUNT_MAX bound to: 2047 - type: integer 
+	Parameter ROUND_BIAS bound to: 512 - type: integer 
+	Parameter SUM_WIDTH bound to: 19 - type: integer 
+	Parameter AVG_MSB bound to: 17 - type: integer 
+	Parameter ZERO_MIN_CODE bound to: 95 - type: integer 
+	Parameter ZERO_MAX_CODE bound to: 159 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'adc_zero_calibrator' (8#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_zero_calibrator.v:3]
+INFO: [Synth 8-6157] synthesizing module 'adc_sample_average' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_sample_average.v:3]
+	Parameter WIDTH bound to: 8 - type: integer 
+	Parameter AVERAGE_SHIFT bound to: 6 - type: integer 
+	Parameter SAMPLE_COUNT bound to: 64 - type: integer 
+	Parameter ROUND_BIAS bound to: 32 - type: integer 
+	Parameter SUM_WIDTH bound to: 15 - type: integer 
+	Parameter AVG_MSB bound to: 13 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'adc_sample_average' (9#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_sample_average.v:3]
+INFO: [Synth 8-6157] synthesizing module 'adc_abs_voltage_calc' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_abs_voltage_calc.v:3]
+	Parameter WIDTH bound to: 8 - type: integer 
+	Parameter FULL_SCALE_MV bound to: 5000 - type: integer 
+	Parameter ZERO_CODE_DEFAULT bound to: 127 - type: integer 
+	Parameter ADC_CODE_SPAN bound to: 256 - type: integer 
+	Parameter PRODUCT_WIDTH bound to: 24 - type: integer 
+	Parameter ZERO_CODE_FALLBACK bound to: 8'b01111111 
+INFO: [Synth 8-6155] done synthesizing module 'adc_abs_voltage_calc' (10#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_abs_voltage_calc.v:3]
+INFO: [Synth 8-6157] synthesizing module 'adc_voltage_digits' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_voltage_digits.v:3]
+INFO: [Synth 8-6155] done synthesizing module 'adc_voltage_digits' (11#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_voltage_digits.v:3]
+INFO: [Synth 8-6155] done synthesizing module 'adc_abs_voltage_top' (12#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_abs_voltage_top.v:41]
+INFO: [Synth 8-6157] synthesizing module 'lcd_rgb_char' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_rgb_char.v:8]
 INFO: [Synth 8-6157] synthesizing module 'rd_id' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/rd_id.v:7]
-INFO: [Synth 8-6155] done synthesizing module 'rd_id' (11#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/rd_id.v:7]
+INFO: [Synth 8-6155] done synthesizing module 'rd_id' (13#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/rd_id.v:7]
 INFO: [Synth 8-6157] synthesizing module 'clk_div' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/clk_div.v:7]
-INFO: [Synth 8-6155] done synthesizing module 'clk_div' (12#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/clk_div.v:7]
+INFO: [Synth 8-6155] done synthesizing module 'clk_div' (14#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/clk_div.v:7]
 INFO: [Synth 8-6157] synthesizing module 'binary2bcd' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/binary2bcd.v:7]
 	Parameter CNT_SHIFT_NUM bound to: 5'b10000 
-INFO: [Synth 8-6155] done synthesizing module 'binary2bcd' (13#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/binary2bcd.v:7]
-INFO: [Synth 8-6157] synthesizing module 'lcd_display' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display.v:13]
-	Parameter CHAR_POS_X bound to: 11'b00000000001 
-	Parameter CHAR_POS_Y bound to: 11'b00000000001 
-	Parameter CHAR_WIDTH bound to: 11'b00000010000 
-	Parameter CHAR_HEIGHT bound to: 11'b00000100000 
-	Parameter LINE1_CHARS bound to: 11'b00000001111 
-	Parameter LINE2_CHARS bound to: 11'b00000010000 
-	Parameter LINE3_CHARS bound to: 11'b00000010111 
-	Parameter LINE4_CHARS bound to: 11'b00000010000 
-	Parameter LINE1_WIDTH bound to: 11'b00011110000 
-	Parameter LINE2_WIDTH bound to: 11'b00100000000 
-	Parameter LINE3_WIDTH bound to: 11'b00101110000 
-	Parameter LINE4_WIDTH bound to: 11'b00100000000 
-	Parameter LINE2_POS_Y bound to: 11'b00000100101 
-	Parameter LINE3_POS_Y bound to: 11'b00001001001 
-	Parameter LINE4_POS_Y bound to: 11'b00001101101 
-	Parameter WHITE bound to: 24'b111111111111111111111111 
-	Parameter BLACK bound to: 24'b000000000000000000000000 
+INFO: [Synth 8-6155] done synthesizing module 'binary2bcd' (15#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/binary2bcd.v:7]
+INFO: [Synth 8-6157] synthesizing module 'lcd_display' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display.v:8]
+	Parameter BIG_CHAR_W bound to: 6'b010000 
+	Parameter SMALL_CHAR_W bound to: 6'b001010 
 	Parameter FONT_BLANK bound to: 7'b1111111 
-	Parameter DRAW_X_SHIFT bound to: 3 - type: integer 
-	Parameter DRAW_Y_SHIFT bound to: 3 - type: integer 
-	Parameter DRAW_W bound to: 160 - type: integer 
-	Parameter DRAW_H bound to: 100 - type: integer 
-	Parameter DRAW_SIZE bound to: 16000 - type: integer 
-INFO: [Synth 8-6157] synthesizing module 'font_rom' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/font_rom.v:9]
-INFO: [Synth 8-6155] done synthesizing module 'font_rom' (14#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/font_rom.v:9]
-INFO: [Synth 8-6155] done synthesizing module 'lcd_display' (15#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display.v:13]
+	Parameter BG_COLOR bound to: 24'b000010110001010100100100 
+	Parameter TEXT_WHITE bound to: 24'b111100101111011011111010 
+	Parameter WAVE_U_COLOR bound to: 24'b001110011110010001101111 
+	Parameter GRAPH_X bound to: 11'b00000100100 
+	Parameter GRAPH_Y bound to: 11'b00010010000 
+	Parameter GRAPH_W bound to: 11'b00110000000 
+	Parameter GRAPH_H bound to: 11'b00011110000 
+INFO: [Synth 8-6157] synthesizing module 'wave_frame_capture' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v:19]
+	Parameter WAVE_POINT_COUNT bound to: 384 - type: integer 
+	Parameter WAVE_FRAME_TICKS bound to: 1000000 - type: integer 
+	Parameter WAVE_TRIGGER_HYST bound to: 8'b00000010 
+	Parameter GRAPH_H bound to: 240 - type: integer 
+	Parameter GRAPH_HALF_H bound to: 120 - type: integer 
+	Parameter SAMPLE_WIDTH bound to: 8 - type: integer 
+	Parameter CENTER_IIR_SHIFT bound to: 22 - type: integer 
+	Parameter CENTER_ACC_W bound to: 32 - type: integer 
+	Parameter CENTER_DEFAULT bound to: 8'b01111111 
+INFO: [Synth 8-6157] synthesizing module 'signal_rms_calc' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/signal_rms_calc.v:12]
+	Parameter WIDTH bound to: 8 - type: integer 
+	Parameter FULL_SCALE_MV bound to: 5000 - type: integer 
+	Parameter WINDOW_SAMPLES bound to: 1000000 - type: integer 
+	Parameter COUNT_W bound to: 20 - type: integer 
+	Parameter SUM_W bound to: 40 - type: integer 
+	Parameter WINDOW_SAMPLES_EXT bound to: 1000000 - type: integer 
+INFO: [Synth 8-6157] synthesizing module 'divider_unsigned' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/divider_unsigned.v:10]
+	Parameter WIDTH bound to: 40 - type: integer 
+	Parameter COUNT_W bound to: 6 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'divider_unsigned' (16#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/divider_unsigned.v:10]
+INFO: [Synth 8-6155] done synthesizing module 'signal_rms_calc' (17#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/signal_rms_calc.v:12]
+INFO: [Synth 8-6157] synthesizing module 'divider_unsigned__parameterized0' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/divider_unsigned.v:10]
+	Parameter WIDTH bound to: 16 - type: integer 
+	Parameter COUNT_W bound to: 5 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'divider_unsigned__parameterized0' (17#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/divider_unsigned.v:10]
+WARNING: [Synth 8-6014] Unused sequential element copy_src_idx_reg was removed.  [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v:199]
+WARNING: [Synth 8-6014] Unused sequential element wave_amp_px_reg was removed.  [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v:232]
+WARNING: [Synth 8-6014] Unused sequential element wave_y_next_reg was removed.  [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v:235]
+WARNING: [Synth 8-6014] Unused sequential element wave_y_clamped_reg was removed.  [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v:240]
+INFO: [Synth 8-6155] done synthesizing module 'wave_frame_capture' (18#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v:19]
+INFO: [Synth 8-6157] synthesizing module 'lcd_display_bg' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display_bg.v:8]
+	Parameter BG_COLOR bound to: 24'b000010110001010100100100 
+	Parameter TITLE_BG bound to: 24'b000101110011101101100011 
+	Parameter PANEL_BG bound to: 24'b000101000010001000110101 
+	Parameter PANEL_DARK bound to: 24'b000100000001101000101000 
+	Parameter PANEL_BORDER bound to: 24'b010011110110110110001111 
+	Parameter GRAPH_BG bound to: 24'b000000100000010000000110 
+	Parameter GRAPH_GRID bound to: 24'b001001000011011001000101 
+	Parameter GRAPH_AXIS bound to: 24'b100011101010011110111111 
+	Parameter GRAPH_Y_AXIS bound to: 24'b111010101111001111111111 
+	Parameter BUTTON_BG bound to: 24'b010010010110000101111110 
+	Parameter BUTTON_BORDER bound to: 24'b110111101110100111110101 
+	Parameter WAVE_U_COLOR bound to: 24'b001110011110010001101111 
+	Parameter WAVE_I_COLOR bound to: 24'b111111111101100001001110 
+	Parameter ACCENT_COLOR bound to: 24'b010110001011011011111111 
+	Parameter SEPARATOR_CLR bound to: 24'b001001000011001001000011 
+	Parameter TITLE_BAR_H bound to: 11'b00000101100 
+	Parameter LEFT_X bound to: 11'b00000000000 
+	Parameter LEFT_Y bound to: 11'b00001000000 
+	Parameter LEFT_W bound to: 11'b00111100000 
+	Parameter LEFT_H bound to: 11'b00110001000 
+	Parameter RIGHT_X bound to: 11'b00111110100 
+	Parameter RIGHT_Y bound to: 11'b00001000000 
+	Parameter RIGHT_W bound to: 11'b00100010100 
+	Parameter RIGHT_H bound to: 11'b00110001000 
+	Parameter DIVIDER_X bound to: 11'b00111100110 
+	Parameter DIVIDER_W bound to: 11'b00000000100 
+	Parameter GRAPH_X bound to: 11'b00000100100 
+	Parameter GRAPH_Y bound to: 11'b00010010000 
+	Parameter GRAPH_W bound to: 11'b00110000000 
+	Parameter GRAPH_H bound to: 11'b00011110000 
+	Parameter GRAPH_CY bound to: 11'b00100001000 
+	Parameter GRID_X_STEP bound to: 11'b00001100000 
+	Parameter GRID_Y_STEP bound to: 11'b00000011000 
+	Parameter GRID_X_1 bound to: 11'b00010000100 
+	Parameter GRID_X_2 bound to: 11'b00011100100 
+	Parameter GRID_X_3 bound to: 11'b00101000100 
+	Parameter GRID_Y_1 bound to: 11'b00010101000 
+	Parameter GRID_Y_2 bound to: 11'b00011000000 
+	Parameter GRID_Y_3 bound to: 11'b00011011000 
+	Parameter GRID_Y_4 bound to: 11'b00011110000 
+	Parameter GRID_Y_5 bound to: 11'b00100001000 
+	Parameter GRID_Y_6 bound to: 11'b00100100000 
+	Parameter GRID_Y_7 bound to: 11'b00100111000 
+	Parameter GRID_Y_8 bound to: 11'b00101010000 
+	Parameter GRID_Y_9 bound to: 11'b00101101000 
+	Parameter BTN_X bound to: 11'b01000111100 
+	Parameter BTN_Y bound to: 11'b00000000110 
+	Parameter BTN_W bound to: 11'b00001100110 
+	Parameter BTN_H bound to: 11'b00000100000 
+	Parameter AUTO_X bound to: 11'b01010110100 
+	Parameter AUTO_Y bound to: 11'b00000000110 
+	Parameter AUTO_W bound to: 11'b00001010000 
+	Parameter AUTO_H bound to: 11'b00000100000 
+	Parameter LINE_Y0 bound to: 11'b00010010000 
+	Parameter LINE_STEP bound to: 11'b00000011110 
+INFO: [Synth 8-6155] done synthesizing module 'lcd_display_bg' (19#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display_bg.v:8]
+INFO: [Synth 8-6157] synthesizing module 'lcd_display_text' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display_text.v:8]
+	Parameter BIG_CHAR_W bound to: 6'b010000 
+	Parameter BIG_CHAR_H bound to: 6'b100000 
+	Parameter SMALL_CHAR_W bound to: 6'b001010 
+	Parameter SMALL_CHAR_H bound to: 6'b010100 
+	Parameter FONT_BLANK bound to: 7'b1111111 
+	Parameter FONT_DIGIT_BASE bound to: 7'b0000000 
+	Parameter FONT_UPPER_BASE bound to: 7'b0001010 
+	Parameter FONT_LOWER_BASE bound to: 7'b0100100 
+	Parameter FONT_LPAREN bound to: 7'b1000111 
+	Parameter FONT_RPAREN bound to: 7'b1001000 
+	Parameter FONT_UNDERSCORE bound to: 7'b1001001 
+	Parameter FONT_PLUS bound to: 7'b1001010 
+	Parameter FONT_MINUS bound to: 7'b1001011 
+	Parameter FONT_DOT bound to: 7'b1010100 
+	Parameter FONT_SLASH bound to: 7'b1010101 
+	Parameter FONT_COLON bound to: 7'b1011001 
+	Parameter TEXT_WHITE bound to: 24'b111100101111011011111010 
+	Parameter TEXT_SOFT bound to: 24'b110001101101001111100010 
+	Parameter TEXT_DIM bound to: 24'b100101011010100110111110 
+	Parameter WAVE_U_COLOR bound to: 24'b001110011110010001101111 
+	Parameter WAVE_I_COLOR bound to: 24'b111111111101100001001110 
+	Parameter ACCENT_COLOR bound to: 24'b010110001011011011111111 
+	Parameter TITLE_TXT_X bound to: 11'b00000100000 
+	Parameter TITLE_TXT_Y bound to: 11'b00000000110 
+	Parameter BTN_TXT_X bound to: 11'b01001000010 
+	Parameter BTN_TXT_Y bound to: 11'b00000000110 
+	Parameter AUTO_TXT_X bound to: 11'b01010111100 
+	Parameter AUTO_TXT_Y bound to: 11'b00000000110 
+	Parameter PLOT_TXT_X bound to: 11'b00001000100 
+	Parameter PLOT_TXT_Y bound to: 11'b00001001000 
+	Parameter AXIS_V_X bound to: 11'b00000101000 
+	Parameter AXIS_V_Y bound to: 11'b00001110110 
+	Parameter AXIS_I_X bound to: 11'b00100110010 
+	Parameter AXIS_I_Y bound to: 11'b00001110110 
+	Parameter AXIS_TICK0_X bound to: 11'b00000100100 
+	Parameter AXIS_TICK1_X bound to: 11'b00001110101 
+	Parameter AXIS_TICK2_X bound to: 11'b00011010101 
+	Parameter AXIS_TICK3_X bound to: 11'b00100110101 
+	Parameter AXIS_TICK4_X bound to: 11'b00110000101 
+	Parameter AXIS_TICK_Y bound to: 11'b00110001000 
+	Parameter AXIS_T_X bound to: 11'b00101010000 
+	Parameter AXIS_T_Y bound to: 11'b00110100000 
+	Parameter V_TICK_X bound to: 11'b00000001100 
+	Parameter V_TICK_Y0 bound to: 11'b00010000110 
+	Parameter V_TICK_STEP bound to: 11'b00000011000 
+	Parameter I_TICK_X bound to: 11'b00110101000 
+	Parameter I_TICK_Y0 bound to: 11'b00010000110 
+	Parameter I_TICK_STEP bound to: 11'b00000101000 
+	Parameter RP_TITLE_X bound to: 11'b01000001000 
+	Parameter RP_TITLE_Y bound to: 11'b00001001100 
+	Parameter LEGEND1_X bound to: 11'b01000110000 
+	Parameter LEGEND1_Y bound to: 11'b00001110000 
+	Parameter LEGEND2_X bound to: 11'b01010100100 
+	Parameter LEGEND2_Y bound to: 11'b00001110000 
+	Parameter LINE_X bound to: 11'b01000000100 
+	Parameter LINE_Y0 bound to: 11'b00010010000 
+	Parameter LINE_STEP bound to: 11'b00000011110 
+	Parameter MAX_TEXT_LEN bound to: 22 - type: integer 
+	Parameter TITLE_LEN bound to: 19 - type: integer 
+	Parameter BTN_LEN bound to: 6 - type: integer 
+	Parameter AUTO_LEN bound to: 4 - type: integer 
+	Parameter PLOT_LEN bound to: 20 - type: integer 
+	Parameter AXIS_V_LEN bound to: 12 - type: integer 
+	Parameter AXIS_I_LEN bound to: 11 - type: integer 
+	Parameter AXIS_T_LEN bound to: 8 - type: integer 
+	Parameter V_TICK_LEN bound to: 2 - type: integer 
+	Parameter I_TICK_LEN bound to: 4 - type: integer 
+	Parameter T_TICK_LEN bound to: 3 - type: integer 
+	Parameter RP_HEAD_LEN bound to: 10 - type: integer 
+	Parameter LEGEND_U_LEN bound to: 1 - type: integer 
+	Parameter LEGEND_I_LEN bound to: 1 - type: integer 
+	Parameter LINE1_LEN bound to: 17 - type: integer 
+	Parameter LINE2_LEN bound to: 16 - type: integer 
+	Parameter LINE3_LEN bound to: 16 - type: integer 
+	Parameter LINE4_LEN bound to: 22 - type: integer 
+	Parameter TITLE_STR bound to: MODE: Single - Time - type: string 
+	Parameter BTN_STR bound to: Freeze - type: string 
+	Parameter AUTO_STR bound to: Auto - type: string 
+	Parameter PLOT_STR bound to: Time Domain Analysis - type: string 
+	Parameter AXIS_V_STR bound to: Voltage ( V) - type: string 
+	Parameter AXIS_I_STR bound to: Current (A) - type: string 
+	Parameter AXIS_T_STR bound to: Time(ms) - type: string 
+	Parameter RP_HEAD_STR bound to: Parameters - type: string 
+	Parameter LEGEND_U_STR bound to: U - type: string 
+	Parameter LEGEND_I_STR bound to: I - type: string 
+	Parameter LINE1_STR bound to: Sampling: 5 (KPS) - type: string 
+	Parameter LINE3_STR bound to: I_rms: --.-- (A) - type: string 
+	Parameter LINE4_STR bound to: Phase Diff: 0.49 (rad) - type: string 
+INFO: [Synth 8-6155] done synthesizing module 'lcd_display_text' (20#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display_text.v:8]
+INFO: [Synth 8-6157] synthesizing module 'blk_mem_gen_font_16x32' [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/blk_mem_gen_font_16x32_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'blk_mem_gen_font_16x32' (21#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/blk_mem_gen_font_16x32_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'blk_mem_gen_font_10x20' [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/blk_mem_gen_font_10x20_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'blk_mem_gen_font_10x20' (22#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/blk_mem_gen_font_10x20_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'blk_mem_gen_ram0' [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/blk_mem_gen_ram0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'blk_mem_gen_ram0' (23#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/blk_mem_gen_ram0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'lcd_display' (24#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display.v:8]
 INFO: [Synth 8-6157] synthesizing module 'lcd_driver' [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_driver.v:7]
 	Parameter H_SYNC_4342 bound to: 11'b00000101001 
 	Parameter H_BACK_4342 bound to: 11'b00000000010 
@@ -203,39 +381,116 @@ INFO: [Synth 8-6157] synthesizing module 'lcd_driver' [C:/Users/zhangtao/Desktop
 	Parameter V_DISP_4384 bound to: 11'b00111100000 
 	Parameter V_FRONT_4384 bound to: 11'b00000001010 
 	Parameter V_TOTAL_4384 bound to: 11'b01000001101 
-INFO: [Synth 8-6155] done synthesizing module 'lcd_driver' (16#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_driver.v:7]
-INFO: [Synth 8-6155] done synthesizing module 'lcd_rgb_char' (17#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_rgb_char.v:7]
-INFO: [Synth 8-6157] synthesizing module 'clk_wiz_0' [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-28872-DESKTOP-6DUCG5H/realtime/clk_wiz_0_stub.v:5]
-INFO: [Synth 8-6155] done synthesizing module 'clk_wiz_0' (18#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-28872-DESKTOP-6DUCG5H/realtime/clk_wiz_0_stub.v:5]
-INFO: [Synth 8-6071] Mark debug on the nets applies keep_hierarchy on instance 'u_AD7606_Parallel_DRIVER'. This will prevent further optimization [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:232]
-INFO: [Synth 8-6071] Mark debug on the nets applies keep_hierarchy on instance 'u_ila_adc_driver'. This will prevent further optimization [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:283]
-WARNING: [Synth 8-3848] Net uart_tx_en in module/entity main does not have driver. [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:68]
-WARNING: [Synth 8-3848] Net uart_tx_data in module/entity main does not have driver. [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:67]
-INFO: [Synth 8-6155] done synthesizing module 'main' (19#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:4]
+INFO: [Synth 8-6155] done synthesizing module 'lcd_driver' (25#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_driver.v:7]
+INFO: [Synth 8-6155] done synthesizing module 'lcd_rgb_char' (26#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_rgb_char.v:8]
+INFO: [Synth 8-6157] synthesizing module 'clk_wiz_0' [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/clk_wiz_0_stub.v:5]
+INFO: [Synth 8-6155] done synthesizing module 'clk_wiz_0' (27#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/.Xil/Vivado-10156-DESKTOP-6DUCG5H/realtime/clk_wiz_0_stub.v:5]
+WARNING: [Synth 8-3848] Net uart_tx_en in module/entity main does not have driver. [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:72]
+WARNING: [Synth 8-3848] Net uart_tx_data in module/entity main does not have driver. [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:71]
+INFO: [Synth 8-6155] done synthesizing module 'main' (28#1) [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:4]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[31]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[30]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[29]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[28]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[27]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[26]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[25]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[24]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[23]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[22]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[21]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[20]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[19]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[18]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[17]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[16]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[15]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[14]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[13]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[12]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[11]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[10]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[9]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[8]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[7]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[6]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[5]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[4]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[3]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[2]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[1]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port data[0]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[15]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[14]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[13]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[12]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[11]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[10]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[9]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[8]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[7]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[6]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[5]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[4]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[3]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[2]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[1]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_x[0]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[15]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[14]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[13]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[12]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[11]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[10]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[9]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[8]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[7]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[6]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[5]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[4]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[3]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[2]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[1]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_y[0]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_state_bits[4]
 WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_state_bits[3]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[22]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[21]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[20]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[19]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[18]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[17]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[16]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[14]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[13]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[12]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[11]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[10]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[9]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[8]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[6]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[5]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[4]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[3]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[2]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[1]
-WARNING: [Synth 8-3331] design rd_id has unconnected port lcd_rgb[0]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_state_bits[2]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_state_bits[1]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port touch_state_bits[0]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[15]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[14]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[13]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[12]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[11]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[10]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[9]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[8]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[7]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[6]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[5]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[4]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[3]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[2]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[1]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_x_bcd[0]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[15]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[14]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[13]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[12]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[11]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[10]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[9]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[8]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[7]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[6]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[5]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[4]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[3]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[2]
+WARNING: [Synth 8-3331] design lcd_display has unconnected port start_y_bcd[1]
+INFO: [Common 17-14] Message 'Synth 8-3331' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
 ---------------------------------------------------------------------------------
-Finished RTL Elaboration : Time (s): cpu = 00:00:03 ; elapsed = 00:00:04 . Memory (MB): peak = 525.691 ; gain = 210.367
+Finished RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 536.238 ; gain = 245.809
 ---------------------------------------------------------------------------------
 
 Report Check Netlist: 
@@ -244,23 +499,23 @@ Report Check Netlist:
 +------+------------------+-------+---------+-------+------------------+
 |1     |multi_driven_nets |      0|        0|Passed |Multi driven nets |
 +------+------------------+-------+---------+-------+------------------+
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_en to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[7] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[6] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[5] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[4] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[3] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[2] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[1] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
-WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[0] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:116]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_en to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[7] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[6] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[5] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[4] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[3] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[2] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[1] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
+WARNING: [Synth 8-3295] tying undriven pin u_uart:tx_data[0] to constant 0 [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v:122]
 ---------------------------------------------------------------------------------
 Start Handling Custom Attributes
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 525.691 ; gain = 210.367
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 536.238 ; gain = 245.809
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 525.691 ; gain = 210.367
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 536.238 ; gain = 245.809
 ---------------------------------------------------------------------------------
 INFO: [Device 21-403] Loading part xc7z020clg400-2
 INFO: [Project 1-570] Preparing netlist for logic optimization
@@ -269,31 +524,35 @@ Processing XDC Constraints
 Initializing timing engine
 Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc] for cell 'u_clk_wiz_0'
 Finished Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc] for cell 'u_clk_wiz_0'
-Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/ILA_ADC_DRIVER/ILA_ADC_DRIVER/ILA_ADC_DRIVER_in_context.xdc] for cell 'u_ila_adc_driver'
-Finished Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/ILA_ADC_DRIVER/ILA_ADC_DRIVER/ILA_ADC_DRIVER_in_context.xdc] for cell 'u_ila_adc_driver'
+Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_16x32/blk_mem_gen_font_16x32/blk_mem_gen_font_16x32_in_context.xdc] for cell 'u_lcd_rgb_char/u_lcd_display/u_font_16x32'
+Finished Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_16x32/blk_mem_gen_font_16x32/blk_mem_gen_font_16x32_in_context.xdc] for cell 'u_lcd_rgb_char/u_lcd_display/u_font_16x32'
+Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_10x20/blk_mem_gen_font_10x20/blk_mem_gen_font_10x20_in_context.xdc] for cell 'u_lcd_rgb_char/u_lcd_display/u_font_10x20'
+Finished Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_10x20/blk_mem_gen_font_10x20/blk_mem_gen_font_10x20_in_context.xdc] for cell 'u_lcd_rgb_char/u_lcd_display/u_font_10x20'
+Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_ram0/blk_mem_gen_ram0/blk_mem_gen_ram0_in_context.xdc] for cell 'u_lcd_rgb_char/u_lcd_display/u_wave_frame_ram'
+Finished Parsing XDC File [c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_ram0/blk_mem_gen_ram0/blk_mem_gen_ram0_in_context.xdc] for cell 'u_lcd_rgb_char/u_lcd_display/u_wave_frame_ram'
 Parsing XDC File [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.xdc]
 WARNING: [Constraints 18-619] A clock with name 'sys_clk' already exists, overwriting the previous clock with the same name. [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.xdc:2]
 Finished Parsing XDC File [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.xdc]
 INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/main_propImpl.xdc].
 Resolution: To avoid this warning, move constraints listed in [.Xil/main_propImpl.xdc] to another XDC file and exclude this new file from synthesis with the used_in_synthesis property (File Properties dialog in GUI) and re-run elaboration/synthesis.
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 1067.211 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.004 . Memory (MB): peak = 927.250 ; gain = 0.000
 Completed Processing XDC Constraints
 
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 1067.211 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.004 . Memory (MB): peak = 927.250 ; gain = 0.000
 INFO: [Project 1-111] Unisim Transformation Summary:
 No Unisim elements were transformed.
 
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 1067.211 ; gain = 0.000
-Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.042 . Memory (MB): peak = 1067.211 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.004 . Memory (MB): peak = 927.250 ; gain = 0.000
+Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.026 . Memory (MB): peak = 927.250 ; gain = 0.000
 ---------------------------------------------------------------------------------
-Finished Constraint Validation : Time (s): cpu = 00:00:17 ; elapsed = 00:00:19 . Memory (MB): peak = 1067.211 ; gain = 751.887
+Finished Constraint Validation : Time (s): cpu = 00:00:17 ; elapsed = 00:00:19 . Memory (MB): peak = 927.250 ; gain = 636.820
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Loading Part and Timing Information
 ---------------------------------------------------------------------------------
 Loading part: xc7z020clg400-2
 ---------------------------------------------------------------------------------
-Finished Loading Part and Timing Information : Time (s): cpu = 00:00:17 ; elapsed = 00:00:19 . Memory (MB): peak = 1067.211 ; gain = 751.887
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:17 ; elapsed = 00:00:19 . Memory (MB): peak = 927.250 ; gain = 636.820
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Applying 'set_property' XDC Constraints
@@ -301,9 +560,11 @@ Start Applying 'set_property' XDC Constraints
 Applied set_property IO_BUFFER_TYPE = NONE for sys_clk. (constraint file  c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc, line 5).
 Applied set_property CLOCK_BUFFER_TYPE = NONE for sys_clk. (constraint file  c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc, line 6).
 Applied set_property DONT_TOUCH = true for u_clk_wiz_0. (constraint file  auto generated constraint, line ).
-Applied set_property DONT_TOUCH = true for u_ila_adc_driver. (constraint file  auto generated constraint, line ).
+Applied set_property DONT_TOUCH = true for u_lcd_rgb_char/u_lcd_display/u_font_16x32. (constraint file  auto generated constraint, line ).
+Applied set_property DONT_TOUCH = true for u_lcd_rgb_char/u_lcd_display/u_font_10x20. (constraint file  auto generated constraint, line ).
+Applied set_property DONT_TOUCH = true for u_lcd_rgb_char/u_lcd_display/u_wave_frame_ram. (constraint file  auto generated constraint, line ).
 ---------------------------------------------------------------------------------
-Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:17 ; elapsed = 00:00:19 . Memory (MB): peak = 1067.211 ; gain = 751.887
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:17 ; elapsed = 00:00:19 . Memory (MB): peak = 927.250 ; gain = 636.820
 ---------------------------------------------------------------------------------
 INFO: [Synth 8-802] inferred FSM for state register 'cur_state_reg' in module 'i2c_dri'
 INFO: [Synth 8-5546] ROM "dri_clk" won't be mapped to RAM because it is too sparse
@@ -369,69 +630,91 @@ INFO: [Synth 8-5818] HDL ADVISOR - The operator resource <adder> is shared. To p
 INFO: [Synth 8-5818] HDL ADVISOR - The operator resource <adder> is shared. To prevent sharing consider applying a KEEP on the output of the operator [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/touch/touch_state.v:57]
 INFO: [Synth 8-5545] ROM "press_time_ms" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5545] ROM "ms_div_cnt" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5544] ROM "state" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
-INFO: [Synth 8-5545] ROM "state" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5544] ROM "channel_index" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
-INFO: [Synth 8-5545] ROM "counter" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5545] ROM "counter" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5545] ROM "counter" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5544] ROM "cs_n_o" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
+INFO: [Synth 8-5546] ROM "cal_cnt" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "zero_code_valid" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "avg_code" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5818] HDL ADVISOR - The operator resource <adder> is shared. To prevent sharing consider applying a KEEP on the output of the operator [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_abs_voltage_calc.v:60]
 INFO: [Synth 8-5546] ROM "bcd_data" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5587] ROM size for "idx2" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5546] ROM "idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5587] ROM size for "idx2" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5546] ROM "idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx0" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx1" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx3" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx4" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx5" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx6" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx7" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx8" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx9" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx10" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx11" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx12" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx13" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx14" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5587] ROM size for "idx2" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5546] ROM "idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5587] ROM size for "idx2" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5546] ROM "idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx0" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx1" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx3" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx4" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx5" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx6" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx7" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx8" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx9" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx10" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx11" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx12" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx13" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ascii_to_idx14" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5544] ROM "drag_bitmap" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "pixel_data" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "pixel_data" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "pixel_data" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "pixel_data" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-5546] ROM "h_disp" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_disp" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "h_sync" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "h_back" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_sync" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_back" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "h_total" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_total" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5545] ROM "busy" won't be mapped to RAM because address size (40) is larger than maximum supported(25)
+INFO: [Synth 8-5546] ROM "busy" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5545] ROM "done" won't be mapped to RAM because address size (40) is larger than maximum supported(25)
+INFO: [Synth 8-5818] HDL ADVISOR - The operator resource <adder> is shared. To prevent sharing consider applying a KEEP on the output of the operator [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/signal_rms_calc.v:52]
+INFO: [Synth 8-5546] ROM "sum_sq_latched" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "busy" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "busy" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "done" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5818] HDL ADVISOR - The operator resource <adder> is shared. To prevent sharing consider applying a KEEP on the output of the operator [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v:234]
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[0]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[1]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[2]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[3]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[4]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[5]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[6]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[7]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[8]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[9]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[10]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[11]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[12]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[13]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[14]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[15]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[16]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[17]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[18]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[19]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[20]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[21]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[22]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[23]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[24]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[25]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[26]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[27]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[28]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[29]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[30]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[31]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[32]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[33]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[34]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[35]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[36]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[37]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[38]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[39]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[40]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[41]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[42]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[43]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[44]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[45]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[46]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[47]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[48]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[49]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[50]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[51]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[52]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[53]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[54]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[55]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[56]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[57]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[58]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[59]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[60]" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "wave_y_hist_reg[61]" won't be mapped to RAM because it is too sparse
+INFO: [Common 17-14] Message 'Synth 8-5546' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+INFO: [Synth 8-5544] ROM "text_color" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "small_text_slot1" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "small_text_slot2" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "small_text_slot3" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "small_text_slot4" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "small_text_slot5" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "small_text_slot6" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "small_text_slot7" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 ---------------------------------------------------------------------------------------------------
                    State |                     New Encoding |                Previous Encoding 
 ---------------------------------------------------------------------------------------------------
@@ -459,827 +742,3 @@ INFO: [Synth 8-3898] No Re-encoding of one hot register 'cur_state_reg' in modul
          st_coord_handle |                          1000000 |                          1000000
 ---------------------------------------------------------------------------------------------------
 INFO: [Synth 8-3898] No Re-encoding of one hot register 'cur_state_reg' in module 'touch_dri'
----------------------------------------------------------------------------------
-Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:22 ; elapsed = 00:00:24 . Memory (MB): peak = 1067.211 ; gain = 751.887
----------------------------------------------------------------------------------
-
-Report RTL Partitions: 
-+------+---------------------+------------+----------+
-|      |RTL Partition        |Replication |Instances |
-+------+---------------------+------------+----------+
-|1     |muxpart__76_font_rom |           1|     46877|
-|2     |lcd_display__GCB0    |           1|     32345|
-|3     |lcd_display__GCB1    |           1|     32083|
-|4     |lcd_display__GCB2    |           1|     33785|
-|5     |lcd_display__GCB3    |           1|     19869|
-|6     |lcd_rgb_char__GC0    |           1|      4167|
-|7     |main__GC0            |           1|     18138|
-+------+---------------------+------------+----------+
----------------------------------------------------------------------------------
-Start RTL Component Statistics 
----------------------------------------------------------------------------------
-INFO: [Synth 8-3538] Detected potentially large (wide) register drag_bitmap_reg [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display.v:113]
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input     32 Bit       Adders := 3     
-	   2 Input     17 Bit       Adders := 2     
-	   2 Input     16 Bit       Adders := 2     
-	   3 Input     16 Bit       Adders := 2     
-	   4 Input     12 Bit       Adders := 1     
-	   3 Input     11 Bit       Adders := 2     
-	   2 Input     11 Bit       Adders := 5     
-	   4 Input     11 Bit       Adders := 1     
-	   2 Input     10 Bit       Adders := 1     
-	   2 Input      9 Bit       Adders := 5     
-	   2 Input      8 Bit       Adders := 2     
-	   2 Input      7 Bit       Adders := 50    
-	   2 Input      5 Bit       Adders := 5     
-	   2 Input      4 Bit       Adders := 24    
-	   2 Input      3 Bit       Adders := 1     
-	   2 Input      1 Bit       Adders := 1     
-+---Registers : 
-	            16000 Bit    Registers := 1     
-	              128 Bit    Registers := 3     
-	               32 Bit    Registers := 10    
-	               24 Bit    Registers := 1     
-	               16 Bit    Registers := 29    
-	               11 Bit    Registers := 4     
-	               10 Bit    Registers := 1     
-	                8 Bit    Registers := 9     
-	                7 Bit    Registers := 1     
-	                5 Bit    Registers := 5     
-	                4 Bit    Registers := 4     
-	                3 Bit    Registers := 2     
-	                1 Bit    Registers := 67    
-+---Muxes : 
-	   2 Input  16000 Bit        Muxes := 3     
-	   2 Input    128 Bit        Muxes := 5     
-	   8 Input    128 Bit        Muxes := 2     
-	  18 Input    128 Bit        Muxes := 1     
-	   2 Input     32 Bit        Muxes := 24    
-	   2 Input     24 Bit        Muxes := 4     
-	   3 Input     24 Bit        Muxes := 1     
-	   2 Input     16 Bit        Muxes := 18    
-	   7 Input     16 Bit        Muxes := 2     
-	   8 Input     16 Bit        Muxes := 6     
-	   6 Input     16 Bit        Muxes := 2     
-	   6 Input     15 Bit        Muxes := 1     
-	   4 Input     11 Bit        Muxes := 2     
-	   2 Input     11 Bit        Muxes := 6     
-	   4 Input     10 Bit        Muxes := 2     
-	   2 Input     10 Bit        Muxes := 2     
-	   4 Input      8 Bit        Muxes := 2     
-	   2 Input      8 Bit        Muxes := 23    
-	  12 Input      8 Bit        Muxes := 1     
-	  22 Input      8 Bit        Muxes := 1     
-	   9 Input      8 Bit        Muxes := 2     
-	   8 Input      8 Bit        Muxes := 3     
-	   3 Input      8 Bit        Muxes := 1     
-	   2 Input      7 Bit        Muxes := 54    
-	   6 Input      7 Bit        Muxes := 2     
-	   5 Input      7 Bit        Muxes := 2     
-	   8 Input      7 Bit        Muxes := 4     
-	   4 Input      7 Bit        Muxes := 1     
-	  10 Input      7 Bit        Muxes := 1     
-	  19 Input      7 Bit        Muxes := 1     
-	  21 Input      7 Bit        Muxes := 1     
-	   3 Input      7 Bit        Muxes := 16    
-	  31 Input      7 Bit        Muxes := 1     
-	  29 Input      7 Bit        Muxes := 1     
-	  33 Input      7 Bit        Muxes := 1     
-	  22 Input      7 Bit        Muxes := 1     
-	   9 Input      7 Bit        Muxes := 1     
-	   7 Input      7 Bit        Muxes := 1     
-	   4 Input      6 Bit        Muxes := 1     
-	   2 Input      6 Bit        Muxes := 5     
-	   2 Input      5 Bit        Muxes := 9     
-	   3 Input      5 Bit        Muxes := 1     
-	   3 Input      4 Bit        Muxes := 1     
-	   2 Input      4 Bit        Muxes := 10    
-	   7 Input      4 Bit        Muxes := 2     
-	   6 Input      4 Bit        Muxes := 1     
-	   5 Input      3 Bit        Muxes := 1     
-	   2 Input      3 Bit        Muxes := 12    
-	   8 Input      3 Bit        Muxes := 1     
-	   3 Input      3 Bit        Muxes := 1     
-	   6 Input      2 Bit        Muxes := 8     
-	   2 Input      2 Bit        Muxes := 6     
-	   2 Input      1 Bit        Muxes := 118   
-	   6 Input      1 Bit        Muxes := 9     
-	  12 Input      1 Bit        Muxes := 1     
-	  11 Input      1 Bit        Muxes := 1     
-	  29 Input      1 Bit        Muxes := 9     
-	  22 Input      1 Bit        Muxes := 6     
-	  31 Input      1 Bit        Muxes := 8     
-	  33 Input      1 Bit        Muxes := 5     
-	   9 Input      1 Bit        Muxes := 17    
-	   7 Input      1 Bit        Muxes := 14    
-	   8 Input      1 Bit        Muxes := 27    
-	   4 Input      1 Bit        Muxes := 1     
-	   3 Input      1 Bit        Muxes := 1     
----------------------------------------------------------------------------------
-Finished RTL Component Statistics 
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start RTL Hierarchical Component Statistics 
----------------------------------------------------------------------------------
-INFO: [Synth 8-3538] Detected potentially large (wide) register drag_bitmap_reg [C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display.v:113]
-Hierarchical RTL Component report 
-Module main 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      4 Bit       Adders := 1     
-+---Registers : 
-	              128 Bit    Registers := 1     
-	                4 Bit    Registers := 1     
-	                1 Bit    Registers := 2     
-+---Muxes : 
-	  18 Input    128 Bit        Muxes := 1     
-	   2 Input    128 Bit        Muxes := 1     
-	   2 Input      8 Bit        Muxes := 1     
-	   2 Input      4 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 3     
-Module lcd_display 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      9 Bit       Adders := 4     
-	   2 Input      7 Bit       Adders := 48    
-+---Registers : 
-	            16000 Bit    Registers := 1     
-	               24 Bit    Registers := 1     
-	                1 Bit    Registers := 1     
-+---Muxes : 
-	   2 Input  16000 Bit        Muxes := 3     
-	   2 Input     24 Bit        Muxes := 3     
-	   3 Input     24 Bit        Muxes := 1     
-	   2 Input      7 Bit        Muxes := 44    
-	   6 Input      7 Bit        Muxes := 1     
-	   5 Input      7 Bit        Muxes := 2     
-	   8 Input      7 Bit        Muxes := 2     
-	   4 Input      7 Bit        Muxes := 1     
-	  10 Input      7 Bit        Muxes := 1     
-	  19 Input      7 Bit        Muxes := 1     
-	  21 Input      7 Bit        Muxes := 1     
-	   3 Input      7 Bit        Muxes := 16    
-	   5 Input      3 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 4     
-Module rd_id 
-Detailed RTL Component Info : 
-+---Registers : 
-	               16 Bit    Registers := 1     
-	                1 Bit    Registers := 1     
-+---Muxes : 
-	   6 Input     15 Bit        Muxes := 1     
-Module clk_div 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      1 Bit       Adders := 1     
-+---Registers : 
-	                1 Bit    Registers := 3     
-+---Muxes : 
-	   6 Input      1 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 1     
-Module binary2bcd__1 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      5 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 4     
-+---Registers : 
-	               32 Bit    Registers := 1     
-	               16 Bit    Registers := 1     
-	                5 Bit    Registers := 1     
-	                1 Bit    Registers := 1     
-+---Muxes : 
-	   2 Input     32 Bit        Muxes := 3     
-	   2 Input      5 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 2     
-Module binary2bcd__2 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      5 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 4     
-+---Registers : 
-	               32 Bit    Registers := 1     
-	               16 Bit    Registers := 1     
-	                5 Bit    Registers := 1     
-	                1 Bit    Registers := 1     
-+---Muxes : 
-	   2 Input     32 Bit        Muxes := 3     
-	   2 Input      5 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 2     
-Module binary2bcd__3 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      5 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 4     
-+---Registers : 
-	               32 Bit    Registers := 1     
-	               16 Bit    Registers := 1     
-	                5 Bit    Registers := 1     
-	                1 Bit    Registers := 1     
-+---Muxes : 
-	   2 Input     32 Bit        Muxes := 3     
-	   2 Input      5 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 2     
-Module binary2bcd__4 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      5 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 4     
-+---Registers : 
-	               32 Bit    Registers := 1     
-	               16 Bit    Registers := 1     
-	                5 Bit    Registers := 1     
-	                1 Bit    Registers := 1     
-+---Muxes : 
-	   2 Input     32 Bit        Muxes := 3     
-	   2 Input      5 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 2     
-Module binary2bcd 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input      5 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 4     
-+---Registers : 
-	               32 Bit    Registers := 1     
-	               16 Bit    Registers := 1     
-	                5 Bit    Registers := 1     
-	                1 Bit    Registers := 1     
-+---Muxes : 
-	   2 Input     32 Bit        Muxes := 3     
-	   2 Input      5 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 2     
-Module lcd_driver 
-Detailed RTL Component Info : 
-+---Adders : 
-	   4 Input     12 Bit       Adders := 1     
-	   3 Input     11 Bit       Adders := 2     
-	   2 Input     11 Bit       Adders := 5     
-	   4 Input     11 Bit       Adders := 1     
-	   2 Input      9 Bit       Adders := 1     
-	   2 Input      7 Bit       Adders := 1     
-+---Registers : 
-	               11 Bit    Registers := 4     
-	                1 Bit    Registers := 2     
-+---Muxes : 
-	   2 Input     24 Bit        Muxes := 1     
-	   4 Input     11 Bit        Muxes := 2     
-	   2 Input     11 Bit        Muxes := 6     
-	   4 Input     10 Bit        Muxes := 2     
-	   2 Input     10 Bit        Muxes := 2     
-	   4 Input      8 Bit        Muxes := 2     
-	   2 Input      8 Bit        Muxes := 2     
-	   4 Input      6 Bit        Muxes := 1     
-	   2 Input      6 Bit        Muxes := 1     
-	   3 Input      4 Bit        Muxes := 1     
-	   2 Input      4 Bit        Muxes := 1     
-	   6 Input      2 Bit        Muxes := 8     
-Module uart_rx 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input     16 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 1     
-+---Registers : 
-	               16 Bit    Registers := 1     
-	                8 Bit    Registers := 2     
-	                4 Bit    Registers := 1     
-	                1 Bit    Registers := 6     
-+---Muxes : 
-	   2 Input     16 Bit        Muxes := 2     
-	  12 Input      8 Bit        Muxes := 1     
-	   2 Input      4 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 3     
-	  12 Input      1 Bit        Muxes := 1     
-	  11 Input      1 Bit        Muxes := 1     
-Module uart_tx 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input     16 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 1     
-+---Registers : 
-	               16 Bit    Registers := 1     
-	                8 Bit    Registers := 1     
-	                4 Bit    Registers := 1     
-	                1 Bit    Registers := 3     
-+---Muxes : 
-	   2 Input     16 Bit        Muxes := 3     
-	   2 Input      4 Bit        Muxes := 2     
-	   2 Input      1 Bit        Muxes := 4     
-Module i2c_dri 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input     10 Bit       Adders := 1     
-	   2 Input      8 Bit       Adders := 2     
-	   2 Input      7 Bit       Adders := 1     
-+---Registers : 
-	               16 Bit    Registers := 1     
-	               10 Bit    Registers := 1     
-	                8 Bit    Registers := 4     
-	                1 Bit    Registers := 9     
-+---Muxes : 
-	  22 Input      8 Bit        Muxes := 1     
-	   2 Input      8 Bit        Muxes := 15    
-	   9 Input      8 Bit        Muxes := 2     
-	  31 Input      7 Bit        Muxes := 1     
-	   2 Input      7 Bit        Muxes := 5     
-	  29 Input      7 Bit        Muxes := 1     
-	  33 Input      7 Bit        Muxes := 1     
-	  22 Input      7 Bit        Muxes := 1     
-	   6 Input      7 Bit        Muxes := 1     
-	   9 Input      7 Bit        Muxes := 1     
-	   2 Input      6 Bit        Muxes := 1     
-	   2 Input      4 Bit        Muxes := 1     
-	   2 Input      2 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 34    
-	  29 Input      1 Bit        Muxes := 9     
-	  22 Input      1 Bit        Muxes := 6     
-	  31 Input      1 Bit        Muxes := 8     
-	  33 Input      1 Bit        Muxes := 5     
-	   6 Input      1 Bit        Muxes := 5     
-	   9 Input      1 Bit        Muxes := 14    
-Module touch_dri 
-Detailed RTL Component Info : 
-+---Registers : 
-	               32 Bit    Registers := 1     
-	               16 Bit    Registers := 8     
-	                8 Bit    Registers := 2     
-	                7 Bit    Registers := 1     
-	                4 Bit    Registers := 1     
-	                1 Bit    Registers := 10    
-+---Muxes : 
-	   7 Input     16 Bit        Muxes := 2     
-	   2 Input     16 Bit        Muxes := 9     
-	   8 Input     16 Bit        Muxes := 6     
-	   6 Input     16 Bit        Muxes := 2     
-	   2 Input      8 Bit        Muxes := 5     
-	   8 Input      8 Bit        Muxes := 3     
-	   3 Input      8 Bit        Muxes := 1     
-	   2 Input      7 Bit        Muxes := 5     
-	   8 Input      7 Bit        Muxes := 2     
-	   7 Input      7 Bit        Muxes := 1     
-	   2 Input      6 Bit        Muxes := 3     
-	   3 Input      5 Bit        Muxes := 1     
-	   2 Input      5 Bit        Muxes := 4     
-	   2 Input      4 Bit        Muxes := 3     
-	   7 Input      4 Bit        Muxes := 2     
-	   6 Input      4 Bit        Muxes := 1     
-	   2 Input      3 Bit        Muxes := 7     
-	   2 Input      2 Bit        Muxes := 5     
-	   2 Input      1 Bit        Muxes := 26    
-	   7 Input      1 Bit        Muxes := 14    
-	   8 Input      1 Bit        Muxes := 19    
-	   6 Input      1 Bit        Muxes := 3     
-	   4 Input      1 Bit        Muxes := 1     
-	   3 Input      1 Bit        Muxes := 1     
-Module touch_state 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input     32 Bit       Adders := 2     
-	   2 Input     17 Bit       Adders := 2     
-	   3 Input     16 Bit       Adders := 2     
-+---Registers : 
-	               32 Bit    Registers := 3     
-	               16 Bit    Registers := 4     
-	                1 Bit    Registers := 11    
-+---Muxes : 
-	   2 Input     32 Bit        Muxes := 4     
-	   2 Input     16 Bit        Muxes := 4     
-	   2 Input      1 Bit        Muxes := 14    
-Module ad7606_parallel_ctrl 
-Detailed RTL Component Info : 
-+---Adders : 
-	   2 Input     32 Bit       Adders := 1     
-	   2 Input      4 Bit       Adders := 1     
-	   2 Input      3 Bit       Adders := 1     
-+---Registers : 
-	              128 Bit    Registers := 1     
-	               32 Bit    Registers := 1     
-	                3 Bit    Registers := 2     
-	                1 Bit    Registers := 13    
-+---Muxes : 
-	   2 Input    128 Bit        Muxes := 4     
-	   8 Input    128 Bit        Muxes := 2     
-	   2 Input     32 Bit        Muxes := 5     
-	   2 Input      4 Bit        Muxes := 1     
-	   2 Input      3 Bit        Muxes := 5     
-	   8 Input      3 Bit        Muxes := 1     
-	   3 Input      3 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 19    
-	   8 Input      1 Bit        Muxes := 8     
-	   9 Input      1 Bit        Muxes := 3     
-Module AD7606_Parallel_DRIVER 
-Detailed RTL Component Info : 
-+---Registers : 
-	              128 Bit    Registers := 1     
-	               16 Bit    Registers := 8     
-	                1 Bit    Registers := 1     
----------------------------------------------------------------------------------
-Finished RTL Hierarchical Component Statistics
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Part Resource Summary
----------------------------------------------------------------------------------
-Part Resources:
-DSPs: 220 (col length:60)
-BRAMs: 280 (col length: RAMB18 60 RAMB36 30)
----------------------------------------------------------------------------------
-Finished Part Resource Summary
----------------------------------------------------------------------------------
-INFO: [Synth 8-5580] Multithreading enabled for synth_design using a maximum of 2 processes.
----------------------------------------------------------------------------------
-Start Cross Boundary and Area Optimization
----------------------------------------------------------------------------------
-INFO: [Synth 8-5546] ROM "h_disp" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "h_back" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "h_sync" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "h_total" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_back" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_sync" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_total" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "v_disp" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-3886] merging instance 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[0]' (FDCE) to 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[5]' (FDCE) to 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[10]'
-INFO: [Synth 8-3886] merging instance 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[8]' (FDCE) to 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[9]'
-INFO: [Synth 8-3886] merging instance 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[10]' (FDCE) to 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[11]'
-INFO: [Synth 8-3886] merging instance 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[11]' (FDCE) to 'u_lcd_rgb_chari_5/u_rd_id/lcd_id_reg[15]'
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (u_lcd_rgb_chari_5/\u_rd_id/lcd_id_reg[15] )
-INFO: [Synth 8-5546] ROM "data_wr_t" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "once_byte_done" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "once_byte_done" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "st_done" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "st_done" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "st_done" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ack" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ack" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "sda_dir" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "sda_dir" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "sda_dir" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5587] ROM size for "sda_out" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5587] ROM size for "sda_out" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5546] ROM "sda_out" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5587] ROM size for "scl" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5587] ROM size for "scl" is below threshold of ROM address width. It will be mapped to LUTs
-INFO: [Synth 8-5546] ROM "scl" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "data_r" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "dri_clk" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "cnt_time_en" won't be mapped to RAM because it is too sparse
-INFO: [Common 17-14] Message 'Synth 8-5546' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
-INFO: [Synth 8-5545] ROM "ms_div_cnt" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5545] ROM "press_time_ms" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5544] ROM "channel_index" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "state" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "cs_n_o" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
-INFO: [Synth 8-5545] ROM "counter" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5545] ROM "counter" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5545] ROM "counter" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5545] ROM "state" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[8]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[8]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[9]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[9]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[10]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[10]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[11]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[11]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[12]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[12]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[13]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[13]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[14]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[14]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[15]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[15]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[0]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[0]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[1]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[2]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[2]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[3]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[3]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[3]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[4]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[4]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[5]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/coord_reg_reg[5]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[7]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[6]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/touch_s_reg_reg[7]' (FDCE) to 'u_touch_top/u_touch_dri/coord_reg_reg[7]'
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\u_touch_top/u_touch_dri/coord_reg_reg[7] )
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/i2c_data_w_reg[0]' (FDCE) to 'u_touch_top/u_touch_dri/i2c_data_w_reg[7]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/i2c_data_w_reg[1]' (FDCE) to 'u_touch_top/u_touch_dri/i2c_data_w_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/i2c_data_w_reg[5]' (FDCE) to 'u_touch_top/u_touch_dri/i2c_data_w_reg[7]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/i2c_data_w_reg[6]' (FDCE) to 'u_touch_top/u_touch_dri/i2c_data_w_reg[7]'
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\u_touch_top/u_touch_dri/flow_cnt_reg[3] )
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_i2c_dri/data_wr_t_reg[0]' (FDCE) to 'u_touch_top/u_i2c_dri/data_wr_t_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_i2c_dri/data_wr_t_reg[7]' (FDCE) to 'u_touch_top/u_i2c_dri/data_wr_t_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_i2c_dri/data_wr_t_reg[1]' (FDCE) to 'u_touch_top/u_i2c_dri/data_wr_t_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_i2c_dri/data_wr_t_reg[5]' (FDCE) to 'u_touch_top/u_i2c_dri/data_wr_t_reg[6]'
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\u_touch_top/u_touch_dri/i2c_data_w_reg[7] )
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/slave_addr_reg[0]' (FDCE) to 'u_touch_top/u_touch_dri/slave_addr_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/slave_addr_reg[1]' (FDCE) to 'u_touch_top/u_touch_dri/slave_addr_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/slave_addr_reg[3]' (FDCE) to 'u_touch_top/u_touch_dri/slave_addr_reg[5]'
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\u_touch_top/u_touch_dri/slave_addr_reg[6] )
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/reg_num_reg[6]' (FDCE) to 'u_touch_top/u_touch_dri/reg_num_reg[7]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/reg_num_reg[7]' (FDCE) to 'u_touch_top/u_touch_dri/reg_num_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/reg_num_reg[3]' (FDCE) to 'u_touch_top/u_touch_dri/reg_num_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/reg_num_reg[4]' (FDCE) to 'u_touch_top/u_touch_dri/reg_num_reg[5]'
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\u_touch_top/u_touch_dri/reg_num_reg[5] )
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/i2c_addr_reg[8]' (FDCE) to 'u_touch_top/u_touch_dri/i2c_addr_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_touch_dri/i2c_addr_reg[15]' (FDCE) to 'u_touch_top/u_touch_dri/i2c_addr_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_i2c_dri/addr_t_reg[8]' (FDCE) to 'u_touch_top/u_i2c_dri/addr_t_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_touch_top/u_i2c_dri/addr_t_reg[15]' (FDCE) to 'u_touch_top/u_i2c_dri/addr_t_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[0]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[0]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[1]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[1]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[2]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[3]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[3]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[4]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[5]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[6]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[7]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[7]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[8]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[8]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[9]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[9]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[10]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[10]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[11]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[11]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[12]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[12]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[13]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[13]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[14]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[14]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[15]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch1_data_reg[15]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[16]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[0]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[17]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[1]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[18]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[19]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[3]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[20]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[21]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[22]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[23]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[7]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[24]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[8]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[25]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[9]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[26]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[10]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[27]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[11]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[28]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[12]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[29]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[13]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[30]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[14]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[31]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch2_data_reg[15]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[32]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[0]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[33]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[1]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[34]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[2]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[35]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[3]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[36]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[4]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[37]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[5]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[38]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[6]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[39]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[7]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[40]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[8]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[41]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[9]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[42]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[10]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[43]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[11]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[44]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[12]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[45]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[13]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[46]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[14]'
-INFO: [Synth 8-3886] merging instance 'u_AD7606_Parallel_DRIVER/data_frame_reg[47]' (FDCE) to 'u_AD7606_Parallel_DRIVER/ch3_data_reg[15]'
-INFO: [Common 17-14] Message 'Synth 8-3886' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
-INFO: [Common 17-14] Message 'Synth 8-3886' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[7] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[15] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[23] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[31] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[39] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[47] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[55] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[63] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[71] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[79] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[87] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[95] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[103] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[111] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[119] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\rx_line_ascii_reg[127] )
----------------------------------------------------------------------------------
-Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:00:55 ; elapsed = 00:01:11 . Memory (MB): peak = 1067.211 ; gain = 751.887
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start ROM, RAM, DSP and Shift Register Reporting
----------------------------------------------------------------------------------
-
-ROM:
-+------------+------------+---------------+----------------+
-|Module Name | RTL Object | Depth x Width | Implemented As | 
-+------------+------------+---------------+----------------+
-|i2c_dri     | sda_out    | 128x1         | LUT            | 
-|i2c_dri     | scl        | 128x1         | LUT            | 
-+------------+------------+---------------+----------------+
-
----------------------------------------------------------------------------------
-Finished ROM, RAM, DSP and Shift Register Reporting
----------------------------------------------------------------------------------
-
-Report RTL Partitions: 
-+------+---------------------+------------+----------+
-|      |RTL Partition        |Replication |Instances |
-+------+---------------------+------------+----------+
-|1     |muxpart__76_font_rom |           4|      2681|
-|2     |lcd_display__GCB0    |           1|     16342|
-|3     |lcd_display__GCB1    |           1|     32061|
-|4     |lcd_display__GCB2    |           1|     17786|
-|5     |lcd_display__GCB3    |           1|     19077|
-|6     |lcd_rgb_char__GC0    |           1|      1655|
-|7     |main__GC0            |           1|      3280|
-+------+---------------------+------------+----------+
----------------------------------------------------------------------------------
-Start Applying XDC Timing Constraints
----------------------------------------------------------------------------------
-INFO: [Synth 8-5578] Moved timing constraint from pin 'u_clk_wiz_0/clk_out1' to pin 'u_clk_wiz_0/bbstub_clk_out1/O'
-INFO: [Synth 8-5578] Moved timing constraint from pin 'u_clk_wiz_0/clk_out2' to pin 'u_clk_wiz_0/bbstub_clk_out2/O'
-INFO: [Synth 8-5578] Moved timing constraint from pin 'u_clk_wiz_0/clk_out3' to pin 'u_clk_wiz_0/bbstub_clk_out3/O'
-WARNING: [Synth 8-565] redefining clock 'sys_clk'
-INFO: [Synth 8-5819] Moved 3 constraints on hierarchical pins to their respective driving/loading pins
----------------------------------------------------------------------------------
-Finished Applying XDC Timing Constraints : Time (s): cpu = 00:01:04 ; elapsed = 00:01:20 . Memory (MB): peak = 1067.211 ; gain = 751.887
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Timing Optimization
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Timing Optimization : Time (s): cpu = 00:04:40 ; elapsed = 00:05:00 . Memory (MB): peak = 1277.375 ; gain = 962.051
----------------------------------------------------------------------------------
-
-Report RTL Partitions: 
-+------+---------------------+------------+----------+
-|      |RTL Partition        |Replication |Instances |
-+------+---------------------+------------+----------+
-|1     |muxpart__76_font_rom |           1|      2681|
-|2     |lcd_display__GCB0    |           1|     16342|
-|3     |lcd_display__GCB2    |           1|     17786|
-|4     |main_GT1             |           1|       868|
-|5     |main_GT3             |           1|     32036|
-|6     |main_GT0             |           1|     30911|
-+------+---------------------+------------+----------+
----------------------------------------------------------------------------------
-Start Technology Mapping
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Technology Mapping : Time (s): cpu = 00:04:57 ; elapsed = 00:05:35 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
-
-Report RTL Partitions: 
-+------+---------------------+------------+----------+
-|      |RTL Partition        |Replication |Instances |
-+------+---------------------+------------+----------+
-|1     |muxpart__76_font_rom |           1|       341|
-|2     |lcd_display__GCB0    |           1|     16141|
-|3     |lcd_display__GCB2    |           1|     32834|
-|4     |main_GT1             |           1|       615|
-|5     |main_GT3             |           1|     16022|
-|6     |main_GT0             |           1|     12890|
-+------+---------------------+------------+----------+
----------------------------------------------------------------------------------
-Start IO Insertion
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Flattening Before IO Insertion
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Flattening Before IO Insertion
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Final Netlist Cleanup
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Final Netlist Cleanup
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished IO Insertion : Time (s): cpu = 00:05:06 ; elapsed = 00:05:44 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
-
-Report Check Netlist: 
-+------+------------------+-------+---------+-------+------------------+
-|      |Item              |Errors |Warnings |Status |Description       |
-+------+------------------+-------+---------+-------+------------------+
-|1     |multi_driven_nets |      0|        0|Passed |Multi driven nets |
-+------+------------------+-------+---------+-------+------------------+
----------------------------------------------------------------------------------
-Start Renaming Generated Instances
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Renaming Generated Instances : Time (s): cpu = 00:05:06 ; elapsed = 00:05:45 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
-
-Report RTL Partitions: 
-+-+--------------+------------+----------+
-| |RTL Partition |Replication |Instances |
-+-+--------------+------------+----------+
-+-+--------------+------------+----------+
----------------------------------------------------------------------------------
-Start Rebuilding User Hierarchy
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Rebuilding User Hierarchy : Time (s): cpu = 00:05:17 ; elapsed = 00:05:56 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Renaming Generated Ports
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Renaming Generated Ports : Time (s): cpu = 00:05:22 ; elapsed = 00:06:01 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Handling Custom Attributes
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:07:33 ; elapsed = 00:08:15 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Renaming Generated Nets
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Finished Renaming Generated Nets : Time (s): cpu = 00:07:34 ; elapsed = 00:08:17 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-Start Writing Synthesis Report
----------------------------------------------------------------------------------
-
-Report BlackBoxes: 
-+------+---------------+----------+
-|      |BlackBox name  |Instances |
-+------+---------------+----------+
-|1     |ILA_ADC_DRIVER |         1|
-|2     |clk_wiz_0      |         1|
-+------+---------------+----------+
-
-Report Cell Usage: 
-+------+---------------+------+
-|      |Cell           |Count |
-+------+---------------+------+
-|1     |ILA_ADC_DRIVER |     1|
-|2     |clk_wiz_0      |     1|
-|3     |BUFG           |     2|
-|4     |CARRY4         |   103|
-|5     |LUT1           |    68|
-|6     |LUT2           |   504|
-|7     |LUT3           |   503|
-|8     |LUT4           |   670|
-|9     |LUT5           | 16922|
-|10    |LUT6           | 23353|
-|11    |MUXF7          |  2625|
-|12    |MUXF8          |  1240|
-|13    |FDCE           | 17405|
-|14    |FDPE           |    38|
-|15    |IBUF           |    20|
-|16    |IOBUF          |     4|
-|17    |OBUF           |    13|
-|18    |OBUFT          |    22|
-+------+---------------+------+
-
-Report Instance Areas: 
-+------+---------------------------+-----------------------+------+
-|      |Instance                   |Module                 |Cells |
-+------+---------------------------+-----------------------+------+
-|1     |top                        |                       | 63496|
-|2     |  u_AD7606_Parallel_DRIVER |AD7606_Parallel_DRIVER |   615|
-|3     |    u_ad7606_parallel_ctrl |ad7606_parallel_ctrl   |   486|
-|4     |  u_lcd_rgb_char           |lcd_rgb_char           | 29134|
-|5     |    u_binary2bcd_sx        |binary2bcd             |   100|
-|6     |    u_binary2bcd_sy        |binary2bcd_0           |   100|
-|7     |    u_binary2bcd_tm        |binary2bcd_1           |   100|
-|8     |    u_binary2bcd_x         |binary2bcd_2           |   100|
-|9     |    u_binary2bcd_y         |binary2bcd_3           |   104|
-|10    |    u_clk_div              |clk_div                |     6|
-|11    |    u_lcd_display          |lcd_display            | 25646|
-|12    |      u_font1              |font_rom               |   341|
-|13    |      u_font2              |font_rom_4             |   704|
-|14    |      u_font3              |font_rom_5             |   721|
-|15    |    u_lcd_driver           |lcd_driver             |  2842|
-|16    |    u_rd_id                |rd_id                  |   136|
-|17    |  u_touch_top              |touch_top              | 33410|
-|18    |    u_i2c_dri              |i2c_dri                |   224|
-|19    |    u_touch_dri            |touch_dri              | 32716|
-|20    |    u_touch_state          |touch_state            |   470|
-|21    |  u_uart                   |uart                   |   125|
-|22    |    u_uart_rx              |uart_rx                |   125|
-+------+---------------------------+-----------------------+------+
----------------------------------------------------------------------------------
-Finished Writing Synthesis Report : Time (s): cpu = 00:07:34 ; elapsed = 00:08:17 . Memory (MB): peak = 1288.609 ; gain = 973.285
----------------------------------------------------------------------------------
-Synthesis finished with 0 errors, 0 critical warnings and 1 warnings.
-Synthesis Optimization Runtime : Time (s): cpu = 00:07:19 ; elapsed = 00:08:06 . Memory (MB): peak = 1288.609 ; gain = 431.766
-Synthesis Optimization Complete : Time (s): cpu = 00:07:34 ; elapsed = 00:08:18 . Memory (MB): peak = 1288.609 ; gain = 973.285
-INFO: [Project 1-571] Translating synthesized netlist
-INFO: [Netlist 29-17] Analyzing 3972 Unisim elements for replacement
-INFO: [Netlist 29-28] Unisim Transformation completed in 1 CPU seconds
-INFO: [Project 1-570] Preparing netlist for logic optimization
-INFO: [Opt 31-140] Inserted 1 IBUFs to IO ports without IO buffers.
-INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.022 . Memory (MB): peak = 1288.609 ; gain = 0.000
-INFO: [Project 1-111] Unisim Transformation Summary:
-  A total of 4 instances were transformed.
-  IOBUF => IOBUF (IBUF, OBUFT): 4 instances
-
-INFO: [Common 17-83] Releasing license: Synthesis
-352 Infos, 36 Warnings, 0 Critical Warnings and 0 Errors encountered.
-synth_design completed successfully
-synth_design: Time (s): cpu = 00:08:06 ; elapsed = 00:08:51 . Memory (MB): peak = 1288.609 ; gain = 975.016
-INFO: [Common 17-600] The following parameters have non-default value.
-tcl.collectionResultDisplayLimit
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.035 . Memory (MB): peak = 1288.609 ; gain = 0.000
-WARNING: [Constraints 18-5210] No constraints selected for write.
-Resolution: This message can indicate that there are no constraints for the design, or it can indicate that the used_in flags are set such that the constraints are ignored. This later case is used when running synth_design to not write synthesis constraints to the resulting checkpoint. Instead, project constraints are read when the synthesized design is opened.
-INFO: [Common 17-1381] The checkpoint 'C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.runs/synth_1/main.dcp' has been generated.
-write_checkpoint: Time (s): cpu = 00:00:17 ; elapsed = 00:00:15 . Memory (MB): peak = 1288.609 ; gain = 0.000
-INFO: [runtcl-4] Executing : report_utilization -file main_utilization_synth.rpt -pb main_utilization_synth.pb
-INFO: [Common 17-206] Exiting Vivado at Wed Apr  1 00:47:43 2026...

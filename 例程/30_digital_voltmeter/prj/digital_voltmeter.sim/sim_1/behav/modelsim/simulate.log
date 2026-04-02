@@ -1,0 +1,66 @@
+# //  ModelSim SE-64 2020.4 Oct 13 2020
+# //
+# //  Copyright 1991-2020 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  ModelSim SE-64 and its associated documentation contain trade
+# //  secrets and commercial or financial information that are the property of
+# //  Mentor Graphics Corporation and are privileged, confidential,
+# //  and exempt from disclosure under the Freedom of Information Act,
+# //  5 U.S.C. Section 552. Furthermore, this information
+# //  is prohibited from disclosure under the Trade Secrets Act,
+# //  18 U.S.C. Section 1905.
+# //
+# do {tb_top_dvm_simulate.do}
+# vsim -voptargs=""+acc"" -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip -lib xil_defaultlib xil_defaultlib.tb_top_dvm xil_defaultlib.glbl 
+# Start time: 16:00:15 on Sep 08,2025
+# ** Note: (vsim-8009) Loading existing optimized design _opt
+# Loading work.tb_top_dvm(fast)
+# Loading work.top_dvm(fast)
+# Loading work.voltage_data(fast)
+# Loading work.voltage_calibrator(fast)
+# Loading work.lcd_disp_char(fast)
+# Loading work.rd_id(fast)
+# Loading work.clk_div(fast)
+# Loading work.lcd_display(fast)
+# Loading work.lcd_driver(fast)
+# Loading work.test_voltage(fast)
+# Loading work.glbl(fast)
+# 1
+# 1
+# .main_pane.wave.interior.cs.body.pw.wf
+# .main_pane.structure.interior.cs.body.struct
+# .main_pane.objects.interior.cs.body.tree
+add wave -position insertpoint  \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/WIDTH \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/clk \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/rst_n \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/ad_data \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/voc_finish \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/voc_data \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/ad_data_sum \
+sim:/tb_top_dvm/u_top_dvm/u_voltage_calibrator/ad_data_cnt
+restart
+# ** Note: (vsim-8009) Loading existing optimized design _opt
+# Loading work.tb_top_dvm(fast)
+# Loading work.top_dvm(fast)
+# Loading work.voltage_data(fast)
+# Loading work.voltage_calibrator(fast)
+# Loading work.lcd_disp_char(fast)
+# Loading work.rd_id(fast)
+# Loading work.clk_div(fast)
+# Loading work.lcd_display(fast)
+# Loading work.lcd_driver(fast)
+# Loading work.test_voltage(fast)
+# Loading work.glbl(fast)
+run
+run
+run
+run
+run
+run
+run
+run
+run
+# End time: 16:53:35 on Sep 08,2025, Elapsed time: 0:53:20
+# Errors: 0, Warnings: 0

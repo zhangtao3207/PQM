@@ -34,7 +34,7 @@ This file documents the current LCD screen implemented in
 | Right vertical axis / time zero line | `x=419`, same highlighted bright line as left |
 | Time window | `40 ms` |
 | Signal cycles in window | `2 cycles @ 50 Hz` |
-| Vertical grid pitch | `40 px` |
+| Voltage-aligned horizontal pitch | `24 px` |
 | Horizontal grid pitch | `96 px` |
 
 ## Left-Side Text
@@ -94,6 +94,7 @@ This file documents the current LCD screen implemented in
 - The current implementation draws the voltage trace only; the current axis and legend remain reserved for a future current-signal path.
 - The right-side parameter panel keeps only the required header, U/I legend, and 4 parameter lines.
 - Numeric tick labels are rendered for voltage, current, and time.
+- The horizontal reference lines in the graph are aligned to the left voltage axis labels `+5` to `-5`, giving 11 equally spaced voltage levels across the plot height.
 
 ## Notes
 

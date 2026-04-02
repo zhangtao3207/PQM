@@ -164,7 +164,8 @@
         ctx.stroke();
       }
 
-      for (let y = L.graphY + 40; y < L.graphY + L.graphH - 1; y += 40) {
+      for (let y = L.graphY + 24; y < L.graphY + L.graphH - 1; y += 24) {
+        if (y === L.graphCY) continue;
         ctx.beginPath();
         ctx.moveTo(L.graphX + 1, y + 0.5);
         ctx.lineTo(L.graphX + L.graphW - 1, y + 0.5);

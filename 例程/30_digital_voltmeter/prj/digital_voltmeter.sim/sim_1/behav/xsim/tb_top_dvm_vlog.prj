@@ -1,0 +1,18 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  \
+"../../../../../rtl/clk_div.v" \
+"../../../../../rtl/lcd_disp_char.v" \
+"../../../../../rtl/lcd_display.v" \
+"../../../../../rtl/lcd_driver.v" \
+"../../../../../rtl/rd_id.v" \
+"../../../../../rtl/test_voltage.v" \
+"../../../../../rtl/top_dvm.v" \
+"../../../../../rtl/voltage_calibrator.v" \
+"../../../../../rtl/voltage_data.v" \
+"../../../../../sim/tb_top_dvm.v" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

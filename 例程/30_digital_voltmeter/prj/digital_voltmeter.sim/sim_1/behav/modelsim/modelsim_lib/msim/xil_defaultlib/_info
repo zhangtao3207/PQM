@@ -1,0 +1,285 @@
+m255
+K4
+z2
+!s11f vlog 2020.4 2020.10, Oct 13 2020
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dG:/navigator_v3/doc_check/7020/30_digital_voltmeter/prj/digital_voltmeter.sim/sim_1/behav/modelsim
+T_opt
+!s110 1753855190
+VFijT=X2TXW:U^joY8O1S82
+04 10 4 work tb_top_dvm fast 0
+04 4 4 work glbl fast 0
+=1-047c1686bbe4-6889b4d5-3ac-22c
+o-quiet -auto_acc_if_foreign -work xil_defaultlib -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip +acc
+Z1 tCvgOpt 0
+n@_opt
+OL;O;2020.4;71
+R0
+vclk_div
+!s10a 1693793917
+Z2 !s110 1753844887
+!i10b 1
+!s100 c4iQJQDFgMBP0_2E=2zQ40
+Z3 !s11b Dg1SIo80bB@j0V0VzS_@n1
+IiPzO>fSc77doeO49c^ege1
+R0
+w1693793917
+8../../../../../rtl/clk_div.v
+F../../../../../rtl/clk_div.v
+!i122 0
+L0 23 51
+Z4 VDg1SIo80bB@j0V0VzS_@n1
+Z5 OL;L;2020.4;71
+r1
+!s85 0
+31
+Z6 !s108 1753844887.000000
+Z7 !s107 ../../../../../sim/tb_top_dvm.v|../../../../../rtl/voltage_data.v|../../../../../rtl/voltage_calibrator.v|../../../../../rtl/top_dvm.v|../../../../../rtl/test_voltage.v|../../../../../rtl/rd_id.v|../../../../../rtl/lcd_driver.v|../../../../../rtl/lcd_display.v|../../../../../rtl/lcd_disp_char.v|../../../../../rtl/clk_div.v|
+Z8 !s90 -incr|-work|xil_defaultlib|../../../../../rtl/clk_div.v|../../../../../rtl/lcd_disp_char.v|../../../../../rtl/lcd_display.v|../../../../../rtl/lcd_driver.v|../../../../../rtl/rd_id.v|../../../../../rtl/test_voltage.v|../../../../../rtl/top_dvm.v|../../../../../rtl/voltage_calibrator.v|../../../../../rtl/voltage_data.v|../../../../../sim/tb_top_dvm.v|
+!i113 0
+Z9 o-work xil_defaultlib -L mtiAvm -L mtiRnm -L mtiOvm -L mtiUvm -L mtiUPF -L infact
+R1
+vglbl
+!s110 1757318388
+!i10b 1
+!s100 ZHmTNm_h3dd`6mIQLzSUN3
+R3
+IJT>_:<WW6a7KP^k3<8E3=1
+R0
+w1605673889
+8glbl.v
+Fglbl.v
+!i122 13
+L0 6 78
+R4
+R5
+r1
+!s85 0
+31
+!s108 1757318388.000000
+!s107 glbl.v|
+!s90 -work|xil_defaultlib|glbl.v|
+!i113 0
+R9
+R1
+vlcd_disp_char
+!s10a 1693793860
+R2
+!i10b 1
+!s100 G7ACg9E`aH33=R0cf1WLi1
+R3
+IDYXLZkA?4I`2BWDzfV;>R2
+R0
+w1693793860
+8../../../../../rtl/lcd_disp_char.v
+F../../../../../rtl/lcd_disp_char.v
+!i122 0
+L0 23 94
+R4
+R5
+r1
+!s85 0
+31
+R6
+R7
+R8
+!i113 0
+R9
+R1
+vlcd_display
+!s10a 1693793947
+R2
+!i10b 1
+!s100 U986hEQz=zZ_Q]IVImIF10
+R3
+IJd4R8L0j5NVbT]@cAKiOO0
+R0
+w1693793947
+8../../../../../rtl/lcd_display.v
+F../../../../../rtl/lcd_display.v
+!i122 0
+L0 29 149
+R4
+R5
+r1
+!s85 0
+31
+R6
+R7
+R8
+!i113 0
+R9
+R1
+vlcd_driver
+!s10a 1693793971
+R2
+!i10b 1
+!s100 e9]aJJZb>Q=C[Q<LU?N593
+R3
+IU=KM3=?hVciPzhYa<3mMd0
+R0
+w1693793971
+8../../../../../rtl/lcd_driver.v
+F../../../../../rtl/lcd_driver.v
+!i122 0
+L0 23 228
+R4
+R5
+r1
+!s85 0
+31
+R6
+R7
+R8
+!i113 0
+R9
+R1
+vrd_id
+!s10a 1693793887
+R2
+!i10b 1
+!s100 FZhR;`c3iGeXz]<oZPGiP0
+R3
+IFEZ;d<SMki>CImZ9fNDAb2
+R0
+w1693793887
+8../../../../../rtl/rd_id.v
+F../../../../../rtl/rd_id.v
+!i122 0
+L0 23 36
+R4
+R5
+r1
+!s85 0
+31
+R6
+R7
+R8
+!i113 0
+R9
+R1
+vtb_top_dvm
+!s10a 1753854017
+Z10 !s110 1753854025
+!i10b 1
+!s100 8^KDD65o5n`BFRa76n;ZM3
+R3
+I=WO>Yn7oWLKoR]fWKRVZ:0
+R0
+w1753854017
+8../../../../../sim/tb_top_dvm.v
+F../../../../../sim/tb_top_dvm.v
+!i122 8
+L0 3 66
+R4
+R5
+r1
+!s85 0
+31
+Z11 !s108 1753854025.000000
+R7
+R8
+!i113 0
+R9
+R1
+vtest_voltage
+!s10a 1753855059
+!s110 1753855181
+!i10b 1
+!s100 ifgNF9_nzZDWgX:6=Z[973
+R3
+I:AFg=9fJRLD5gl6m[NO3m2
+R0
+w1753855059
+8../../../../../rtl/test_voltage.v
+F../../../../../rtl/test_voltage.v
+!i122 10
+L0 23 43
+R4
+R5
+r1
+!s85 0
+31
+!s108 1753855181.000000
+R7
+R8
+!i113 0
+R9
+R1
+vtop_dvm
+!s10a 1693793656
+R2
+!i10b 1
+!s100 ac[CPeX5lig00Hha`EaR31
+R3
+IzaQ<7UzKAg7FmS56B9?:K0
+R0
+w1693793656
+8../../../../../rtl/top_dvm.v
+F../../../../../rtl/top_dvm.v
+!i122 0
+L0 23 100
+R4
+R5
+r1
+!s85 0
+31
+R6
+R7
+R8
+!i113 0
+R9
+R1
+vvoltage_calibrator
+!s10a 1693793738
+R2
+!i10b 1
+!s100 j8mXiE>SaG^gDS1HJd2Vb1
+R3
+IJefa=BmHPe3KU]^X@ZzKC3
+R0
+w1693793738
+8../../../../../rtl/voltage_calibrator.v
+F../../../../../rtl/voltage_calibrator.v
+!i122 0
+L0 23 58
+R4
+R5
+r1
+!s85 0
+31
+R6
+R7
+R8
+!i113 0
+R9
+R1
+vvoltage_data
+!s10a 1756446131
+R10
+!i10b 1
+!s100 48lO`f:a2c^jb7[MBoc^<3
+R3
+INDb<a7oDmK5h>AB5YoT503
+R0
+w1753853894
+8../../../../../rtl/voltage_data.v
+F../../../../../rtl/voltage_data.v
+!i122 8
+L0 22 158
+R4
+R5
+r1
+!s85 0
+31
+R11
+R7
+R8
+!i113 0
+R9
+R1

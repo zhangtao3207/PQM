@@ -17,9 +17,9 @@ proc create_report { reportName command } {
     send_msg_id runtcl-5 warning "$msg"
   }
 }
-set_param tcl.collectionResultDisplayLimit 0
-set_param synth.incrementalSynthesisCache C:/Users/zhangtao/AppData/Roaming/Xilinx/Vivado/.Xil/Vivado-10556-DESKTOP-6DUCG5H/incrSyn
+set_param synth.incrementalSynthesisCache C:/Users/zhangtao/AppData/Roaming/Xilinx/Vivado/.Xil/Vivado-19120-DESKTOP-6DUCG5H/incrSyn
 set_param xicom.use_bs_reader 1
+set_msg_config -id {Common 17-41} -limit 10000000
 set_msg_config -id {Synth 8-256} -limit 10000
 set_msg_config -id {Synth 8-638} -limit 10000
 create_project -in_memory -part xc7z020clg400-2
@@ -35,24 +35,32 @@ set_property default_lib xil_defaultlib [current_project]
 set_property target_language Verilog [current_project]
 set_property ip_output_repo c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.cache/ip [current_project]
 set_property ip_cache_permissions {read write} [current_project]
-add_files C:/Users/zhangtao/Desktop/PQM/FPGA/data/dds_256x8b_wave.coe
+add_files C:/Users/zhangtao/Desktop/PQM/FPGA/data/font16x32_row.coe
+add_files C:/Users/zhangtao/Desktop/PQM/FPGA/data/font10x20_row.coe
 read_verilog -library xil_defaultlib {
-  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_PARALLEL/AD7606_Parallel_DRIVER.v
-  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_PARALLEL/ad7606_parallel_ctrl.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_abs_voltage_calc.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_abs_voltage_top.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_sample_average.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_voltage_digits.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/ADC_TEMP/adc_zero_calibrator.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/binary2bcd.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/clk_div.v
-  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/font_rom.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/divider_unsigned.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/touch/i2c_dri.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display_bg.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_display_text.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_driver.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/lcd_rgb_char.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/display/rd_id.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/signal_rms_calc.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/touch/touch_dri.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/touch/touch_state.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/lcd/touch/touch_top.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/uart/uart.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/uart/uart_rx.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/uart/uart_tx.v
+  C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/DataProcessor/wave_frame_capture.v
   C:/Users/zhangtao/Desktop/PQM/FPGA/rtl/main.v
 }
 read_ip -quiet C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xci
@@ -60,11 +68,14 @@ set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desk
 set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xdc]
 set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0_ooc.xdc]
 
-read_ip -quiet C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/ILA_ADC_DRIVER/ILA_ADC_DRIVER.xci
-set_property used_in_synthesis false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/ILA_ADC_DRIVER/ila_v6_2/constraints/ila_impl.xdc]
-set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/ILA_ADC_DRIVER/ila_v6_2/constraints/ila_impl.xdc]
-set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/ILA_ADC_DRIVER/ila_v6_2/constraints/ila.xdc]
-set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/ILA_ADC_DRIVER/ILA_ADC_DRIVER_ooc.xdc]
+read_ip -quiet C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_16x32/blk_mem_gen_font_16x32.xci
+set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_16x32/blk_mem_gen_font_16x32_ooc.xdc]
+
+read_ip -quiet C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_10x20/blk_mem_gen_font_10x20.xci
+set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_10x20/blk_mem_gen_font_10x20_ooc.xdc]
+
+read_ip -quiet c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_ram0/blk_mem_gen_ram0.xci
+set_property used_in_implementation false [get_files -all c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_ram0/blk_mem_gen_ram0_ooc.xdc]
 
 # Mark all dcp files as not used in implementation to prevent them from being
 # stitched into the results of this synthesis run. Any black boxes in the
