@@ -4,6 +4,11 @@
  *   读取 LCD 标识引脚并输出面板 ID。
  */
 
+/*
+ * 详细说明：
+ *   本模块在系统上电后从 LCD 复用数据总线读取一次面板 ID，并将结果锁存。
+ *   之后 `lcd_id` 会被像素时钟与扫描时序模块复用。
+ */
 module rd_id(
     input                   clk    ,    
     input                   rst_n  ,    
@@ -13,7 +18,7 @@ module rd_id(
 
 reg            rd_flag;  
 
-// Sample panel ID once after reset release.
+// 复位释放后只采样一次 ID，避免正常显示阶段被 RGB 数据覆盖。
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         rd_flag <= 1'b0;

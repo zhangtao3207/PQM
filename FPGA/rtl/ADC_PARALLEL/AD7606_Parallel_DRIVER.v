@@ -9,13 +9,12 @@
 //   2. RANGE = 1'b1。
 //   模块对外提供 ADC 控制口、8 路通道数据、整帧数据以及调试状态信号。
 //==============================================================================
-module AD7606_Parallel_DRIVER #(
-    parameter integer RESET_HIGH_CYCLES   = 500,
-    parameter integer CONVST_LOW_CYCLES   = 20,
-    parameter integer RD_LOW_CYCLES       = 16,
-    parameter integer RD_HIGH_CYCLES      = 16,
-    parameter integer BUSY_TIMEOUT_CYCLES = 100000
-)(
+/*
+ * 详细说明：
+ *   AD7606 并行接口上层封装。负责例化底层控制器，并把整帧 128bit 数据
+ *   拆分成 8 路 16bit 通道数据，供后级电压/电流处理链使用。
+ */
+module AD7606_Parallel_DRIVER (
     input  wire         clk,
     input  wire         rst_n,
     input  wire         start,
@@ -46,6 +45,14 @@ module AD7606_Parallel_DRIVER #(
 wire [127:0] frame_raw;        // 底层控制器输出的整帧原始数据
 wire         frame_valid_raw;  // 底层控制器输出的整帧有效脉冲
 
+
+
+localparam integer RESET_HIGH_CYCLES   = 500;
+localparam integer CONVST_LOW_CYCLES   = 20;
+localparam integer RD_LOW_CYCLES       = 16;
+localparam integer RD_HIGH_CYCLES      = 16;
+localparam integer BUSY_TIMEOUT_CYCLES = 100000;
+
 ad7606_parallel_ctrl #(
     .RESET_HIGH_CYCLES(RESET_HIGH_CYCLES),
     .CONVST_LOW_CYCLES(CONVST_LOW_CYCLES),
@@ -74,6 +81,7 @@ ad7606_parallel_ctrl #(
 );
 
 // 在 frame_valid_raw 拉高时锁存一整帧数据，供上层长期使用。
+// 在每次整帧采样完成时锁存 8 路通道数据与整帧数据。
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         {ch8_data, ch7_data, ch6_data, ch5_data,

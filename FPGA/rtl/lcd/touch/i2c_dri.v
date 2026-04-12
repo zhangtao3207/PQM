@@ -4,6 +4,12 @@
  *   I2C 位级事务引擎，支持 8/16 位寄存器地址读写。
  */
 
+/*
+ * 详细说明：
+ *   本模块是通用 I2C 位级事务引擎。上层给出从机地址、寄存器地址、
+ *   读写方向和数据后，本模块自动产生起始、地址、应答、数据和停止
+ *   所需的 SCL/SDA 波形。
+ */
 module i2c_dri
   #(
     parameter   CLK_FREQ   = 26'd50_000_000, 
@@ -31,7 +37,7 @@ module i2c_dri
      );
 
 
-// I2C transaction states.
+// I2C 事务状态机编码。
 localparam  st_idle     = 8'b0000_0001; 
 localparam  st_sladdr   = 8'b0000_0010; 
 localparam  st_addr16   = 8'b0000_0100; 
@@ -65,7 +71,7 @@ wire                     reg_done    ;
 
 
 
-// Open-drain SDA emulation: drive low/high-Z by direction control.
+// 用方向控制模拟 SDA 开漏驱动。
 assign  sda        = sda_dir ?  sda_out : 1'bz;        
 assign  sda_in     = sda ;
 assign  clk_divide = (CLK_FREQ/I2C_FREQ) >> 2'd2;
@@ -74,7 +80,7 @@ assign  clk_divide = (CLK_FREQ/I2C_FREQ) >> 2'd2;
 assign  reg_done   = reg_cnt == reg_num ? 1'b1 : 1'b0; 
 
 
-// Generate internal driver clock for quarter-bit timing steps.
+// 生成 I2C 内部细分节拍，每一拍对应位周期的四分之一。
 always @(posedge clk or negedge rst_n) begin
     if(rst_n == 1'b0) begin
         dri_clk <=  1'b1;
@@ -89,7 +95,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 
-// Count transferred bytes in the current transaction.
+// 统计当前事务已完成的字节数。
 always @(posedge dri_clk or negedge rst_n) begin
     if(!rst_n)
         reg_cnt <= 8'd0;
@@ -108,7 +114,7 @@ always @(posedge dri_clk or negedge rst_n) begin
 end
 
 
-// Next-state logic: branch by ack and read/write direction.
+// 状态跳转逻辑：由 ACK、读写方向和寄存器宽度共同决定。
 always @( * ) begin
     case(cur_state)
         st_idle: begin                            
@@ -197,7 +203,7 @@ always @( * ) begin
 end
 
 
-// Bit-level bus waveform generator for each transaction state.
+// 位级总线波形生成：逐拍驱动 SCL/SDA 完成整笔 I2C 事务。
 always @(posedge dri_clk or negedge rst_n) begin
     
     if(rst_n == 1'b0) begin

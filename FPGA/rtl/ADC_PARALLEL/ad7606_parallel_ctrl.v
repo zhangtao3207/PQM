@@ -12,6 +12,12 @@
 //   5. 使用物理 FRSTDATA 校验第 1 路读数窗口是否对齐；
 //   6. 在 8 路数据全部读取完成后输出 data_valid_o 单拍脉冲。
 //==============================================================================
+/*
+ * 详细说明：
+ *   AD7606 并行接口底层时序控制器。收到 `start` 后，模块依次完成：
+ *   RESET/CONVST/BUSY 等待/8 路并行读数，并利用 FRSTDATA 校验首通道
+ *   是否对齐。
+ */
 module ad7606_parallel_ctrl #(
     parameter integer RESET_HIGH_CYCLES   = 500,
     parameter integer CONVST_LOW_CYCLES   = 20,
@@ -62,6 +68,7 @@ wire start_rise;           // start 上升沿检测结果
 wire soft_reset_rise;      // soft_reset 上升沿检测结果
 
 // 将“保持 N 个周期”换算成计数器装载值。
+// 把“保持 N 个时钟周期”换算成计数器装载值。
 function [31:0] cycles_to_counter;
     input integer cycles;
     begin
@@ -84,6 +91,7 @@ assign channel_o = ((state == ST_RD_LOW) || (state == ST_RD_HIGH)) ?
                    ({1'b0, channel_index} + 4'd1) : 4'd0;
 
 // 主状态机。
+// 主状态机：描述一帧 AD7606 并行采样流程。
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         state           <= ST_RESET;

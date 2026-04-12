@@ -2,8 +2,15 @@
  * Module: lcd_display_text
  * Function:
  *   Decode the current pixel into a text cell, font size, glyph index and
- *   color. The module keeps the page wording in one place and uses helper
- *   tasks/functions to avoid repeating the same region decode pattern.
+ *   color. The module keeps the screen wording in one place and matches the
+ *   current lcd.html preview layout.
+ */
+/*
+ * è¯¦ç»è¯´æï¼
+ *   æ¬æ¨¡åç»´æ¤é¡µé¢ä¸æææå­åå®¹ãå®æ ¹æ®åç´ åæ å¤æ­å½ååç´ æ¯å¦è½å¨
+ *   æä¸ªææ¬åºåï¼å¹¶è¾åºå¯¹åºçå­ä½å¤§å°ãå­ç¬¦ç´¢å¼ãå­ååæ åé¢è²ã
+ *   å¨ææ°æ®å¦ FrequencyãU_rmsãI_rmsãPhase DiffãUppãIpp ä¹å¨æ­¤
+ *   è¢«æ¼æ¥æå­ç¬¦æµã
  */
 module lcd_display_text(
     input      [10:0] pixel_xpos,
@@ -13,6 +20,54 @@ module lcd_display_text(
     input      [7:0]  u_rms_decile,
     input      [7:0]  u_rms_percentiles,
     input             u_rms_digits_valid,
+    input      [7:0]  i_rms_tens,
+    input      [7:0]  i_rms_units,
+    input      [7:0]  i_rms_decile,
+    input      [7:0]  i_rms_percentiles,
+    input             i_rms_digits_valid,
+    input             phase_neg,
+    input      [7:0]  phase_hundreds,
+    input      [7:0]  phase_tens,
+    input      [7:0]  phase_units,
+    input      [7:0]  phase_decile,
+    input      [7:0]  phase_percentiles,
+    input             phase_valid,
+    input      [7:0]  freq_hundreds,
+    input      [7:0]  freq_tens,
+    input      [7:0]  freq_units,
+    input      [7:0]  freq_decile,
+    input      [7:0]  freq_percentiles,
+    input             freq_valid,
+    input      [7:0]  u_pp_tens,
+    input      [7:0]  u_pp_units,
+    input      [7:0]  u_pp_decile,
+    input      [7:0]  u_pp_percentiles,
+    input             u_pp_digits_valid,
+    input      [7:0]  i_pp_tens,
+    input      [7:0]  i_pp_units,
+    input      [7:0]  i_pp_decile,
+    input      [7:0]  i_pp_percentiles,
+    input             i_pp_digits_valid,
+    input             active_p_neg,
+    input      [7:0]  active_p_tens,
+    input      [7:0]  active_p_units,
+    input      [7:0]  active_p_decile,
+    input      [7:0]  active_p_percentiles,
+    input             reactive_q_neg,
+    input      [7:0]  reactive_q_tens,
+    input      [7:0]  reactive_q_units,
+    input      [7:0]  reactive_q_decile,
+    input      [7:0]  reactive_q_percentiles,
+    input      [7:0]  apparent_s_tens,
+    input      [7:0]  apparent_s_units,
+    input      [7:0]  apparent_s_decile,
+    input      [7:0]  apparent_s_percentiles,
+    input             power_factor_neg,
+    input      [7:0]  power_factor_units,
+    input      [7:0]  power_factor_decile,
+    input      [7:0]  power_factor_percentiles,
+    input             power_metrics_valid,
+    input             freeze_active,
     output reg        text_en,
     output reg        text_font_small,
     output reg [6:0]  text_char_idx,
@@ -21,11 +76,13 @@ module lcd_display_text(
     output reg [23:0] text_color
 );
 
+// ä¸¤å¥å­å·çåºç¡å°ºå¯¸ã
 localparam [5:0] BIG_CHAR_W   = 6'd16;
 localparam [5:0] BIG_CHAR_H   = 6'd32;
 localparam [5:0] SMALL_CHAR_W = 6'd10;
 localparam [5:0] SMALL_CHAR_H = 6'd20;
 
+// å­åºç´¢å¼å®ä¹ï¼éä¸å­ä½ ROM æä»¶ä¿æä¸è´ã
 localparam [6:0] FONT_BLANK      = 7'd127;
 localparam [6:0] FONT_DIGIT_BASE = 7'd0;
 localparam [6:0] FONT_UPPER_BASE = 7'd10;
@@ -36,9 +93,9 @@ localparam [6:0] FONT_UNDERSCORE = 7'd73;
 localparam [6:0] FONT_PLUS       = 7'd74;
 localparam [6:0] FONT_MINUS      = 7'd75;
 localparam [6:0] FONT_DOT        = 7'd84;
-localparam [6:0] FONT_SLASH      = 7'd85;
 localparam [6:0] FONT_COLON      = 7'd89;
 
+// æå­é¢è²å®ä¹ã
 localparam [23:0] TEXT_WHITE   = 24'hF2F6FA;
 localparam [23:0] TEXT_SOFT    = 24'hC6D3E2;
 localparam [23:0] TEXT_DIM     = 24'h95A9BE;
@@ -46,11 +103,13 @@ localparam [23:0] WAVE_U_COLOR = 24'h39E46F;
 localparam [23:0] WAVE_I_COLOR = 24'hFFD84E;
 localparam [23:0] ACCENT_COLOR = 24'h58B6FF;
 
+// åææ¬åå¨å±å¹ä¸çèµ·å§ä½ç½®ã
 localparam [10:0] TITLE_TXT_X  = 11'd32;
 localparam [10:0] TITLE_TXT_Y  = 11'd6;
-localparam [10:0] BTN_TXT_X    = 11'd578;
+localparam [10:0] BTN_TXT_X    = 11'd583;
 localparam [10:0] BTN_TXT_Y    = 11'd6;
-localparam [10:0] AUTO_TXT_X   = 11'd700;
+localparam [10:0] AUTO_FREEZE_TXT_X = 11'd680;
+localparam [10:0] AUTO_AUTO_TXT_X   = 11'd696;
 localparam [10:0] AUTO_TXT_Y   = 11'd6;
 localparam [10:0] PLOT_TXT_X   = 11'd68;
 localparam [10:0] PLOT_TXT_Y   = 11'd72;
@@ -66,58 +125,58 @@ localparam [10:0] AXIS_TICK4_X = 11'd389;
 localparam [10:0] AXIS_TICK_Y  = 11'd392;
 localparam [10:0] AXIS_T_X     = 11'd336;
 localparam [10:0] AXIS_T_Y     = 11'd416;
-localparam [10:0] V_TICK_X     = 11'd12;
+localparam [10:0] V_TICK_X     = 11'd2;
 localparam [10:0] V_TICK_Y0    = 11'd134;
-localparam [10:0] V_TICK_STEP  = 11'd24;
+localparam [10:0] V_TICK_STEP  = 11'd40;
 localparam [10:0] I_TICK_X     = 11'd424;
 localparam [10:0] I_TICK_Y0    = 11'd134;
 localparam [10:0] I_TICK_STEP  = 11'd40;
 localparam [10:0] RP_TITLE_X   = 11'd520;
 localparam [10:0] RP_TITLE_Y   = 11'd76;
-localparam [10:0] LEGEND1_X    = 11'd560;
-localparam [10:0] LEGEND1_Y    = 11'd112;
-localparam [10:0] LEGEND2_X    = 11'd676;
-localparam [10:0] LEGEND2_Y    = 11'd112;
 localparam [10:0] LINE_X       = 11'd516;
-localparam [10:0] LINE_Y0      = 11'd144;
-localparam [10:0] LINE_STEP    = 11'd30;
+localparam [10:0] LINE_Y0      = 11'd114;
+localparam [10:0] LINE_STEP    = 11'd28;
+localparam [10:0] U_PP_X       = 11'd68;
+localparam [10:0] U_PP_Y       = 11'd425;
+localparam [10:0] I_PP_X       = 11'd68;
+localparam [10:0] I_PP_Y       = 11'd449;
 
-localparam integer MAX_TEXT_LEN = 22;
+localparam integer MAX_TEXT_LEN = 25;
 localparam integer TITLE_LEN    = 19;
-localparam integer BTN_LEN      = 6;
-localparam integer AUTO_LEN     = 4;
+localparam integer BTN_LEN      = 4;
+localparam integer AUTO_FREEZE_LEN = 6;
+localparam integer AUTO_AUTO_LEN   = 4;
 localparam integer PLOT_LEN     = 20;
 localparam integer AXIS_V_LEN   = 12;
 localparam integer AXIS_I_LEN   = 11;
 localparam integer AXIS_T_LEN   = 8;
-localparam integer V_TICK_LEN   = 2;
+localparam integer V_TICK_LEN   = 3;
 localparam integer I_TICK_LEN   = 4;
 localparam integer T_TICK_LEN   = 3;
 localparam integer RP_HEAD_LEN  = 10;
-localparam integer LEGEND_U_LEN = 1;
-localparam integer LEGEND_I_LEN = 1;
-localparam integer LINE1_LEN    = 17;
-localparam integer LINE2_LEN    = 16;
-localparam integer LINE3_LEN    = 16;
-localparam integer LINE4_LEN    = 22;
+localparam integer FREQ_LEN     = 22;
+localparam integer RMS_LEN      = 16;
+localparam integer PHASE_LEN    = 25;
+localparam integer ACTIVE_LEN   = 20;
+localparam integer REACTIVE_LEN = 24;
+localparam integer APPARENT_LEN = 23;
+localparam integer PF_LEN       = 20;
+localparam integer PP_LEN       = 14;
 
-localparam [8*TITLE_LEN-1:0]    TITLE_STR    = "MODE: Single - Time";
-localparam [8*BTN_LEN-1:0]      BTN_STR      = "Freeze";
-localparam [8*AUTO_LEN-1:0]     AUTO_STR     = "Auto";
-localparam [8*PLOT_LEN-1:0]     PLOT_STR     = "Time Domain Analysis";
-localparam [8*AXIS_V_LEN-1:0]   AXIS_V_STR   = "Voltage ( V)";
-localparam [8*AXIS_I_LEN-1:0]   AXIS_I_STR   = "Current (A)";
-localparam [8*AXIS_T_LEN-1:0]   AXIS_T_STR   = "Time(ms)";
-localparam [8*RP_HEAD_LEN-1:0]  RP_HEAD_STR  = "Parameters";
-localparam [8*LEGEND_U_LEN-1:0] LEGEND_U_STR = "U";
-localparam [8*LEGEND_I_LEN-1:0] LEGEND_I_STR = "I";
-localparam [8*LINE1_LEN-1:0]    LINE1_STR    = "Sampling: 5 (KPS)";
-localparam [8*LINE3_LEN-1:0]    LINE3_STR    = "I_rms: --.-- (A)";
-localparam [8*LINE4_LEN-1:0]    LINE4_STR    = "Phase Diff: 0.49 (rad)";
+localparam [8*TITLE_LEN-1:0]   TITLE_STR   = "MODE: Single - Time";
+localparam [8*BTN_LEN-1:0]     BTN_STR     = "MODE";
+localparam [8*AUTO_FREEZE_LEN-1:0] AUTO_FREEZE_STR = "Freeze";
+localparam [8*AUTO_AUTO_LEN-1:0]   AUTO_AUTO_STR   = "Auto";
+localparam [8*PLOT_LEN-1:0]    PLOT_STR    = "Time Domain Analysis";
+localparam [8*AXIS_V_LEN-1:0]  AXIS_V_STR  = "Voltage ( V)";
+localparam [8*AXIS_I_LEN-1:0]  AXIS_I_STR  = "Current (A)";
+localparam [8*AXIS_T_LEN-1:0]  AXIS_T_STR  = "Time(ms)";
+localparam [8*RP_HEAD_LEN-1:0] RP_HEAD_STR = "Parameters";
 
 integer line_slot;
 integer tick_slot;
 
+// ASCII å°å­ä½ç´¢å¼çç»ä¸æ å°ã
 function [6:0] ascii_to_idx;
     input [7:0] ch;
     begin
@@ -136,7 +195,6 @@ function [6:0] ascii_to_idx;
                 "+": ascii_to_idx = FONT_PLUS;
                 "-": ascii_to_idx = FONT_MINUS;
                 ".": ascii_to_idx = FONT_DOT;
-                "/": ascii_to_idx = FONT_SLASH;
                 ":": ascii_to_idx = FONT_COLON;
                 default: ascii_to_idx = FONT_BLANK;
             endcase
@@ -144,16 +202,140 @@ function [6:0] ascii_to_idx;
     end
 endfunction
 
+function [7:0] active_p_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  active_p_line_ascii = "A";
+            1:  active_p_line_ascii = "c";
+            2:  active_p_line_ascii = "t";
+            3:  active_p_line_ascii = "i";
+            4:  active_p_line_ascii = "v";
+            5:  active_p_line_ascii = "e";
+            6:  active_p_line_ascii = " ";
+            7:  active_p_line_ascii = "P";
+            8:  active_p_line_ascii = ":";
+            9:  active_p_line_ascii = " ";
+            10: active_p_line_ascii = power_metrics_valid ? (active_p_neg ? "-" : " ") : " ";
+            11: active_p_line_ascii = power_metrics_valid ? ((active_p_tens == 8'd0) ? " " : digit_to_ascii(active_p_tens)) : " ";
+            12: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_units) : " ";
+            13: active_p_line_ascii = ".";
+            14: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_decile) : " ";
+            15: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_percentiles) : " ";
+            16: active_p_line_ascii = " ";
+            17: active_p_line_ascii = "(";
+            18: active_p_line_ascii = "W";
+            19: active_p_line_ascii = ")";
+            default: active_p_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+function [7:0] reactive_q_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  reactive_q_line_ascii = "R";
+            1:  reactive_q_line_ascii = "e";
+            2:  reactive_q_line_ascii = "a";
+            3:  reactive_q_line_ascii = "c";
+            4:  reactive_q_line_ascii = "t";
+            5:  reactive_q_line_ascii = "i";
+            6:  reactive_q_line_ascii = "v";
+            7:  reactive_q_line_ascii = "e";
+            8:  reactive_q_line_ascii = " ";
+            9:  reactive_q_line_ascii = "Q";
+            10: reactive_q_line_ascii = ":";
+            11: reactive_q_line_ascii = " ";
+            12: reactive_q_line_ascii = power_metrics_valid ? (reactive_q_neg ? "-" : "+") : " ";
+            13: reactive_q_line_ascii = power_metrics_valid ? ((reactive_q_tens == 8'd0) ? " " : digit_to_ascii(reactive_q_tens)) : " ";
+            14: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_units) : " ";
+            15: reactive_q_line_ascii = ".";
+            16: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_decile) : " ";
+            17: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_percentiles) : " ";
+            18: reactive_q_line_ascii = " ";
+            19: reactive_q_line_ascii = "(";
+            20: reactive_q_line_ascii = "v";
+            21: reactive_q_line_ascii = "a";
+            22: reactive_q_line_ascii = "r";
+            23: reactive_q_line_ascii = ")";
+            default: reactive_q_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+function [7:0] apparent_s_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  apparent_s_line_ascii = "A";
+            1:  apparent_s_line_ascii = "p";
+            2:  apparent_s_line_ascii = "p";
+            3:  apparent_s_line_ascii = "a";
+            4:  apparent_s_line_ascii = "r";
+            5:  apparent_s_line_ascii = "e";
+            6:  apparent_s_line_ascii = "n";
+            7:  apparent_s_line_ascii = "t";
+            8:  apparent_s_line_ascii = " ";
+            9:  apparent_s_line_ascii = "S";
+            10: apparent_s_line_ascii = ":";
+            11: apparent_s_line_ascii = " ";
+            12: apparent_s_line_ascii = " ";
+            13: apparent_s_line_ascii = power_metrics_valid ? ((apparent_s_tens == 8'd0) ? " " : digit_to_ascii(apparent_s_tens)) : " ";
+            14: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_units) : " ";
+            15: apparent_s_line_ascii = ".";
+            16: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_decile) : " ";
+            17: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_percentiles) : " ";
+            18: apparent_s_line_ascii = " ";
+            19: apparent_s_line_ascii = "(";
+            20: apparent_s_line_ascii = "V";
+            21: apparent_s_line_ascii = "A";
+            22: apparent_s_line_ascii = ")";
+            default: apparent_s_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+function [7:0] power_factor_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  power_factor_line_ascii = "P";
+            1:  power_factor_line_ascii = "o";
+            2:  power_factor_line_ascii = "w";
+            3:  power_factor_line_ascii = "e";
+            4:  power_factor_line_ascii = "r";
+            5:  power_factor_line_ascii = " ";
+            6:  power_factor_line_ascii = "F";
+            7:  power_factor_line_ascii = "a";
+            8:  power_factor_line_ascii = "c";
+            9:  power_factor_line_ascii = "t";
+            10: power_factor_line_ascii = "o";
+            11: power_factor_line_ascii = "r";
+            12: power_factor_line_ascii = ":";
+            13: power_factor_line_ascii = " ";
+            14: power_factor_line_ascii = power_metrics_valid ? (power_factor_neg ? "-" : " ") : " ";
+            15: power_factor_line_ascii = power_metrics_valid ? digit_to_ascii(power_factor_units) : " ";
+            16: power_factor_line_ascii = ".";
+            17: power_factor_line_ascii = power_metrics_valid ? digit_to_ascii(power_factor_decile) : " ";
+            18: power_factor_line_ascii = power_metrics_valid ? digit_to_ascii(power_factor_percentiles) : " ";
+            default: power_factor_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// åè¿å¶æ°å­è½¬ ASCIIï¼å¼å¸¸è¾å¥åéä¸º '-'.
 function [7:0] digit_to_ascii;
     input [7:0] digit;
     begin
         if (digit <= 8'd9)
             digit_to_ascii = "0" + digit[7:0];
         else
-            digit_to_ascii = "-";
+            digit_to_ascii = " ";
     end
 endfunction
 
+// ä»å®é¿å­ç¬¦ä¸²ä¸­ååºæå®æ§½ä½å­ç¬¦ã
 function [7:0] text_char_from_str;
     input [8*MAX_TEXT_LEN-1:0] str_value;
     input integer text_len;
@@ -166,27 +348,25 @@ function [7:0] text_char_from_str;
     end
 endfunction
 
+// å·¦ä¾§çµåå»åº¦ææ¬æ¥è¡¨ã
 function [7:0] voltage_tick_ascii;
     input integer tick_index;
     input integer char_slot;
     begin
         case (tick_index)
-            0:  voltage_tick_ascii = text_char_from_str("+5", V_TICK_LEN, char_slot);
-            1:  voltage_tick_ascii = text_char_from_str("+4", V_TICK_LEN, char_slot);
-            2:  voltage_tick_ascii = text_char_from_str("+3", V_TICK_LEN, char_slot);
-            3:  voltage_tick_ascii = text_char_from_str("+2", V_TICK_LEN, char_slot);
-            4:  voltage_tick_ascii = text_char_from_str("+1", V_TICK_LEN, char_slot);
-            5:  voltage_tick_ascii = text_char_from_str(" 0", V_TICK_LEN, char_slot);
-            6:  voltage_tick_ascii = text_char_from_str("-1", V_TICK_LEN, char_slot);
-            7:  voltage_tick_ascii = text_char_from_str("-2", V_TICK_LEN, char_slot);
-            8:  voltage_tick_ascii = text_char_from_str("-3", V_TICK_LEN, char_slot);
-            9:  voltage_tick_ascii = text_char_from_str("-4", V_TICK_LEN, char_slot);
-            10: voltage_tick_ascii = text_char_from_str("-5", V_TICK_LEN, char_slot);
+            0:  voltage_tick_ascii = text_char_from_str("+12", V_TICK_LEN, char_slot);
+            1:  voltage_tick_ascii = text_char_from_str(" +8", V_TICK_LEN, char_slot);
+            2:  voltage_tick_ascii = text_char_from_str(" +4", V_TICK_LEN, char_slot);
+            3:  voltage_tick_ascii = text_char_from_str("  0", V_TICK_LEN, char_slot);
+            4:  voltage_tick_ascii = text_char_from_str(" -4", V_TICK_LEN, char_slot);
+            5:  voltage_tick_ascii = text_char_from_str(" -8", V_TICK_LEN, char_slot);
+            6:  voltage_tick_ascii = text_char_from_str("-12", V_TICK_LEN, char_slot);
             default: voltage_tick_ascii = " ";
         endcase
     end
 endfunction
 
+// å³ä¾§çµæµå»åº¦ææ¬æ¥è¡¨ã
 function [7:0] current_tick_ascii;
     input integer tick_index;
     input integer char_slot;
@@ -204,6 +384,39 @@ function [7:0] current_tick_ascii;
     end
 endfunction
 
+// Frequency è¡å¨æå­ç¬¦çæã
+function [7:0] freq_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_line_ascii = "F";
+            1:  freq_line_ascii = "r";
+            2:  freq_line_ascii = "e";
+            3:  freq_line_ascii = "q";
+            4:  freq_line_ascii = "u";
+            5:  freq_line_ascii = "e";
+            6:  freq_line_ascii = "n";
+            7:  freq_line_ascii = "c";
+            8:  freq_line_ascii = "y";
+            9:  freq_line_ascii = ":";
+            10: freq_line_ascii = " ";
+            11: freq_line_ascii = freq_valid ? ((freq_hundreds == 8'd0) ? " " : digit_to_ascii(freq_hundreds)) : " ";
+            12: freq_line_ascii = freq_valid ? digit_to_ascii(freq_tens) : " ";
+            13: freq_line_ascii = freq_valid ? digit_to_ascii(freq_units) : " ";
+            14: freq_line_ascii = ".";
+            15: freq_line_ascii = freq_valid ? digit_to_ascii(freq_decile) : " ";
+            16: freq_line_ascii = freq_valid ? digit_to_ascii(freq_percentiles) : " ";
+            17: freq_line_ascii = " ";
+            18: freq_line_ascii = "(";
+            19: freq_line_ascii = "H";
+            20: freq_line_ascii = "z";
+            21: freq_line_ascii = ")";
+            default: freq_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// U_rms è¡å¨æå­ç¬¦çæã
 function [7:0] u_rms_line_ascii;
     input integer char_slot;
     begin
@@ -215,11 +428,11 @@ function [7:0] u_rms_line_ascii;
             4:  u_rms_line_ascii = "s";
             5:  u_rms_line_ascii = ":";
             6:  u_rms_line_ascii = " ";
-            7:  u_rms_line_ascii = u_rms_digits_valid ? ((u_rms_tens == 8'd0) ? " " : digit_to_ascii(u_rms_tens)) : "-";
-            8:  u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_units) : "-";
+            7:  u_rms_line_ascii = u_rms_digits_valid ? ((u_rms_tens == 8'd0) ? " " : digit_to_ascii(u_rms_tens)) : " ";
+            8:  u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_units) : " ";
             9:  u_rms_line_ascii = ".";
-            10: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_decile) : "-";
-            11: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_percentiles) : "-";
+            10: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_decile) : " ";
+            11: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_percentiles) : " ";
             12: u_rms_line_ascii = " ";
             13: u_rms_line_ascii = "(";
             14: u_rms_line_ascii = "V";
@@ -229,6 +442,116 @@ function [7:0] u_rms_line_ascii;
     end
 endfunction
 
+// I_rms è¡å¨æå­ç¬¦çæã
+function [7:0] i_rms_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  i_rms_line_ascii = "I";
+            1:  i_rms_line_ascii = "_";
+            2:  i_rms_line_ascii = "r";
+            3:  i_rms_line_ascii = "m";
+            4:  i_rms_line_ascii = "s";
+            5:  i_rms_line_ascii = ":";
+            6:  i_rms_line_ascii = " ";
+            7:  i_rms_line_ascii = i_rms_digits_valid ? ((i_rms_tens == 8'd0) ? " " : digit_to_ascii(i_rms_tens)) : " ";
+            8:  i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_units) : " ";
+            9:  i_rms_line_ascii = ".";
+            10: i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_decile) : " ";
+            11: i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_percentiles) : " ";
+            12: i_rms_line_ascii = " ";
+            13: i_rms_line_ascii = "(";
+            14: i_rms_line_ascii = "A";
+            15: i_rms_line_ascii = ")";
+            default: i_rms_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// Phase Diff è¡å¨æå­ç¬¦çæï¼å½ååä½ä¸º degã
+function [7:0] phase_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  phase_line_ascii = "P";
+            1:  phase_line_ascii = "h";
+            2:  phase_line_ascii = "a";
+            3:  phase_line_ascii = "s";
+            4:  phase_line_ascii = "e";
+            5:  phase_line_ascii = " ";
+            6:  phase_line_ascii = "D";
+            7:  phase_line_ascii = "i";
+            8:  phase_line_ascii = "f";
+            9:  phase_line_ascii = "f";
+            10: phase_line_ascii = ":";
+            11: phase_line_ascii = " ";
+            12: phase_line_ascii = phase_valid ? (phase_neg ? "-" : "+") : " ";
+            13: phase_line_ascii = phase_valid ? ((phase_hundreds == 8'd0) ? " " : digit_to_ascii(phase_hundreds)) : " ";
+            14: phase_line_ascii = phase_valid ? (((phase_hundreds == 8'd0) && (phase_tens == 8'd0)) ? " " : digit_to_ascii(phase_tens)) : " ";
+            15: phase_line_ascii = phase_valid ? digit_to_ascii(phase_units) : " ";
+            16: phase_line_ascii = ".";
+            17: phase_line_ascii = phase_valid ? digit_to_ascii(phase_decile) : " ";
+            18: phase_line_ascii = phase_valid ? digit_to_ascii(phase_percentiles) : " ";
+            19: phase_line_ascii = " ";
+            20: phase_line_ascii = "(";
+            21: phase_line_ascii = "d";
+            22: phase_line_ascii = "e";
+            23: phase_line_ascii = "g";
+            24: phase_line_ascii = ")";
+            default: phase_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// Upp è¡å¨æå­ç¬¦çæã
+function [7:0] u_pp_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  u_pp_line_ascii = "U";
+            1:  u_pp_line_ascii = "p";
+            2:  u_pp_line_ascii = "p";
+            3:  u_pp_line_ascii = ":";
+            4:  u_pp_line_ascii = " ";
+            5:  u_pp_line_ascii = u_pp_digits_valid ? ((u_pp_tens == 8'd0) ? " " : digit_to_ascii(u_pp_tens)) : " ";
+            6:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_units) : " ";
+            7:  u_pp_line_ascii = ".";
+            8:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_decile) : " ";
+            9:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_percentiles) : " ";
+            10: u_pp_line_ascii = " ";
+            11: u_pp_line_ascii = "(";
+            12: u_pp_line_ascii = "V";
+            13: u_pp_line_ascii = ")";
+            default: u_pp_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// Ipp è¡å¨æå­ç¬¦çæã
+function [7:0] i_pp_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  i_pp_line_ascii = "I";
+            1:  i_pp_line_ascii = "p";
+            2:  i_pp_line_ascii = "p";
+            3:  i_pp_line_ascii = ":";
+            4:  i_pp_line_ascii = " ";
+            5:  i_pp_line_ascii = i_pp_digits_valid ? ((i_pp_tens == 8'd0) ? " " : digit_to_ascii(i_pp_tens)) : " ";
+            6:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_units) : " ";
+            7:  i_pp_line_ascii = ".";
+            8:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_decile) : " ";
+            9:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_percentiles) : " ";
+            10: i_pp_line_ascii = " ";
+            11: i_pp_line_ascii = "(";
+            12: i_pp_line_ascii = "A";
+            13: i_pp_line_ascii = ")";
+            default: i_pp_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// å°å­å·ææ¬ï¼æ ¹æ®æ¨ªååç§»ç¡®å®å­ç¬¦æ§½ä½ã
 function integer small_text_slot;
     input [10:0] delta_x;
     input integer text_len;
@@ -262,7 +585,7 @@ function voltage_tick_hit;
     integer idx;
     begin
         voltage_tick_hit = 1'b0;
-        for (idx = 0; idx < 11; idx = idx + 1) begin
+        for (idx = 0; idx < 7; idx = idx + 1) begin
             if ((delta_y >= (idx * V_TICK_STEP)) &&
                 (delta_y < ((idx * V_TICK_STEP) + SMALL_CHAR_H)))
                 voltage_tick_hit = 1'b1;
@@ -275,7 +598,7 @@ function integer voltage_tick_slot_from_y;
     integer idx;
     begin
         voltage_tick_slot_from_y = 0;
-        for (idx = 0; idx < 11; idx = idx + 1) begin
+        for (idx = 0; idx < 7; idx = idx + 1) begin
             if ((delta_y >= (idx * V_TICK_STEP)) &&
                 (delta_y < ((idx * V_TICK_STEP) + SMALL_CHAR_H)))
                 voltage_tick_slot_from_y = idx;
@@ -288,7 +611,7 @@ function [5:0] voltage_tick_rel_y;
     integer idx;
     begin
         voltage_tick_rel_y = 6'd0;
-        for (idx = 0; idx < 11; idx = idx + 1) begin
+        for (idx = 0; idx < 7; idx = idx + 1) begin
             if ((delta_y >= (idx * V_TICK_STEP)) &&
                 (delta_y < ((idx * V_TICK_STEP) + SMALL_CHAR_H)))
                 voltage_tick_rel_y = delta_y - (idx * V_TICK_STEP);
@@ -335,6 +658,7 @@ function [5:0] current_tick_rel_y;
     end
 endfunction
 
+// å°è¯å½ä¸­ä¸å 16x32 ææ¬åºåã
 task try_big_text_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -358,6 +682,7 @@ task try_big_text_region;
     end
 endtask
 
+// å°è¯å½ä¸­ä¸å 10x20 ææ¬åºåã
 task try_small_text_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -381,6 +706,7 @@ task try_small_text_region;
     end
 endtask
 
+// å°è¯å½ä¸­å·¦ä¾§çµåå»åº¦åºã
 task try_voltage_tick_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -390,7 +716,7 @@ task try_voltage_tick_region;
         if (!text_en &&
             (pixel_xpos >= base_x) && (pixel_xpos < base_x + (V_TICK_LEN * SMALL_CHAR_W)) &&
             (pixel_ypos >= base_y) &&
-            (pixel_ypos < base_y + (10 * V_TICK_STEP) + SMALL_CHAR_H)) begin
+            (pixel_ypos < base_y + (6 * V_TICK_STEP) + SMALL_CHAR_H)) begin
             delta_x = pixel_xpos - base_x;
             delta_y = pixel_ypos - base_y;
 
@@ -408,6 +734,7 @@ task try_voltage_tick_region;
     end
 endtask
 
+// å°è¯å½ä¸­å³ä¾§çµæµå»åº¦åºã
 task try_current_tick_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -435,16 +762,36 @@ task try_current_tick_region;
     end
 endtask
 
+task try_freq_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (FREQ_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, FREQ_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(freq_line_ascii(line_slot));
+            text_color      = TEXT_SOFT;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
 task try_u_rms_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
     reg   [10:0] delta_x;
     begin
         if (!text_en &&
-            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (LINE2_LEN * SMALL_CHAR_W)) &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (RMS_LEN * SMALL_CHAR_W)) &&
             (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
             delta_x         = pixel_xpos - base_x;
-            line_slot       = small_text_slot(delta_x, LINE2_LEN);
+            line_slot       = small_text_slot(delta_x, RMS_LEN);
             text_en         = 1'b1;
             text_font_small = 1'b1;
             text_char_idx   = ascii_to_idx(u_rms_line_ascii(line_slot));
@@ -455,6 +802,167 @@ task try_u_rms_line_region;
     end
 endtask
 
+task try_i_rms_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (RMS_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, RMS_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(i_rms_line_ascii(line_slot));
+            text_color      = WAVE_I_COLOR;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+task try_phase_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (PHASE_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, PHASE_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(phase_line_ascii(line_slot));
+            text_color      = TEXT_WHITE;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+task try_u_pp_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (PP_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, PP_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(u_pp_line_ascii(line_slot));
+            text_color      = WAVE_U_COLOR;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+task try_i_pp_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (PP_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, PP_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(i_pp_line_ascii(line_slot));
+            text_color      = WAVE_I_COLOR;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+task try_active_p_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (ACTIVE_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, ACTIVE_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(active_p_line_ascii(line_slot));
+            text_color      = ACCENT_COLOR;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+task try_reactive_q_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (REACTIVE_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, REACTIVE_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(reactive_q_line_ascii(line_slot));
+            text_color      = TEXT_SOFT;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+task try_apparent_s_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (APPARENT_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, APPARENT_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(apparent_s_line_ascii(line_slot));
+            text_color      = TEXT_WHITE;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+task try_power_factor_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + (PF_LEN * SMALL_CHAR_W)) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, PF_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(power_factor_line_ascii(line_slot));
+            text_color      = WAVE_U_COLOR;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+// ç»åæ«ææææå­åºåï¼å½ä¸­ä¼åçº§ä¸è°ç¨é¡ºåºä¸è´ã
 always @(*) begin
     text_en         = 1'b0;
     text_font_small = 1'b0;
@@ -467,7 +975,10 @@ always @(*) begin
 
     try_big_text_region(TITLE_TXT_X, TITLE_TXT_Y, TITLE_LEN, TEXT_WHITE, TITLE_STR);
     try_big_text_region(BTN_TXT_X,   BTN_TXT_Y,   BTN_LEN,   TEXT_WHITE, BTN_STR);
-    try_big_text_region(AUTO_TXT_X,  AUTO_TXT_Y,  AUTO_LEN,  TEXT_WHITE, AUTO_STR);
+    if (freeze_active)
+        try_big_text_region(AUTO_AUTO_TXT_X, AUTO_TXT_Y, AUTO_AUTO_LEN, TEXT_WHITE, AUTO_AUTO_STR);
+    else
+        try_big_text_region(AUTO_FREEZE_TXT_X, AUTO_TXT_Y, AUTO_FREEZE_LEN, TEXT_WHITE, AUTO_FREEZE_STR);
     try_big_text_region(PLOT_TXT_X,  PLOT_TXT_Y,  PLOT_LEN,  TEXT_SOFT,  PLOT_STR);
 
     try_small_text_region(AXIS_V_X, AXIS_V_Y, AXIS_V_LEN, WAVE_U_COLOR, AXIS_V_STR);
@@ -475,20 +986,24 @@ always @(*) begin
     try_voltage_tick_region(V_TICK_X, V_TICK_Y0);
     try_current_tick_region(I_TICK_X, I_TICK_Y0);
 
-    try_small_text_region(AXIS_TICK0_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-40");
-    try_small_text_region(AXIS_TICK1_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-30");
-    try_small_text_region(AXIS_TICK2_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-20");
-    try_small_text_region(AXIS_TICK3_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-10");
+    try_small_text_region(AXIS_TICK0_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-60");
+    try_small_text_region(AXIS_TICK1_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-45");
+    try_small_text_region(AXIS_TICK2_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-30");
+    try_small_text_region(AXIS_TICK3_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-15");
     try_small_text_region(AXIS_TICK4_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "  0");
     try_small_text_region(AXIS_T_X, AXIS_T_Y, AXIS_T_LEN, TEXT_DIM, AXIS_T_STR);
 
     try_small_text_region(RP_TITLE_X, RP_TITLE_Y, RP_HEAD_LEN, ACCENT_COLOR, RP_HEAD_STR);
-    try_small_text_region(LEGEND1_X, LEGEND1_Y, LEGEND_U_LEN, WAVE_U_COLOR, LEGEND_U_STR);
-    try_small_text_region(LEGEND2_X, LEGEND2_Y, LEGEND_I_LEN, WAVE_I_COLOR, LEGEND_I_STR);
-    try_small_text_region(LINE_X, LINE_Y0, LINE1_LEN, TEXT_SOFT, LINE1_STR);
+    try_freq_line_region(LINE_X, LINE_Y0);
     try_u_rms_line_region(LINE_X, LINE_Y0 + LINE_STEP);
-    try_small_text_region(LINE_X, LINE_Y0 + (LINE_STEP * 2), LINE3_LEN, WAVE_I_COLOR, LINE3_STR);
-    try_small_text_region(LINE_X, LINE_Y0 + (LINE_STEP * 3), LINE4_LEN, TEXT_WHITE, LINE4_STR);
+    try_i_rms_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 2));
+    try_phase_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 3));
+    try_active_p_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 4));
+    try_reactive_q_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 5));
+    try_apparent_s_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 6));
+    try_power_factor_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 7));
+    try_u_pp_line_region(U_PP_X, U_PP_Y);
+    try_i_pp_line_region(I_PP_X, I_PP_Y);
 end
 
 endmodule

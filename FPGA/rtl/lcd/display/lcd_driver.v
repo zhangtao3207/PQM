@@ -4,6 +4,12 @@
  *   LCD 时序驱动模块，生成像素坐标与有效数据输出信号。
  */
 
+/*
+ * 详细说明：
+ *   该模块负责 LCD 时序扫描。它根据 `lcd_id` 选择一组水平/垂直时序参数，
+ *   产生行场计数、有效显示窗口、数据请求以及最终的 RGB 输出。
+ *   当前工程采用 DE 模式，因此 HS/VS 固定为高电平。
+ */
 module lcd_driver(
     input                lcd_pclk,    
     input                rst_n,       
@@ -21,10 +27,12 @@ module lcd_driver(
     output               lcd_bl,      
     output               lcd_clk,     
     output               lcd_rst,     
-    output       [23:0]  lcd_rgb      
+    output       [23:0]  lcd_rgb,
+    output  reg          frame_done_toggle
     );
 
 
+// 不同 LCD 面板的时序参数表。
 parameter  H_SYNC_4342   =  11'd41;     
 parameter  H_BACK_4342   =  11'd2;      
 parameter  H_DISP_4342   =  11'd480;    
@@ -104,7 +112,7 @@ reg  [10:0] v_cnt  ;
 
 
 
-// This design keeps HS/VS high and uses DE mode output.
+// 当前工程统一使用 DE 模式，HS/VS 固定为高电平。
 assign  lcd_hs = 1'b1;        
 assign  lcd_vs = 1'b1;        
 
@@ -116,6 +124,7 @@ assign  lcd_rst= 1'b1;
 assign lcd_rgb = lcd_de ? pixel_data : 24'd0;
 
 
+// 根据 data_req 生成当前有效区内的横向像素坐标。
 always@ (posedge lcd_pclk or negedge rst_n) begin
     if(!rst_n)
         pixel_xpos <= 11'd0;
@@ -126,6 +135,7 @@ always@ (posedge lcd_pclk or negedge rst_n) begin
 end
    
 
+// 根据当前扫描行生成纵向像素坐标。
 always@ (posedge lcd_pclk or negedge rst_n) begin
     if(!rst_n)
         pixel_ypos <= 11'd0;
@@ -136,7 +146,7 @@ always@ (posedge lcd_pclk or negedge rst_n) begin
 end
 
 
-// Timing profile selection by LCD ID.
+// 根据 LCD ID 选择匹配的扫描时序。
 always @(*) begin
     case(lcd_id)
         16'h4342 : begin
@@ -203,6 +213,7 @@ always @(*) begin
 end
     
 
+// `lcd_de` 直接跟随有效像素请求。
 always@ (posedge lcd_pclk or negedge rst_n) begin
     if(!rst_n)  
         lcd_de <= 1'b0;
@@ -211,7 +222,7 @@ always@ (posedge lcd_pclk or negedge rst_n) begin
 end
                   
 
-// Request pixel data exactly in the active video window (with pipeline offset).
+// 仅在有效显示区内向上层请求像素数据。
 always@ (posedge lcd_pclk or negedge rst_n) begin
     if(!rst_n)  
         data_req <=1'b0;
@@ -223,6 +234,7 @@ always@ (posedge lcd_pclk or negedge rst_n) begin
 end
                   
 
+// 水平计数器：扫描整行周期。
 always@ (posedge lcd_pclk or negedge rst_n) begin
     if(!rst_n) 
         h_cnt <= 11'd0;
@@ -235,14 +247,17 @@ always@ (posedge lcd_pclk or negedge rst_n) begin
 end
 
 
+// 垂直计数器：在每行结束时推进到下一行。
 always@ (posedge lcd_pclk or negedge rst_n) begin
-    if(!rst_n) 
+    if(!rst_n) begin
         v_cnt <= 11'd0;
-    else begin
+        frame_done_toggle <= 1'b0;
+    end else begin
         if(h_cnt == h_total - 11'b1) begin
-            if(v_cnt == v_total - 11'b1)
+            if(v_cnt == v_total - 11'b1) begin
                 v_cnt <= 11'd0;
-            else
+                frame_done_toggle <= ~frame_done_toggle;
+            end else
                 v_cnt <= v_cnt + 11'b1;    
         end
     end    

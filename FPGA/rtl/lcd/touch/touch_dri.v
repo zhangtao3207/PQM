@@ -4,6 +4,11 @@
  *   触摸协议状态机，负责复位、芯片识别、状态轮询与坐标读取。
  */
 
+/*
+ * 详细说明：
+ *   本模块是触摸芯片协议层。它会识别 FT/GT 系列器件，完成上电复位、
+ *   版本读取、运行参数配置、触摸状态轮询以及坐标读取。
+ */
 module touch_dri #(parameter   WIDTH = 4'd8) 
 (
     input                   clk          , 
@@ -51,7 +56,7 @@ localparam GT_BIT_CTRL      = 1'b1;
 localparam GT_STATE_REG     = 16'h814E;  
 localparam GT_TP1_REG       = 16'h8150;  
 
-// Top-level touch control states.
+// 触摸控制主状态机编码。
 localparam st_idle          = 7'b000_0001;
 localparam st_init          = 7'b000_0010;
 localparam st_get_id        = 7'b000_0100;
@@ -88,7 +93,7 @@ wire          touch_int_in ;
 
 
 
-// INT pin is bidirectional on some touch chips.
+// 某些触摸芯片的 INT 引脚既用于中断，也参与上电握手，因此需要双向控制。
 assign touch_int = touch_int_dir ? touch_int_out : 1'bz;
 assign touch_int_in = touch_int;
 
@@ -123,7 +128,7 @@ always @ (posedge clk or negedge rst_n) begin
 end
 
 
-// FSM transition control.
+// 主状态机跳转逻辑。
 always @(*) begin
     case(cur_state)
         st_idle : begin
@@ -149,7 +154,7 @@ always @(*) begin
                 next_state = st_get_id;
         end       
         st_cfg_reg : begin
-                // FT-only runtime parameter configuration with retry on NACK.
+                // FT 系列芯片运行参数配置；若器件 NACK，则回退重试。
             if(st_done)
                 next_state = st_check_touch;
             else
@@ -162,14 +167,14 @@ always @(*) begin
                 next_state = st_check_touch;
         end
         st_get_coord : begin
-                // Burst read 4 bytes: Xl, Xh, Yl, Yh (chip-dependent packing).
+                // 连续读出 4 字节坐标数据，具体拼接顺序由芯片协议决定。
             if(st_done)
                 next_state = st_coord_handle;
             else
                 next_state = st_get_coord;
         end
         st_coord_handle : begin
-                // Normalize FT/GT coordinate format to unified {x,y}.
+                // 把 FT/GT 不同寄存器格式统一整理成 {x, y}。
             if(st_done)
                 next_state = st_check_touch;
             else

@@ -6,6 +6,11 @@
 
 `include "touch_state.v"
 
+/*
+ * 详细说明：
+ *   这是触摸子系统顶层封装，负责把 I2C 事务层、触摸芯片协议层和
+ *   手势状态层连接起来，对上层输出统一的坐标与触摸事件接口。
+ */
 module touch_top(
     input             clk        , 
     input             rst_n      , 
@@ -34,7 +39,7 @@ module touch_top(
 );
 
 
-// System clock for I2C driver timing generation.
+// 触摸链顶层公共参数。
 parameter CLK_FREQ    = 50_000_000   ;  
 parameter I2C_FREQ    = 250_000      ;  
 parameter REG_NUM_WID = 8            ;  
@@ -59,7 +64,7 @@ wire                    touch_valid    ;
 
 
 
-// Generic I2C bus transaction engine.
+// 通用 I2C 事务层。
 i2c_dri  #(
     .CLK_FREQ      (CLK_FREQ     ),
     .I2C_FREQ      (I2C_FREQ     ),
@@ -87,7 +92,7 @@ i2c_dri  #(
     );
 
 
-// Touch-chip specific control/state machine.
+// 触摸芯片协议层。
 touch_dri  #(
     .WIDTH         (REG_NUM_WID   )
      )
@@ -115,6 +120,7 @@ touch_dri  #(
     .touch_int     (touch_int     )
     );
 
+// 高层手势状态层。
 touch_state #(
     .CLK_FREQ_HZ   (I2C_FREQ * 4)
 ) u_touch_state(

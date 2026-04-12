@@ -4,6 +4,11 @@
  *   并行产生多种像素时钟并按 LCD ID 选择输出。
  */
 
+/*
+ * 详细说明：
+ *   通过对系统时钟做二分频、四分频，再结合 LCD 面板 ID 查表，
+ *   给显示链输出合适的像素时钟 `lcd_pclk`。
+ */
 module clk_div(
     input               clk,          
     input               rst_n,
@@ -15,7 +20,7 @@ reg          clk_25m;
 reg          clk_12_5m;
 reg          div_4_cnt;
 
-// Divide-by-2 clock generator.
+// 二分频时钟。
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
         clk_25m <= 1'b0;
@@ -23,7 +28,7 @@ always @(posedge clk or negedge rst_n) begin
         clk_25m <= ~clk_25m;
 end
 
-// Divide-by-4 clock generator.
+// 四分频时钟。
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         div_4_cnt <= 1'b0;
@@ -38,7 +43,7 @@ always @(posedge clk or negedge rst_n) begin
     end        
 end
 
-// Pixel clock selection table by panel ID.
+// 根据 LCD ID 选择匹配的像素时钟。
 always @(*) begin
     case(lcd_id)
         16'h4342 : lcd_pclk = clk_12_5m;

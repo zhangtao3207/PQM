@@ -1,11 +1,7 @@
 
 //模块：串口模块顶层
 //功能：将UART发送和接收功能进行集成封装
-module uart #(
-    parameter integer CLK_FREQ     = 50_000_000,
-    parameter integer UART_BPS     = 115200,
-    parameter integer BAUD_CNT_MAX = CLK_FREQ / UART_BPS
-)(
+module uart (
     input  wire       clk,
     input  wire       rst_n,
 
@@ -19,6 +15,10 @@ module uart #(
     output wire [7:0] rx_data,
     output wire       rx_done
 );
+
+parameter integer CLK_FREQ     = 50_000_000;
+parameter integer UART_BPS     = 115200;
+parameter integer BAUD_CNT_MAX = CLK_FREQ / UART_BPS;
 
 uart_rx #(
     .CLK_FREQ     (CLK_FREQ),

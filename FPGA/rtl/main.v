@@ -20,31 +20,40 @@ module main(
     output           lcd_rst_n,
     inout   [23:0]   lcd_rgb,
 
-    input    [7:0]   ad_data,
-    input            ad_otr,
-    output           ad_clk
-
-    // input            ad_busy,
-    // input            ad_frstdata,
-    // input   [15:0]   ad_data,
-    // output           ad_rst,
-    // output wire      ad_convst,
-    // output wire      ad_cs_n,
-    // output wire      ad_rd_n
+    output           OS1,
+    output           OS0,
+    output           OS2,
+    output           Convst,
+    output           RD,
+    output           RESET,
+    input            Busy,
+    output           cs,
+    output           Range,
+    input            Frstdata,
+    input            DB0,
+    input            DB1,
+    input            DB2,
+    input            DB3,
+    input            DB4,
+    input            DB5,
+    input            DB6,
+    input            DB7,
+    input            DB8,
+    input            DB9,
+    input            DB10,
+    input            DB11,
+    input            DB12,
+    input            DB13,
+    input            DB14,
+    input            DB15
 );
 
 //==========================================================================
 // Parameters
 //==========================================================================
-localparam integer CLK_FREQ               = 50_000_000;
-localparam integer UART_BPS               = 115200;
 
-// localparam integer ADC_RESET_HIGH_CYCLES   = 500;
-// localparam integer ADC_CONVST_LOW_CYCLES   = 20;
-// localparam integer ADC_RD_LOW_CYCLES       = 16;
-// localparam integer ADC_RD_HIGH_CYCLES      = 16;
-// localparam integer ADC_BUSY_TIMEOUT_CYCLES = 100000;
-// localparam integer ADC_STARTUP_WAIT_CYCLES = 50000;
+
+localparam integer ADC_STARTUP_WAIT_CYCLES = 50000;
 
 //==========================================================================
 // Internal signals
@@ -68,8 +77,8 @@ wire  [4:0]  touch_state_bits;
 wire  [7:0]  uart_rx_data;
 wire         uart_rx_done;
 wire         uart_tx_busy;
-reg   [7:0]  uart_tx_data;
-reg          uart_tx_en;
+wire  [7:0]  uart_tx_data;
+wire         uart_tx_en;
 reg   [127:0] rx_line_ascii;
 reg   [3:0]  rx_pos;
 
@@ -78,27 +87,54 @@ wire         clk_25m;
 wire         clk_25m_deg120;
 wire         locked;
 wire         rst_n;
-wire  [7:0]  adc_zero_code;
-wire         adc_zero_code_valid;
-
-// wire [15:0]  AD_DATA_1;
-// wire [15:0]  AD_DATA_2;
-// wire [15:0]  AD_DATA_3;
-// wire [15:0]  AD_DATA_4;
-// wire [15:0]  AD_DATA_5;
-// wire [15:0]  AD_DATA_6;
-// wire [15:0]  AD_DATA_7;
-// wire [15:0]  AD_DATA_8;
-// wire [3:0]   AD_CHANNAL;
-// wire [2:0]   AD_STATE;
-// wire         adc_sample_active;
-// reg          adc_start;
-// reg          adc_idle_seen;
-// reg  [15:0]  adc_startup_wait_cnt;
-// wire         adc_startup_wait_done;
+wire [15:0]  AD_DATA_1;
+wire [15:0]  AD_DATA_2;
+wire [15:0]  AD_DATA_3;
+wire [15:0]  AD_DATA_4;
+wire [15:0]  AD_DATA_5;
+wire [15:0]  AD_DATA_6;
+wire [15:0]  AD_DATA_7;
+wire [15:0]  AD_DATA_8;
+wire [3:0]   AD_CHANNAL;
+wire [2:0]   AD_STATE;
+wire         adc_sample_active;
+wire         adc_frame_valid;
+wire         adc_timeout;
+wire [15:0]  adc_data_bus;
+wire         adc_startup_wait_done;
+wire         ad_reset_int;
+wire         ad_convst_int;
+wire         ad_cs_n_int;
+wire         ad_rd_n_int;
+wire         adc_u_wave_sample_valid;
+wire         adc_i_wave_sample_valid;
+wire [15:0]  adc_u_zero_code;
+wire [15:0]  adc_i_zero_code;
+wire         adc_u_zero_valid;
+wire         adc_i_zero_valid;
+reg          adc_start;
+reg          adc_idle_seen;
+reg  [15:0]  adc_startup_wait_cnt;
+reg  [15:0]  adc_u_wave_sample_code;
+reg  [15:0]  adc_i_wave_sample_code;
 
 assign rst_n                  = sys_rst_n & locked;
-// assign adc_startup_wait_done  = (adc_startup_wait_cnt >= ADC_STARTUP_WAIT_CYCLES - 1);
+assign adc_startup_wait_done  = (adc_startup_wait_cnt >= ADC_STARTUP_WAIT_CYCLES - 1);
+assign adc_data_bus           = {DB15, DB14, DB13, DB12, DB11, DB10, DB9, DB8,
+                                 DB7, DB6, DB5, DB4, DB3, DB2, DB1, DB0};
+assign adc_u_wave_sample_valid = adc_frame_valid;
+assign adc_i_wave_sample_valid = adc_frame_valid;
+assign uart_tx_data           = 8'h00;
+assign uart_tx_en             = 1'b0;
+
+assign OS0      = 1'b0;
+assign OS1      = 1'b0;
+assign OS2      = 1'b0;
+assign RESET    = ad_reset_int;
+assign Convst   = ad_convst_int;
+assign Range    = 1'b1;
+assign cs       = ad_cs_n_int;
+assign RD       = ad_rd_n_int;
 
 //==========================================================================
 // Function: sanitize_char
@@ -116,10 +152,7 @@ endfunction
 //==========================================================================
 // UART instance
 //==========================================================================
-uart #(
-    .CLK_FREQ(CLK_FREQ),
-    .UART_BPS(UART_BPS)
-) u_uart (
+uart u_uart (
     .clk      (sys_clk),
     .rst_n    (sys_rst_n),
     .uart_rxd (uart_rxd),
@@ -204,44 +237,6 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
 end
 
 //==========================================================================
-// ADC_TEMP absolute-voltage chain
-//==========================================================================
-adc_abs_voltage_top #(
-    .WIDTH         (8),
-    .AVERAGE_SHIFT (6),
-    .ZERO_CAL_SHIFT(10),
-    .FULL_SCALE_MV (5000)
-) u_adc_abs_voltage_top (
-    .sys_clk          (sys_clk),
-    .sys_rst_n        (rst_n),
-    .ad_data          (ad_data),
-    .ad_otr           (ad_otr),
-    .ad_clk           (ad_clk),
-    .avg_code         (),
-    .avg_valid        (),
-    .voltage_mv       (),
-    .voltage_valid    (),
-    .over_range       (),
-    .data_symbol      (),
-    .data_tens        (),
-    .data_units       (),
-    .data_decile      (),
-    .data_percentiles (),
-    .digits_valid     (),
-    .zero_code_out    (adc_zero_code),
-    .zero_code_valid_out(adc_zero_code_valid)
-);
-
-//==========================================================================
-// ADC disabled temporarily
-//==========================================================================
-// assign ad_rst    = 1'b0;
-// assign ad_convst = 1'b1;
-// assign ad_cs_n   = 1'b1;
-// assign ad_rd_n   = 1'b1;
-
-/*
-//==========================================================================
 // ADC start generator
 //==========================================================================
 always @(posedge sys_clk or negedge rst_n) begin
@@ -249,6 +244,8 @@ always @(posedge sys_clk or negedge rst_n) begin
         adc_start            <= 1'b0;
         adc_idle_seen        <= 1'b0;
         adc_startup_wait_cnt <= 16'd0;
+        adc_u_wave_sample_code <= 16'h8000;
+        adc_i_wave_sample_code <= 16'h8000;
     end else begin
         adc_start <= 1'b0;
 
@@ -261,30 +258,29 @@ always @(posedge sys_clk or negedge rst_n) begin
         end else if (adc_sample_active) begin
             adc_idle_seen <= 1'b0;
         end
+
+        if (adc_frame_valid) begin
+            adc_u_wave_sample_code <= AD_DATA_1 ^ 16'h8000;
+            adc_i_wave_sample_code <= AD_DATA_3 ^ 16'h8000;
+        end
     end
 end
 
 //==========================================================================
-// ADC instance: switched to parallel mode
+// ADC instance: AD7606 parallel mode
 //==========================================================================
-AD7606_Parallel_DRIVER #(
-    .RESET_HIGH_CYCLES  (ADC_RESET_HIGH_CYCLES),
-    .CONVST_LOW_CYCLES  (ADC_CONVST_LOW_CYCLES),
-    .RD_LOW_CYCLES      (ADC_RD_LOW_CYCLES),
-    .RD_HIGH_CYCLES     (ADC_RD_HIGH_CYCLES),
-    .BUSY_TIMEOUT_CYCLES(ADC_BUSY_TIMEOUT_CYCLES)
-) u_AD7606_Parallel_DRIVER (
+AD7606_Parallel_DRIVER  u_AD7606_Parallel_DRIVER (
     .clk          (sys_clk),
     .rst_n        (rst_n),
     .start        (adc_start),
     .soft_reset   (1'b0),
-    .ad_busy      (ad_busy),
-    .ad_frstdata  (ad_frstdata),
-    .ad_data      (ad_data),
-    .ad_reset     (ad_rst),
-    .ad_convst    (ad_convst),
-    .ad_cs_n      (ad_cs_n),
-    .ad_rd_n      (ad_rd_n),
+    .ad_busy      (Busy),
+    .ad_frstdata  (Frstdata),
+    .ad_data      (adc_data_bus),
+    .ad_reset     (ad_reset_int),
+    .ad_convst    (ad_convst_int),
+    .ad_cs_n      (ad_cs_n_int),
+    .ad_rd_n      (ad_rd_n_int),
     .ch1_data     (AD_DATA_1),
     .ch2_data     (AD_DATA_2),
     .ch3_data     (AD_DATA_3),
@@ -294,56 +290,41 @@ AD7606_Parallel_DRIVER #(
     .ch7_data     (AD_DATA_7),
     .ch8_data     (AD_DATA_8),
     .data_frame   (),
-    .data_valid   (),
+    .data_valid   (adc_frame_valid),
     .sample_active(adc_sample_active),
-    .timeout      (),
+    .timeout      (adc_timeout),
     .ad_channal   (AD_CHANNAL),
     .ad_state     (AD_STATE)
 );
 
 //==========================================================================
-// ILA debug instance
-// Probe order for the reconfigured ILA_ADC_DRIVER:
-// probe0  -> ad_rst
-// probe1  -> ad_convst
-// probe2  -> ad_rd_n
-// probe3  -> ad_cs_n
-// probe4  -> ad_busy
-// probe5  -> ad_frstdata
-// probe6  -> AD_DATA_1
-// probe7  -> AD_DATA_2
-// probe8  -> AD_DATA_3
-// probe9  -> AD_DATA_4
-// probe10 -> AD_DATA_5
-// probe11 -> AD_DATA_6
-// probe12 -> AD_DATA_7
-// probe13 -> AD_DATA_8
-// probe14 -> AD_CHANNAL
-// probe15 -> AD_STATE
-// Note:
-//   AD_CHANNAL is the dynamic binary channel number currently being read.
-//   AD_STATE uses 3 bits because the parallel controller currently has 7 states.
+// ADC zero-code tracker
 //==========================================================================
-ILA_ADC_DRIVER u_ila_adc_driver (
-    .clk    (sys_clk),
-    .probe0 (ad_rst),
-    .probe1 (ad_convst),
-    .probe2 (ad_rd_n),
-    .probe3 (ad_cs_n),
-    .probe4 (ad_busy),
-    .probe5 (ad_frstdata),
-    .probe6 (AD_DATA_1),
-    .probe7 (AD_DATA_2),
-    .probe8 (AD_DATA_3),
-    .probe9 (AD_DATA_4),
-    .probe10(AD_DATA_5),
-    .probe11(AD_DATA_6),
-    .probe12(AD_DATA_7),
-    .probe13(AD_DATA_8),
-    .probe14(AD_CHANNAL),
-    .probe15(AD_STATE)
+zero_code_tracker #(
+    .WIDTH          (16),
+    .EST_SHIFT      (8),
+    .WARMUP_SAMPLES (512)
+) u_adc_u_zero_code_tracker (
+    .clk           (sys_clk),
+    .rst_n         (rst_n),
+    .sample_valid  (adc_u_wave_sample_valid),
+    .sample_code   (adc_u_wave_sample_code),
+    .zero_code     (adc_u_zero_code),
+    .zero_valid    (adc_u_zero_valid)
 );
-*/
+
+zero_code_tracker #(
+    .WIDTH          (16),
+    .EST_SHIFT      (8),
+    .WARMUP_SAMPLES (512)
+) u_adc_i_zero_code_tracker (
+    .clk           (sys_clk),
+    .rst_n         (rst_n),
+    .sample_valid  (adc_i_wave_sample_valid),
+    .sample_code   (adc_i_wave_sample_code),
+    .zero_code     (adc_i_zero_code),
+    .zero_valid    (adc_i_zero_valid)
+);
 
 //==========================================================================
 // LCD display
@@ -357,10 +338,15 @@ lcd_rgb_char u_lcd_rgb_char (
     .touch_start_y      (touch_start_y),
     .touch_press_time_ms(touch_press_time_ms),
     .rx_line_ascii      (rx_line_ascii),
-    .wave_clk           (ad_clk),
-    .wave_sample_code   (ad_data),
-    .wave_zero_code     (adc_zero_code),
-    .wave_zero_valid    (adc_zero_code_valid),
+    .wave_clk           (sys_clk),
+    .u_wave_sample_valid(adc_u_wave_sample_valid),
+    .u_wave_sample_code (adc_u_wave_sample_code),
+    .u_wave_zero_code   (adc_u_zero_code),
+    .u_wave_zero_valid  (adc_u_zero_valid),
+    .i_wave_sample_valid(adc_i_wave_sample_valid),
+    .i_wave_sample_code (adc_i_wave_sample_code),
+    .i_wave_zero_code   (adc_i_zero_code),
+    .i_wave_zero_valid  (adc_i_zero_valid),
     .lcd_id             (lcd_id),
     .lcd_hs             (lcd_hs),
     .lcd_vs             (lcd_vs),

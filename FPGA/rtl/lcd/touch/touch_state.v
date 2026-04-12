@@ -7,6 +7,11 @@
  *   - 长按阈值默认 750ms
  *   - 拖动判定默认位移阈值 8 像素（曼哈顿距离）
  */
+/*
+ * 详细说明：
+ *   本模块把触摸协议层给出的 `touch_valid + touch_data` 整理成高层手势：
+ *   点击、长按、拖动，并记录起点、终点和按压时间。
+ */
 module touch_state #(
     parameter CLK_FREQ_HZ      = 50_000_000,
     parameter LONG_PRESS_MS    = 750,
@@ -61,6 +66,7 @@ wire        drag_hit  = (drag_dist >= DRAG_THRESH_PX);
 
 assign unpressed = ~pressed;
 
+// 对原始触摸有效信号做消抖，避免抖动造成多次边沿触发。
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         touch_valid_filt    <= 1'b0;
@@ -87,6 +93,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+// 根据稳定后的触摸状态生成点击、长按、拖动等高层事件。
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         pressed            <= 1'b0;

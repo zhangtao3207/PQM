@@ -1,10 +1,10 @@
 -- Copyright 1986-2018 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2018.3 (win64) Build 2405991 Thu Dec  6 23:38:27 MST 2018
--- Date        : Thu Apr  2 23:49:49 2026
+-- Date        : Mon Apr  6 22:26:54 2026
 -- Host        : DESKTOP-6DUCG5H running 64-bit major release  (build 9200)
--- Command     : write_vhdl -force -mode funcsim -rename_top blk_mem_gen_font_10x20 -prefix
---               blk_mem_gen_font_10x20_ blk_mem_gen_font_10x20_sim_netlist.vhdl
+-- Command     : write_vhdl -force -mode funcsim
+--               C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_10x20/blk_mem_gen_font_10x20_sim_netlist.vhdl
 -- Design      : blk_mem_gen_font_10x20
 -- Purpose     : This VHDL netlist is a functional simulation representation of the design and should not be modified or
 --               synthesized. This netlist cannot be used for SDF annotated simulation.
@@ -21,6 +21,8 @@ entity blk_mem_gen_font_10x20_blk_mem_gen_prim_wrapper_init is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_10x20_blk_mem_gen_prim_wrapper_init : entity is "blk_mem_gen_prim_wrapper_init";
 end blk_mem_gen_font_10x20_blk_mem_gen_prim_wrapper_init;
 
 architecture STRUCTURE of blk_mem_gen_font_10x20_blk_mem_gen_prim_wrapper_init is
@@ -77,14 +79,14 @@ begin
       INIT_09 => X"0000000000000020002000200020002000200010001000080008000804040402",
       INIT_0A => X"0204040204020402040202040138020404020402040202040138000000000000",
       INIT_0B => X"0132020A04060402040204020404020401380000000000000000000000000138",
-      INIT_0C => X"0110011000200020000000000000000000000000000001300208020400040002",
-      INIT_0D => X"00000000000000000000000000000E0E04040404020803380208020801100110",
+      INIT_0C => X"0028002800100010000000000000000000000000000001300208020400040002",
+      INIT_0D => X"00000000000000000000000000000707020202020104013C0104010400280028",
       INIT_0E => X"0000000000000F30040804040404040404040408073004100408040804080F30",
       INIT_0F => X"03020201040104000400040004000400020102010103003D0000000000000000",
       INIT_10 => X"020102010201020102010202020407380000000000000000000000000000003C",
       INIT_11 => X"0408040204040F3C000000000000000000000000000007380204020202010201",
       INIT_12 => X"00000000000000000000000000000F3C04040402040004000408040807380408",
-      INIT_13 => X"0000000000000E00040004000400040004080408073804080408040204040F3C",
+      INIT_13 => X"0000000000000700020002000200020002040204033C0204020402010202073E",
       INIT_14 => X"03020202040204020407040004000400040202020106003A0000000000000000",
       INIT_15 => X"0404073C040404040404040404040E0E0000000000000000000000000000003C",
       INIT_16 => X"002000200020073C00000000000000000000000000000E0E0404040404040404",
@@ -97,18 +99,18 @@ begin
       INIT_1D => X"0000000000000E04040C040C040C041404140424042405040504050406040E0E",
       INIT_1E => X"060C040408020802080208020802080208020404060C01300000000000000000",
       INIT_1F => X"0200033C02020201020102010202073C00000000000000000000000000000130",
-      INIT_20 => X"08020404060C0130000000000000000000000000000007000200020002000200",
-      INIT_21 => X"000000000000000000000004000A0138060C04140B2208020802080208020802",
-      INIT_22 => X"0000000000000E06040404080408041004100420073004080404040404080F30",
+      INIT_20 => X"0401020203060038000000000000000000000000000007000200020002000200",
+      INIT_21 => X"0000000000000000000000020005003C0306020A053104010401040104010401",
+      INIT_22 => X"0000000000000703020202040204020802080210033802040202020202040738",
       INIT_23 => X"0608040404040004000800300300040004000404020C01340000000000000000",
-      INIT_24 => X"0020002000200020002008220822073C00000000000000000000000000000530",
-      INIT_25 => X"0202020202020707000000000000000000000000000001300020002000200020",
+      INIT_24 => X"0010001000100010001004110411033E00000000000000000000000000000530",
+      INIT_25 => X"0202020202020707000000000000000000000000000000380010001000100010",
       INIT_26 => X"0000000000000000000000000000003801040202020202020202020202020202",
       INIT_27 => X"0000000000000020002000200110011001100208020802080208040404040E0E",
       INIT_28 => X"020802080208051405140514051404240424042404240D360000000000000000",
       INIT_29 => X"0030002000300110010801080204070E00000000000000000000000000000208",
-      INIT_2A => X"0208040404040E0E0000000000000000000000000000070E0204020801080110",
-      INIT_2B => X"0000000000000000000000000000013000200020002000200020011001100208",
+      INIT_2A => X"01040202020207070000000000000000000000000000070E0204020801080110",
+      INIT_2B => X"0000000000000000000000000000013000200020002000100010002800280104",
       INIT_2C => X"000000000000073C02040202010001000020002000100008000804040204033E",
       INIT_2D => X"040D040404040324001C04040404033800000000000000000000000000000000",
       INIT_2E => X"0202020203040238020002000200060000000000000000000000000000000337",
@@ -277,6 +279,8 @@ entity blk_mem_gen_font_10x20_blk_mem_gen_prim_width is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_10x20_blk_mem_gen_prim_width : entity is "blk_mem_gen_prim_width";
 end blk_mem_gen_font_10x20_blk_mem_gen_prim_width;
 
 architecture STRUCTURE of blk_mem_gen_font_10x20_blk_mem_gen_prim_width is
@@ -300,6 +304,8 @@ entity blk_mem_gen_font_10x20_blk_mem_gen_generic_cstr is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_10x20_blk_mem_gen_generic_cstr : entity is "blk_mem_gen_generic_cstr";
 end blk_mem_gen_font_10x20_blk_mem_gen_generic_cstr;
 
 architecture STRUCTURE of blk_mem_gen_font_10x20_blk_mem_gen_generic_cstr is
@@ -323,6 +329,8 @@ entity blk_mem_gen_font_10x20_blk_mem_gen_top is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_10x20_blk_mem_gen_top : entity is "blk_mem_gen_top";
 end blk_mem_gen_font_10x20_blk_mem_gen_top;
 
 architecture STRUCTURE of blk_mem_gen_font_10x20_blk_mem_gen_top is
@@ -346,6 +354,8 @@ entity blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2_synth is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2_synth : entity is "blk_mem_gen_v8_4_2_synth";
 end blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2_synth;
 
 architecture STRUCTURE of blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2_synth is
@@ -578,6 +588,8 @@ entity blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2 is
   attribute C_WRITE_WIDTH_B of blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2 : entity is 12;
   attribute C_XDEVICEFAMILY : string;
   attribute C_XDEVICEFAMILY of blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2 : entity is "zynq";
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2 : entity is "blk_mem_gen_v8_4_2";
   attribute downgradeipidentifiedwarnings : string;
   attribute downgradeipidentifiedwarnings of blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2 : entity is "yes";
 end blk_mem_gen_font_10x20_blk_mem_gen_v8_4_2;

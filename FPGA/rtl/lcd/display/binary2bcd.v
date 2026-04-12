@@ -4,6 +4,12 @@
  *   将 16 位二进制数转换为 4 位 BCD 数据。
  */
 
+/*
+ * 详细说明：
+ *   本模块持续把输入 `data` 转换为 4 位 BCD 结果，适合坐标、时间、
+ *   有效值等十进制显示场景。实现采用硬件常见的 double-dabble 算法，
+ *   每轮先对各个 BCD 半字节做“>=5 加 3”修正，再整体左移一位。
+ */
 module binary2bcd(
     input   wire           sys_clk,
     input   wire           sys_rst_n,
@@ -21,7 +27,7 @@ reg [31:0]  data_shift;
 reg         shift_flag;             
 
 
-// Shift round counter.
+// 记录当前进行到第几轮移位/修正操作。
 always@(posedge sys_clk or negedge sys_rst_n)begin
     if(!sys_rst_n)
         cnt_shift <= 5'd0;
@@ -33,7 +39,7 @@ always@(posedge sys_clk or negedge sys_rst_n)begin
         cnt_shift <= cnt_shift;
 end
 
-// Double-dabble core: adjust then shift.
+// double-dabble 主体：先修正，再移位。
 always@(posedge sys_clk or negedge sys_rst_n)begin
     if(!sys_rst_n)
         data_shift <= 32'd0;
@@ -52,7 +58,7 @@ always@(posedge sys_clk or negedge sys_rst_n)begin
 end
 
 
-// Toggle adjust/shift sub-phase.
+// 在“修正”和“移位”两个子阶段之间交替切换。
 always@(posedge sys_clk or negedge sys_rst_n)begin
     if(!sys_rst_n)
         shift_flag <= 1'b0;
@@ -61,7 +67,7 @@ always@(posedge sys_clk or negedge sys_rst_n)begin
 end
 
 
-// Latch final BCD result after all shift rounds.
+// 所有轮次结束后，把最终 BCD 结果锁存到输出。
 always@(posedge sys_clk or negedge sys_rst_n)begin
     if(!sys_rst_n)
         bcd_data <= 16'd0;
