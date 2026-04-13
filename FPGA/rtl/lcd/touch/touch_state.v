@@ -1,16 +1,30 @@
 `ifndef TOUCH_STATE_V
 `define TOUCH_STATE_V
 /*
- * Module: touch_state
+ * 模块: touch_state
  * 功能:
- *   基于触摸坐标与触摸有效信号，输出按下/松开/点击/长按/拖动状态。
- *   - 长按阈值默认 750ms
- *   - 拖动判定默认位移阈值 8 像素（曼哈顿距离）
- */
-/*
- * 详细说明：
- *   本模块把触摸协议层给出的 `touch_valid + touch_data` 整理成高层手势：
- *   点击、长按、拖动，并记录起点、终点和按压时间。
+ *   触摸状态解析模块，将坐标流转换为按下、点击、长按和拖拽状态。
+ *
+ * 输入:
+ *   clk: 系统时钟。
+ *   rst_n: 低有效复位信号。
+ *   touch_valid: 触摸坐标有效标志。
+ *   touch_data: 触摸坐标打包数据。
+ *
+ * 输出:
+ *   pressed: 触摸按下状态。
+ *   unpressed: 触摸释放状态。
+ *   click_pulse: 触摸点击脉冲。
+ *   long_press_pulse: 触摸长按脉冲。
+ *   drag_pulse: 触摸拖拽脉冲。
+ *   click_state: 触摸点击状态。
+ *   long_press_state: 触摸长按状态。
+ *   drag_state: 触摸拖拽状态。
+ *   start_x: 触摸起点 X 坐标。
+ *   start_y: 触摸起点 Y 坐标。
+ *   end_x: 触摸终点 X 坐标。
+ *   end_y: 触摸终点 Y 坐标。
+ *   press_time_ms: 按压时长，单位 ms。
  */
 module touch_state #(
     parameter CLK_FREQ_HZ      = 50_000_000,

@@ -1,14 +1,15 @@
 /*
- * Module: binary2bcd
+ * 模块: binary2bcd
  * 功能:
- *   将 16 位二进制数转换为 4 位 BCD 数据。
- */
-
-/*
- * 详细说明：
- *   本模块持续把输入 `data` 转换为 4 位 BCD 结果，适合坐标、时间、
- *   有效值等十进制显示场景。实现采用硬件常见的 double-dabble 算法，
- *   每轮先对各个 BCD 半字节做“>=5 加 3”修正，再整体左移一位。
+ *   将 16 位二进制数转换为 4 位 BCD 显示码。
+ *
+ * 输入:
+ *   sys_clk: 系统时钟。
+ *   sys_rst_n: 低有效系统复位信号。
+ *   data: 待转换的 16 位二进制输入。
+ *
+ * 输出:
+ *   bcd_data: BCD 编码结果。
  */
 module binary2bcd(
     input   wire           sys_clk,

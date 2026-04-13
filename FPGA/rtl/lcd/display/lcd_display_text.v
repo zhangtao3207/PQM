@@ -1,16 +1,72 @@
 /*
- * Module: lcd_display_text
- * Function:
- *   Decode the current pixel into a text cell, font size, glyph index and
- *   color. The module keeps the screen wording in one place and matches the
- *   current lcd.html preview layout.
- */
-/*
- * è¯¦ç»è¯´æï¼
- *   æ¬æ¨¡åç»´æ¤é¡µé¢ä¸æææå­åå®¹ãå®æ ¹æ®åç´ åæ å¤æ­å½ååç´ æ¯å¦è½å¨
- *   æä¸ªææ¬åºåï¼å¹¶è¾åºå¯¹åºçå­ä½å¤§å°ãå­ç¬¦ç´¢å¼ãå­ååæ åé¢è²ã
- *   å¨ææ°æ®å¦ FrequencyãU_rmsãI_rmsãPhase DiffãUppãIpp ä¹å¨æ­¤
- *   è¢«æ¼æ¥æå­ç¬¦æµã
+ * 模块: lcd_display_text
+ * 功能:
+ *   根据测量结果和界面布局生成 LCD 文本层字符信息。
+ *
+ * 输入:
+ *   pixel_xpos: 当前扫描像素的 X 坐标。
+ *   pixel_ypos: 当前扫描像素的 Y 坐标。
+ *   u_rms_tens: 信号。
+ *   u_rms_units: 信号。
+ *   u_rms_decile: 信号。
+ *   u_rms_percentiles: 信号。
+ *   u_rms_digits_valid: 有效标志。
+ *   i_rms_tens: 信号。
+ *   i_rms_units: 信号。
+ *   i_rms_decile: 信号。
+ *   i_rms_percentiles: 信号。
+ *   i_rms_digits_valid: 有效标志。
+ *   phase_neg: 信号。
+ *   phase_hundreds: 信号。
+ *   phase_tens: 信号。
+ *   phase_units: 信号。
+ *   phase_decile: 信号。
+ *   phase_percentiles: 信号。
+ *   phase_valid: 有效标志。
+ *   freq_hundreds: 信号。
+ *   freq_tens: 信号。
+ *   freq_units: 信号。
+ *   freq_decile: 信号。
+ *   freq_percentiles: 信号。
+ *   freq_valid: 有效标志。
+ *   u_pp_tens: 信号。
+ *   u_pp_units: 信号。
+ *   u_pp_decile: 信号。
+ *   u_pp_percentiles: 信号。
+ *   u_pp_digits_valid: 有效标志。
+ *   i_pp_tens: 信号。
+ *   i_pp_units: 信号。
+ *   i_pp_decile: 信号。
+ *   i_pp_percentiles: 信号。
+ *   i_pp_digits_valid: 有效标志。
+ *   active_p_neg: 信号。
+ *   active_p_tens: 信号。
+ *   active_p_units: 信号。
+ *   active_p_decile: 信号。
+ *   active_p_percentiles: 信号。
+ *   reactive_q_neg: 信号。
+ *   reactive_q_tens: 信号。
+ *   reactive_q_units: 信号。
+ *   reactive_q_decile: 信号。
+ *   reactive_q_percentiles: 信号。
+ *   apparent_s_tens: 信号。
+ *   apparent_s_units: 信号。
+ *   apparent_s_decile: 信号。
+ *   apparent_s_percentiles: 信号。
+ *   power_factor_neg: 信号。
+ *   power_factor_units: 信号。
+ *   power_factor_decile: 信号。
+ *   power_factor_percentiles: 信号。
+ *   power_metrics_valid: 有效标志。
+ *   freeze_active: 信号。
+ *
+ * 输出:
+ *   text_en: 使能信号。
+ *   text_font_small: 信号。
+ *   text_char_idx: 信号。
+ *   text_rel_x: 信号。
+ *   text_rel_y: 信号。
+ *   text_color: 信号。
  */
 module lcd_display_text(
     input      [10:0] pixel_xpos,
@@ -76,13 +132,13 @@ module lcd_display_text(
     output reg [23:0] text_color
 );
 
-// ä¸¤å¥å­å·çåºç¡å°ºå¯¸ã
+// 盲赂陇氓楼聴氓颅聴氓聫路莽職聞氓聼潞莽隆聙氓掳潞氓炉赂茫聙聜
 localparam [5:0] BIG_CHAR_W   = 6'd16;
 localparam [5:0] BIG_CHAR_H   = 6'd32;
 localparam [5:0] SMALL_CHAR_W = 6'd10;
 localparam [5:0] SMALL_CHAR_H = 6'd20;
 
-// å­åºç´¢å¼å®ä¹ï¼éä¸å­ä½ ROM æä»¶ä¿æä¸è´ã
+// 氓颅聴氓潞聯莽麓垄氓录聲氓庐職盲鹿聣茂录聦茅聹聙盲赂聨氓颅聴盲陆聯 ROM 忙聳聡盲禄露盲驴聺忙聦聛盲赂聙猫聡麓茫聙聜
 localparam [6:0] FONT_BLANK      = 7'd127;
 localparam [6:0] FONT_DIGIT_BASE = 7'd0;
 localparam [6:0] FONT_UPPER_BASE = 7'd10;
@@ -95,7 +151,7 @@ localparam [6:0] FONT_MINUS      = 7'd75;
 localparam [6:0] FONT_DOT        = 7'd84;
 localparam [6:0] FONT_COLON      = 7'd89;
 
-// æå­é¢è²å®ä¹ã
+// 忙聳聡氓颅聴茅垄聹猫聣虏氓庐職盲鹿聣茫聙聜
 localparam [23:0] TEXT_WHITE   = 24'hF2F6FA;
 localparam [23:0] TEXT_SOFT    = 24'hC6D3E2;
 localparam [23:0] TEXT_DIM     = 24'h95A9BE;
@@ -103,7 +159,7 @@ localparam [23:0] WAVE_U_COLOR = 24'h39E46F;
 localparam [23:0] WAVE_I_COLOR = 24'hFFD84E;
 localparam [23:0] ACCENT_COLOR = 24'h58B6FF;
 
-// åææ¬åå¨å±å¹ä¸çèµ·å§ä½ç½®ã
+// 氓聬聞忙聳聡忙聹卢氓聺聴氓聹篓氓卤聫氓鹿聲盲赂聤莽職聞猫碌路氓搂聥盲陆聧莽陆庐茫聙聜
 localparam [10:0] TITLE_TXT_X  = 11'd32;
 localparam [10:0] TITLE_TXT_Y  = 11'd6;
 localparam [10:0] BTN_TXT_X    = 11'd583;
@@ -176,7 +232,7 @@ localparam [8*RP_HEAD_LEN-1:0] RP_HEAD_STR = "Parameters";
 integer line_slot;
 integer tick_slot;
 
-// ASCII å°å­ä½ç´¢å¼çç»ä¸æ å°ã
+// ASCII 氓聢掳氓颅聴盲陆聯莽麓垄氓录聲莽職聞莽禄聼盲赂聙忙聵聽氓掳聞茫聙聜
 function [6:0] ascii_to_idx;
     input [7:0] ch;
     begin
@@ -324,7 +380,7 @@ function [7:0] power_factor_line_ascii;
     end
 endfunction
 
-// åè¿å¶æ°å­è½¬ ASCIIï¼å¼å¸¸è¾å¥åéä¸º '-'.
+// 氓聧聛猫驴聸氓聢露忙聲掳氓颅聴猫陆卢 ASCII茂录聸氓录聜氓赂赂猫戮聯氓聟楼氓聸聻茅聙聙盲赂潞 '-'.
 function [7:0] digit_to_ascii;
     input [7:0] digit;
     begin
@@ -335,7 +391,7 @@ function [7:0] digit_to_ascii;
     end
 endfunction
 
-// ä»å®é¿å­ç¬¦ä¸²ä¸­ååºæå®æ§½ä½å­ç¬¦ã
+// 盲禄聨氓庐職茅聲驴氓颅聴莽卢娄盲赂虏盲赂颅氓聫聳氓聡潞忙聦聡氓庐職忙搂陆盲陆聧氓颅聴莽卢娄茫聙聜
 function [7:0] text_char_from_str;
     input [8*MAX_TEXT_LEN-1:0] str_value;
     input integer text_len;
@@ -348,7 +404,7 @@ function [7:0] text_char_from_str;
     end
 endfunction
 
-// å·¦ä¾§çµåå»åº¦ææ¬æ¥è¡¨ã
+// 氓路娄盲戮搂莽聰碌氓聨聥氓聢禄氓潞娄忙聳聡忙聹卢忙聼楼猫隆篓茫聙聜
 function [7:0] voltage_tick_ascii;
     input integer tick_index;
     input integer char_slot;
@@ -366,7 +422,7 @@ function [7:0] voltage_tick_ascii;
     end
 endfunction
 
-// å³ä¾§çµæµå»åº¦ææ¬æ¥è¡¨ã
+// 氓聫鲁盲戮搂莽聰碌忙碌聛氓聢禄氓潞娄忙聳聡忙聹卢忙聼楼猫隆篓茫聙聜
 function [7:0] current_tick_ascii;
     input integer tick_index;
     input integer char_slot;
@@ -384,7 +440,7 @@ function [7:0] current_tick_ascii;
     end
 endfunction
 
-// Frequency è¡å¨æå­ç¬¦çæã
+// Frequency 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
 function [7:0] freq_line_ascii;
     input integer char_slot;
     begin
@@ -416,7 +472,7 @@ function [7:0] freq_line_ascii;
     end
 endfunction
 
-// U_rms è¡å¨æå­ç¬¦çæã
+// U_rms 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
 function [7:0] u_rms_line_ascii;
     input integer char_slot;
     begin
@@ -442,7 +498,7 @@ function [7:0] u_rms_line_ascii;
     end
 endfunction
 
-// I_rms è¡å¨æå­ç¬¦çæã
+// I_rms 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
 function [7:0] i_rms_line_ascii;
     input integer char_slot;
     begin
@@ -468,7 +524,7 @@ function [7:0] i_rms_line_ascii;
     end
 endfunction
 
-// Phase Diff è¡å¨æå­ç¬¦çæï¼å½ååä½ä¸º degã
+// Phase Diff 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茂录聦氓陆聯氓聣聧氓聧聲盲陆聧盲赂潞 deg茫聙聜
 function [7:0] phase_line_ascii;
     input integer char_slot;
     begin
@@ -503,7 +559,7 @@ function [7:0] phase_line_ascii;
     end
 endfunction
 
-// Upp è¡å¨æå­ç¬¦çæã
+// Upp 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
 function [7:0] u_pp_line_ascii;
     input integer char_slot;
     begin
@@ -527,7 +583,7 @@ function [7:0] u_pp_line_ascii;
     end
 endfunction
 
-// Ipp è¡å¨æå­ç¬¦çæã
+// Ipp 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
 function [7:0] i_pp_line_ascii;
     input integer char_slot;
     begin
@@ -551,7 +607,7 @@ function [7:0] i_pp_line_ascii;
     end
 endfunction
 
-// å°å­å·ææ¬ï¼æ ¹æ®æ¨ªååç§»ç¡®å®å­ç¬¦æ§½ä½ã
+// 氓掳聫氓颅聴氓聫路忙聳聡忙聹卢茂录職忙聽鹿忙聧庐忙篓陋氓聬聭氓聛聫莽搂禄莽隆庐氓庐職氓颅聴莽卢娄忙搂陆盲陆聧茫聙聜
 function integer small_text_slot;
     input [10:0] delta_x;
     input integer text_len;
@@ -658,7 +714,7 @@ function [5:0] current_tick_rel_y;
     end
 endfunction
 
-// å°è¯å½ä¸­ä¸å 16x32 ææ¬åºåã
+// 氓掳聺猫炉聲氓聭陆盲赂颅盲赂聙氓聺聴 16x32 忙聳聡忙聹卢氓聦潞氓聼聼茫聙聜
 task try_big_text_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -682,7 +738,7 @@ task try_big_text_region;
     end
 endtask
 
-// å°è¯å½ä¸­ä¸å 10x20 ææ¬åºåã
+// 氓掳聺猫炉聲氓聭陆盲赂颅盲赂聙氓聺聴 10x20 忙聳聡忙聹卢氓聦潞氓聼聼茫聙聜
 task try_small_text_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -706,7 +762,7 @@ task try_small_text_region;
     end
 endtask
 
-// å°è¯å½ä¸­å·¦ä¾§çµåå»åº¦åºã
+// 氓掳聺猫炉聲氓聭陆盲赂颅氓路娄盲戮搂莽聰碌氓聨聥氓聢禄氓潞娄氓聦潞茫聙聜
 task try_voltage_tick_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -734,7 +790,7 @@ task try_voltage_tick_region;
     end
 endtask
 
-// å°è¯å½ä¸­å³ä¾§çµæµå»åº¦åºã
+// 氓掳聺猫炉聲氓聭陆盲赂颅氓聫鲁盲戮搂莽聰碌忙碌聛氓聢禄氓潞娄氓聦潞茫聙聜
 task try_current_tick_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -962,7 +1018,7 @@ task try_power_factor_line_region;
     end
 endtask
 
-// ç»åæ«ææææå­åºåï¼å½ä¸­ä¼åçº§ä¸è°ç¨é¡ºåºä¸è´ã
+// 莽禄聞氓聬聢忙聣芦忙聫聫忙聣聙忙聹聣忙聳聡氓颅聴氓聦潞氓聼聼茂录聦氓聭陆盲赂颅盲录聵氓聟聢莽潞搂盲赂聨猫掳聝莽聰篓茅隆潞氓潞聫盲赂聙猫聡麓茫聙聜
 always @(*) begin
     text_en         = 1'b0;
     text_font_small = 1'b0;

@@ -1,18 +1,38 @@
 `timescale 1ns / 1ps
 
-//==============================================================================
-// Module Name: AD7606_Parallel_DRIVER
-// Function:
-//   CM2248/AD7606 并行模式上层封装。
-//   当前版本固定：
-//   1. OS = 3'd0；
-//   2. RANGE = 1'b1。
-//   模块对外提供 ADC 控制口、8 路通道数据、整帧数据以及调试状态信号。
-//==============================================================================
 /*
- * 详细说明：
- *   AD7606 并行接口上层封装。负责例化底层控制器，并把整帧 128bit 数据
- *   拆分成 8 路 16bit 通道数据，供后级电压/电流处理链使用。
+ * 模块: AD7606_Parallel_DRIVER
+ * 功能:
+ *   AD7606 并行接口上层封装，输出各通道采样值和整帧数据。
+ *
+ * 输入:
+ *   clk: 系统时钟。
+ *   rst_n: 低有效复位信号。
+ *   start: 启动一次采样或处理流程。
+ *   soft_reset: 软复位脉冲。
+ *   ad_busy: AD7606 BUSY 输入。
+ *   ad_frstdata: AD7606 FRSTDATA 输入。
+ *   ad_data: AD7606 并行数据总线。
+ *
+ * 输出:
+ *   ad_reset: AD7606 RESET 输出。
+ *   ad_convst: AD7606 CONVST 输出。
+ *   ad_cs_n: AD7606 CS# 输出。
+ *   ad_rd_n: AD7606 RD# 输出。
+ *   ch1_data: 数据信号。
+ *   ch2_data: 数据信号。
+ *   ch3_data: 数据信号。
+ *   ch4_data: 数据信号。
+ *   ch5_data: 数据信号。
+ *   ch6_data: 数据信号。
+ *   ch7_data: 数据信号。
+ *   ch8_data: 数据信号。
+ *   data_frame: 8 通道采样拼接后的整帧数据。
+ *   data_valid: 整帧数据有效脉冲。
+ *   sample_active: 采样过程忙标志。
+ *   timeout: 采样异常超时标志。
+ *   ad_channal: 当前读出的 AD7606 通道号。
+ *   ad_state: AD7606 控制状态机状态。
  */
 module AD7606_Parallel_DRIVER (
     input  wire         clk,

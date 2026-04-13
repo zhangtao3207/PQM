@@ -1,14 +1,8 @@
 /*
- * Module: lcd_driver
+ * 模块: lcd_driver
  * 功能:
- *   LCD 时序驱动模块，生成像素坐标与有效数据输出信号。
- */
-
-/*
- * 详细说明：
- *   该模块负责 LCD 时序扫描。它根据 `lcd_id` 选择一组水平/垂直时序参数，
- *   产生行场计数、有效显示窗口、数据请求以及最终的 RGB 输出。
- *   当前工程采用 DE 模式，因此 HS/VS 固定为高电平。
+ *   LCD 时序驱动模块，产生扫描坐标、DE 和 RGB 输出。
+ *
  */
 module lcd_driver(
     input                lcd_pclk,    

@@ -1,6 +1,21 @@
-
-//模块：串口模块顶层
-//功能：将UART发送和接收功能进行集成封装
+/*
+ * 模块: uart
+ * 功能:
+ *   UART 收发顶层封装，统一参数后实例化接收器和发送器。
+ *
+ * 输入:
+ *   clk: 系统时钟。
+ *   rst_n: 低有效复位信号。
+ *   uart_rxd: UART 串行接收输入。
+ *   tx_en: 发送启动脉冲。
+ *   tx_data: 待发送字节数据。
+ *
+ * 输出:
+ *   uart_txd: UART 串行发送输出。
+ *   tx_busy: UART 发送忙标志。
+ *   rx_data: UART 接收字节数据。
+ *   rx_done: UART 接收完成脉冲。
+ */
 module uart (
     input  wire       clk,
     input  wire       rst_n,
@@ -20,6 +35,7 @@ parameter integer CLK_FREQ     = 50_000_000;
 parameter integer UART_BPS     = 115200;
 parameter integer BAUD_CNT_MAX = CLK_FREQ / UART_BPS;
 
+// UART 接收子模块，完成串行输入到字节数据的转换。
 uart_rx #(
     .CLK_FREQ     (CLK_FREQ),
     .UART_BPS     (UART_BPS),
@@ -32,6 +48,7 @@ uart_rx #(
     .uart_rx_done (rx_done)
 );
 
+// UART 发送子模块，将待发字节按 8N1 格式串行输出。
 uart_tx #(
     .CLK_FREQ     (CLK_FREQ),
     .UART_BPS     (UART_BPS),

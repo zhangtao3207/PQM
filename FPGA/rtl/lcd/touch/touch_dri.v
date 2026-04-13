@@ -1,13 +1,31 @@
 /*
- * Module: touch_dri
+ * 模块: touch_dri
  * 功能:
- *   触摸协议状态机，负责复位、芯片识别、状态轮询与坐标读取。
- */
-
-/*
- * 详细说明：
- *   本模块是触摸芯片协议层。它会识别 FT/GT 系列器件，完成上电复位、
- *   版本读取、运行参数配置、触摸状态轮询以及坐标读取。
+ *   触摸芯片协议控制层，负责初始化、轮询和坐标读取。
+ *
+ * 输入:
+ *   clk: 协议状态机时钟。
+ *   rst_n: 低有效复位信号。
+ *   i2c_data_r: I2C 读回数据。
+ *   i2c_ack: I2C 应答状态。
+ *   i2c_done: I2C 事务完成脉冲。
+ *   once_byte_done: 单字节传输完成脉冲。
+ *   lcd_id: LCD 面板 ID，用于区分不同触摸芯片方案。
+ *
+ * 输出:
+ *   slave_addr: I2C 从机地址。
+ *   i2c_exec: I2C 事务执行请求。
+ *   i2c_rh_wl: I2C 读写方向控制。
+ *   i2c_addr: I2C 寄存器地址。
+ *   i2c_data_w: I2C 写数据。
+ *   bit_ctrl: I2C 地址宽度控制位。
+ *   reg_num: 连续读写字节数。
+ *   data: 触摸坐标打包数据。
+ *   touch_valid: 触摸坐标有效标志。
+ *   touch_rst_n: 触摸芯片低有效复位输出。
+ *
+ * 双向:
+ *   touch_int: 触摸中断/握手双向引脚。
  */
 module touch_dri #(parameter   WIDTH = 4'd8) 
 (

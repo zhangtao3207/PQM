@@ -9,136 +9,35 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="441000fs"></ZoomStartTime>
-      <ZoomEndTime time="1193001fs"></ZoomEndTime>
-      <Cursor1Time time="741000fs"></Cursor1Time>
+      <ZoomStartTime time="752000fs"></ZoomStartTime>
+      <ZoomEndTime time="2260001fs"></ZoomEndTime>
+      <Cursor1Time time="1024000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="323"></NameColumnWidth>
-      <ValueColumnWidth column_width="72"></ValueColumnWidth>
+      <NameColumnWidth column_width="585"></NameColumnWidth>
+      <ValueColumnWidth column_width="134"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="16" />
+   <WVObjectSize size="3" />
    <wave_markers>
    </wave_markers>
-   <wvobject fp_name="ad_busy_IBUF" type="logic">
+   <wvobject fp_name="u_lcd_rgb_char/u_lcd_display/u_text_display_preprocess/rms_digits_valid" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">ad_busy_IBUF</obj_property>
-      <obj_property name="ObjectShortName">ad_busy_IBUF</obj_property>
+      <obj_property name="ElementShortName">u_lcd_rgb_char/u_lcd_display/u_text_display_preprocess/rms_digits_valid</obj_property>
+      <obj_property name="ObjectShortName">rms_digits_valid</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="ad_convst_OBUF" type="logic">
+   <wvobject fp_name="u_lcd_rgb_char/u_lcd_display/u_text_display_preprocess/base_commit_valid" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">ad_convst_OBUF</obj_property>
-      <obj_property name="ObjectShortName">ad_convst_OBUF</obj_property>
+      <obj_property name="ElementShortName">u_lcd_rgb_char/u_lcd_display/u_text_display_preprocess/base_commit_valid</obj_property>
+      <obj_property name="ObjectShortName">base_commit_valid</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="ad_rd_n_OBUF" type="logic">
+   <wvobject fp_name="u_lcd_rgb_char/u_lcd_display/u_text_display_preprocess/text_result_commit_toggle" type="logic">
       <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">ad_rd_n_OBUF</obj_property>
-      <obj_property name="ObjectShortName">ad_rd_n_OBUF</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="ad_rst_OBUF" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">ad_rst_OBUF</obj_property>
-      <obj_property name="ObjectShortName">ad_rst_OBUF</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="ad_cs_n_OBUF" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">ad_cs_n_OBUF</obj_property>
-      <obj_property name="ObjectShortName">ad_cs_n_OBUF</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_STATE" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_STATE[2:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_STATE[2:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_CHANNAL" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_CHANNAL[3:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_CHANNAL[3:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_1" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_1[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_1[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_2" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_2[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_2[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_3" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_3[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_3[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_4" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_4[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_4[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_5" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_5[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_5[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_6" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_6[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_6[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_7" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_7[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_7[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="AD_DATA_8" type="array">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">AD_DATA_8[15:0]</obj_property>
-      <obj_property name="ObjectShortName">AD_DATA_8[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-      <obj_property name="LABELRADIX">true</obj_property>
-      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
-   </wvobject>
-   <wvobject fp_name="ad_frstdata_IBUF" type="logic">
-      <obj_property name="DisplayName">FullPathName</obj_property>
-      <obj_property name="ElementShortName">ad_frstdata_IBUF</obj_property>
-      <obj_property name="ObjectShortName">ad_frstdata_IBUF</obj_property>
+      <obj_property name="ElementShortName">u_lcd_rgb_char/u_lcd_display/u_text_display_preprocess/text_result_commit_toggle</obj_property>
+      <obj_property name="ObjectShortName">text_result_commit_toggle</obj_property>
       <obj_property name="LABELRADIX">true</obj_property>
       <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>

@@ -1,26 +1,47 @@
-/*
- * Module: touch_top
- * 功能:
- *   触摸子系统封装，连接 I2C 驱动和触摸协议状态机。
- */
-
 `include "touch_state.v"
 
 /*
- * 详细说明：
- *   这是触摸子系统顶层封装，负责把 I2C 事务层、触摸芯片协议层和
- *   手势状态层连接起来，对上层输出统一的坐标与触摸事件接口。
+ * 模块: touch_top
+ * 功能:
+ *   触摸子系统顶层，连接 I2C 驱动、协议层和触摸状态机。
+ *
+ * 输入:
+ *   clk: 系统时钟。
+ *   rst_n: 低有效复位信号。
+ *   lcd_id: LCD 面板 ID。
+ *
+ * 输出:
+ *   touch_rst_n: 触摸芯片低有效复位输出。
+ *   touch_scl: 触摸 I2C SCL 输出。
+ *   data: 触摸坐标打包数据。
+ *   touch_pressed: 触摸按下状态。
+ *   touch_unpressed: 触摸释放状态。
+ *   touch_click: 触摸点击脉冲。
+ *   touch_long_press: 触摸长按脉冲。
+ *   touch_drag: 触摸拖拽脉冲。
+ *   touch_click_state: 触摸点击状态位。
+ *   touch_long_state: 触摸长按状态位。
+ *   touch_drag_state: 触摸拖拽状态位。
+ *   touch_start_x: 触摸起点 X 坐标。
+ *   touch_start_y: 触摸起点 Y 坐标。
+ *   touch_end_x: 触摸终点 X 坐标。
+ *   touch_end_y: 触摸终点 Y 坐标。
+ *   touch_press_time_ms: 当前按压持续时间，单位 ms。
+ *
+ * 双向:
+ *   touch_int: 触摸中断/握手双向引脚。
+ *   touch_sda: 触摸 I2C SDA 双向信号。
  */
 module touch_top(
-    input             clk        , 
-    input             rst_n      , 
-    
-    output            touch_rst_n, 
-    inout             touch_int  , 
-    output            touch_scl  , 
-    inout             touch_sda,   
-    
-    input     [15:0]  lcd_id     , 
+    input             clk        ,
+    input             rst_n      ,
+
+    output            touch_rst_n,
+    inout             touch_int  ,
+    output            touch_scl  ,
+    inout             touch_sda,
+
+    input     [15:0]  lcd_id     ,
     output    [31:0]  data       ,
 
     output            touch_pressed    ,
@@ -38,42 +59,35 @@ module touch_top(
     output    [15:0]  touch_press_time_ms
 );
 
-
 // 触摸链顶层公共参数。
-parameter CLK_FREQ    = 50_000_000   ;  
-parameter I2C_FREQ    = 250_000      ;  
-parameter REG_NUM_WID = 8            ;  
+parameter CLK_FREQ    = 50_000_000   ;
+parameter I2C_FREQ    = 250_000      ;
+parameter REG_NUM_WID = 8            ;
 
-
-wire  [6:0]             slave_addr     ;  
-wire                    i2c_exec       ;  
-wire                    i2c_rh_wl      ;  
-wire  [15:0]            i2c_addr       ;  
-wire  [7:0]             i2c_data_w     ;  
-wire                    bit_ctrl       ;  
-wire  [REG_NUM_WID-1:0] reg_num        ;  
-wire  [7:0]             i2c_data_r     ;  
-wire                    i2c_done       ;  
-wire                    once_byte_done ;  
-wire                    i2c_ack        ;  
-wire                    dri_clk        ;  
+wire  [6:0]             slave_addr     ;
+wire                    i2c_exec       ;
+wire                    i2c_rh_wl      ;
+wire  [15:0]            i2c_addr       ;
+wire  [7:0]             i2c_data_w     ;
+wire                    bit_ctrl       ;
+wire  [REG_NUM_WID-1:0] reg_num        ;
+wire  [7:0]             i2c_data_r     ;
+wire                    i2c_done       ;
+wire                    once_byte_done ;
+wire                    i2c_ack        ;
+wire                    dri_clk        ;
 wire                    touch_valid    ;
 
-
-
-
-
-
 // 通用 I2C 事务层。
-i2c_dri  #(
+i2c_dri #(
     .CLK_FREQ      (CLK_FREQ     ),
     .I2C_FREQ      (I2C_FREQ     ),
     .WIDTH         (REG_NUM_WID  )
     )
-    u_i2c_dri(   
+    u_i2c_dri(
     .clk           (clk          ),
     .rst_n         (rst_n        ),
-                                 
+
     .slave_addr    (slave_addr    ),
     .i2c_exec      (i2c_exec      ),
     .i2c_rh_wl     (i2c_rh_wl     ),
@@ -88,18 +102,17 @@ i2c_dri  #(
     .sda           (touch_sda     ),
     .ack           (i2c_ack       ),
 
-    .dri_clk       (dri_clk       ) 
+    .dri_clk       (dri_clk       )
     );
 
-
 // 触摸芯片协议层。
-touch_dri  #(
+touch_dri #(
     .WIDTH         (REG_NUM_WID   )
      )
     u_touch_dri(
     .clk           (dri_clk       ),
     .rst_n         (rst_n         ),
-                                  
+
     .slave_addr    (slave_addr    ),
     .i2c_exec      (i2c_exec      ),
     .i2c_rh_wl     (i2c_rh_wl     ),
@@ -107,12 +120,12 @@ touch_dri  #(
     .i2c_data_w    (i2c_data_w    ),
     .bit_ctrl      (bit_ctrl      ),
     .reg_num       (reg_num       ),
-                                  
+
     .i2c_data_r    (i2c_data_r    ),
     .i2c_ack       (i2c_ack       ),
     .i2c_done      (i2c_done      ),
     .once_byte_done(once_byte_done),
-     
+
     .lcd_id        (lcd_id        ),
     .data          (data          ),
     .touch_valid   (touch_valid   ),

@@ -1,14 +1,38 @@
 /*
- * Module: lcd_rgb_char
- * æ¦è¿°:
- *   æ¾ç¤ºå­ç³»ç»å°è£ï¼ID è¯»åãåç´ æ¶éåé¢ãæ°å¼BCDè½¬æ¢ãå­ç¬¦æ æ ¼æ¸²æä¸LCDé©±å¨ã
- *   å½åçæ¬æ¥æ¶ä¸»é¾è·¯éæ¥ççµå/çµæµä¸¤è·¯æ³¢å½¢æ ·æ¬ä¸é¶ç¹åèï¼å¹¶è½¬åç»
- *   lcd_display ç¨äºå·¦ä¾§åæ³¢å½¢åå³ä¾§ U_rms / I_rms çå®æ¶æ¾ç¤ºã
- */
-/*
- * è¯¦ç»è¯´æï¼
- *   LCD æ¾ç¤ºé¾çé¡¶å±å°è£ãå®æé¢æ¿ ID è¯å«ãåç´ æ¶ééæ©ãé¡µé¢åç´ æ¸²æ
- *   å LCD æ¶åºé©±å¨ä¸²èµ·æ¥ï¼å¯¹å¤æä¾å®æ´ç LCD æ¥å£ã
+ * 模块: lcd_rgb_char
+ * 功能:
+ *   LCD 显示顶层，整合面板识别、像素时钟、显示内容与屏驱时序。
+ *
+ * 输入:
+ *   sys_clk: 系统时钟。
+ *   sys_rst_n: 低有效系统复位信号。
+ *   data: 模块输出数据。
+ *   touch_state_bits: 信号。
+ *   touch_start_x: 触摸起点 X 坐标。
+ *   touch_start_y: 触摸起点 Y 坐标。
+ *   touch_press_time_ms: 当前按压持续时间，单位 ms。
+ *   rx_line_ascii: 信号。
+ *   wave_clk: 波形处理时钟。
+ *   u_wave_sample_valid: 有效标志。
+ *   u_wave_sample_code: 信号。
+ *   u_wave_zero_code: 信号。
+ *   u_wave_zero_valid: 有效标志。
+ *   i_wave_sample_valid: 有效标志。
+ *   i_wave_sample_code: 信号。
+ *   i_wave_zero_code: 信号。
+ *   i_wave_zero_valid: 有效标志。
+ *
+ * 输出:
+ *   lcd_hs: LCD 行同步输出。
+ *   lcd_vs: LCD 场同步输出。
+ *   lcd_de: LCD 数据有效信号。
+ *   lcd_bl: LCD 背光使能输出。
+ *   lcd_clk: LCD 时钟输出。
+ *   lcd_rst_n: 低有效复位信号。
+ *   lcd_id: LCD 面板 ID。
+ *
+ * 双向:
+ *   lcd_rgb: LCD RGB 数据总线。
  */
 module lcd_rgb_char(
     input              sys_clk,
@@ -39,7 +63,7 @@ module lcd_rgb_char(
     output     [15:0]  lcd_id
 );
 
-// é¡µé¢æ¸²æåå­ç¬¦æ¾ç¤ºé¾ä½¿ç¨å°çä¸­é´ä¿¡å·ã
+// 茅隆碌茅聺垄忙赂虏忙聼聯氓聮聦氓颅聴莽卢娄忙聵戮莽陇潞茅聯戮盲陆驴莽聰篓氓聢掳莽職聞盲赂颅茅聴麓盲驴隆氓聫路茫聙聜
 wire  [10:0]  pixel_xpos_w;
 wire  [10:0]  pixel_ypos_w;
 wire  [23:0]  pixel_data_w;
@@ -54,7 +78,7 @@ wire          frame_done_toggle_w;
 
 assign lcd_rgb = lcd_de ? lcd_rgb_o : {24{1'bz}};
 
-// é¢æ¿ ID è¯»åæ¨¡åï¼ä¸çµåè¯å« LCD åå·ã
+// 茅聺垄忙聺驴 ID 猫炉禄氓聫聳忙篓隆氓聺聴茂录職盲赂聤莽聰碌氓聬聨猫炉聠氓聢芦 LCD 氓聻聥氓聫路茫聙聜
 rd_id u_rd_id(
     .clk          (sys_clk),
     .rst_n        (sys_rst_n),
@@ -62,7 +86,7 @@ rd_id u_rd_id(
     .lcd_id       (lcd_id)
 );
 
-// æ ¹æ®é¢æ¿ ID éæ©åç´ æ¶éã
+// 忙聽鹿忙聧庐茅聺垄忙聺驴 ID 茅聙聣忙聥漏氓聝聫莽麓聽忙聴露茅聮聼茫聙聜
 clk_div u_clk_div(
     .clk          (sys_clk),
     .rst_n        (sys_rst_n),
@@ -105,7 +129,7 @@ binary2bcd u_binary2bcd_tm(
     .bcd_data     (bcd_time_ms)
 );
 
-// é¡µé¢æ¸²ææ¨¡åï¼è¾åºå½ååç´ é¢è²ã
+// 茅隆碌茅聺垄忙赂虏忙聼聯忙篓隆氓聺聴茂录職猫戮聯氓聡潞氓陆聯氓聣聧氓聝聫莽麓聽茅垄聹猫聣虏茫聙聜
 lcd_display u_lcd_display(
     .lcd_pclk       (lcd_pclk),
     .sys_rst_n      (sys_rst_n),
@@ -132,7 +156,7 @@ lcd_display u_lcd_display(
     .pixel_data     (pixel_data_w)
 );
 
-// LCD æ¶åºé©±å¨æ¨¡åï¼æåç´ é¢è²éå° LCD ç©çæ¥å£ã
+// LCD 忙聴露氓潞聫茅漏卤氓聤篓忙篓隆氓聺聴茂录職忙聤聤氓聝聫莽麓聽茅垄聹猫聣虏茅聙聛氓聢掳 LCD 莽聣漏莽聬聠忙聨楼氓聫拢茫聙聜
 lcd_driver u_lcd_driver(
     .lcd_pclk       (lcd_pclk),
     .rst_n          (sys_rst_n),

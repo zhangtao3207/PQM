@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  文件说明：
+  这是当前 FPGA LCD 界面的浏览器预览稿，用于在修改 RTL 前快速确认布局、
+  颜色、按钮、坐标系、参数区和波形展示方式。该文件不参与综合，仅作为
+  Verilog 显示逻辑的等效参考。
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -66,6 +72,7 @@
       textSoft: "#C6D3E2",
       textDim: "#95A9BE",
       buttonBg: "#49617E",
+      buttonBgPressed: "#3D536D",
       buttonBorder: "#DEE9F5",
       waveU: "#39E46F",
       waveI: "#FFD84E",
@@ -102,35 +109,60 @@
       axisTickY: 392,
       axisTimeX: 336,
       axisTimeY: 416,
-      voltageTickX: 12,
+      voltageTickX: 2,
       currentTickX: 424,
       voltageTickY0: 134,
-      voltageTickStep: 24,
+      voltageTickStep: 40,
       currentTickY0: 134,
       currentTickStep: 40,
       titleTextX: 32,
       titleTextY: 6,
       buttonX: 572,
       buttonY: 6,
-      buttonW: 102,
+      buttonW: 87,
       buttonH: 32,
-      buttonTextX: 578,
+      buttonTextX: 583,
       buttonTextY: 6,
-      autoButtonX: 692,
+      autoButtonX: 672,
       autoButtonY: 6,
-      autoButtonW: 80,
+      autoButtonW: 110,
       autoButtonH: 32,
-      autoButtonTextX: 700,
+      autoButtonTextX: 680,
       autoButtonTextY: 6,
       rightTitleX: 520,
       rightTitleY: 76,
-      legend1X: 560,
-      legend1Y: 112,
-      legend2X: 676,
-      legend2Y: 112,
+      bottomMetricUX: 68,
+      bottomMetricIX: 68,
+      bottomMetricY: 425,
       lineX: 516,
-      lineY0: 144,
-      lineStep: 30
+      lineY0: 114,
+      lineStep: 28
+    };
+
+    const M = {
+      freqHz: 50,
+      timeStart: -0.06,
+      timeSpan: 0.06,
+      analysisSamples: 4096,
+      voltagePeakTarget: 11.0,
+      currentPeakTarget: 0.50,
+      voltageDisplayMax: 12.0,
+      currentDisplayMax: 0.60
+    };
+
+    const UI = {
+      freezeMinPressMs: 30,
+      freezeMaxPressMs: 500
+    };
+
+    const state = {
+      freezeActive: false,
+      freezePressed: false,
+      freezePointerId: null,
+      freezePressStartMs: 0,
+      animSec: 0,
+      liveModel: null,
+      frozenModel: null
     };
 
     function text(str, x, y, color, size = 28) {
@@ -151,6 +183,32 @@
       ctx.strokeRect(x, y, w, h);
     }
 
+    function inRect(x, y, rectX, rectY, rectW, rectH) {
+      return x >= rectX && x < rectX + rectW && y >= rectY && y < rectY + rectH;
+    }
+
+    function isInFreezeButton(x, y) {
+      return inRect(x, y, L.autoButtonX, L.autoButtonY, L.autoButtonW, L.autoButtonH);
+    }
+
+    function canvasPointFromEvent(event) {
+      const bounds = canvas.getBoundingClientRect();
+      return {
+        x: ((event.clientX - bounds.left) * canvas.width) / bounds.width,
+        y: ((event.clientY - bounds.top) * canvas.height) / bounds.height
+      };
+    }
+
+    function drawButton(x, y, w, h, label, pressed) {
+      rect(x, y, w, h, pressed ? C.buttonBgPressed : C.buttonBg);
+      strokeRect(x + 0.5, y + 0.5, w - 1, h - 1, C.buttonBorder);
+      ctx.fillStyle = C.textWhite;
+      ctx.font = `28px Consolas, "Courier New", monospace`;
+      ctx.textBaseline = "top";
+      const textWidth = ctx.measureText(label).width;
+      ctx.fillText(label, Math.round(x + (w - textWidth) / 2), y);
+    }
+
     function drawGrid() {
       rect(L.graphX, L.graphY, L.graphW, L.graphH, C.graphBg);
 
@@ -164,7 +222,7 @@
         ctx.stroke();
       }
 
-      for (let y = L.graphY + 24; y < L.graphY + L.graphH - 1; y += 24) {
+      for (let y = L.graphY + 40; y < L.graphY + L.graphH - 1; y += 40) {
         if (y === L.graphCY) continue;
         ctx.beginPath();
         ctx.moveTo(L.graphX + 1, y + 0.5);
@@ -192,56 +250,189 @@
       ctx.stroke();
     }
 
-    function drawWave() {
+    function mean(values) {
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function rms(values) {
+      return Math.sqrt(mean(values.map((value) => value * value)));
+    }
+
+    function peak(values) {
+      let maxAbs = 0;
+      for (const value of values) {
+        const absValue = Math.abs(value);
+        if (absValue > maxAbs) maxAbs = absValue;
+      }
+      return maxAbs;
+    }
+
+    function fundamentalPhase(samples, times, freqHz) {
+      let re = 0;
+      let im = 0;
+      const omega = 2 * Math.PI * freqHz;
+
+      for (let index = 0; index < samples.length; index += 1) {
+        const angle = -omega * times[index];
+        re += samples[index] * Math.cos(angle);
+        im += samples[index] * Math.sin(angle);
+      }
+
+      return Math.atan2(im, re);
+    }
+
+    function normalizePhaseRad(phaseRad) {
+      let wrapped = phaseRad;
+      while (wrapped > Math.PI) wrapped -= 2 * Math.PI;
+      while (wrapped < -Math.PI) wrapped += 2 * Math.PI;
+      return wrapped;
+    }
+
+    function fmt(value, digits = 2) {
+      return value.toFixed(digits);
+    }
+
+    function fmtSigned(value, digits = 2) {
+      const sign = value >= 0 ? "+" : "-";
+      return `${sign}${Math.abs(value).toFixed(digits)}`;
+    }
+
+    function voltageBase(t, freqHz) {
+      return (
+        Math.sin(2 * Math.PI * freqHz * t) +
+        0.06 * Math.sin(2 * Math.PI * freqHz * 3 * t) +
+        0.03 * Math.sin(2 * Math.PI * freqHz * 5 * t)
+      );
+    }
+
+    function currentBase(t, freqHz, phaseLagRad) {
+      return (
+        0.62 * Math.sin(2 * Math.PI * freqHz * t - phaseLagRad) +
+        0.05 * Math.sin(2 * Math.PI * freqHz * 3 * t - 0.15)
+      );
+    }
+
+    function buildPreviewModel(animSec) {
+      const freqHz = M.freqHz + 0.08 * Math.sin(animSec * 0.55);
+      const voltagePeakTarget = M.voltagePeakTarget * (1 + 0.03 * Math.sin(animSec * 0.21));
+      const currentPeakTarget = M.currentPeakTarget * (1 + 0.05 * Math.cos(animSec * 0.34));
+      const phaseLagRad = 0.42 + 0.08 * Math.sin(animSec * 0.27);
+      const timeStart = M.timeStart + animSec * 0.015;
+
+      const times = Array.from({ length: M.analysisSamples }, (_, index) =>
+        timeStart + (index / M.analysisSamples) * M.timeSpan
+      );
+      const voltageBaseSamples = times.map((t) => voltageBase(t, freqHz));
+      const currentBaseSamples = times.map((t) => currentBase(t, freqHz, phaseLagRad));
+
+      const voltageScale = voltagePeakTarget / peak(voltageBaseSamples);
+      const currentScale = currentPeakTarget / peak(currentBaseSamples);
+
+      const voltageSamples = voltageBaseSamples.map((value) => value * voltageScale);
+      const currentSamples = currentBaseSamples.map((value) => value * currentScale);
+
+      const voltageRms = rms(voltageSamples);
+      const currentRms = rms(currentSamples);
+      const activePower = mean(
+        voltageSamples.map((value, index) => value * currentSamples[index])
+      );
+      const apparentPower = voltageRms * currentRms;
+      const powerFactor = apparentPower > 1e-9 ? activePower / apparentPower : 0;
+
+      const voltagePhase = fundamentalPhase(voltageSamples, times, freqHz);
+      const currentPhase = fundamentalPhase(currentSamples, times, freqHz);
+      const phaseDiffDeg =
+        normalizePhaseRad(voltagePhase - currentPhase) * 180 / Math.PI;
+
+      const reactivePowerMagnitude = Math.sqrt(
+        Math.max(apparentPower * apparentPower - activePower * activePower, 0)
+      );
+      const reactivePower =
+        Math.abs(phaseDiffDeg) < 1e-9 ? 0 : Math.sign(phaseDiffDeg) * reactivePowerMagnitude;
+
+      const voltageP2P = Math.max(...voltageSamples) - Math.min(...voltageSamples);
+      const currentP2P = Math.max(...currentSamples) - Math.min(...currentSamples);
+
       const top = L.graphY + 1;
       const bottom = L.graphY + L.graphH - 2;
       const mid = L.graphCY;
+      const graphPoints = Array.from({ length: L.graphW }, (_, x) => {
+        const t = timeStart + (x / (L.graphW - 1)) * M.timeSpan;
+        const voltage = voltageBase(t, freqHz) * voltageScale;
+        const current = currentBase(t, freqHz, phaseLagRad) * currentScale;
 
+        const voltageY = Math.max(
+          top,
+          Math.min(bottom, mid - (voltage / M.voltageDisplayMax) * 98)
+        );
+        const currentY = Math.max(
+          top,
+          Math.min(bottom, mid - (current / M.currentDisplayMax) * 96)
+        );
+
+        return { x, voltageY, currentY };
+      });
+
+      return {
+        frequencyHz: freqHz,
+        voltageRms,
+        currentRms,
+        phaseDiffDeg,
+        activePower,
+        reactivePower,
+        apparentPower,
+        powerFactor,
+        voltageP2P,
+        currentP2P,
+        graphPoints
+      };
+    }
+
+    function drawWave(model) {
       ctx.strokeStyle = C.waveU;
       ctx.lineWidth = 2;
       ctx.beginPath();
 
-      for (let x = 0; x < L.graphW; x += 1) {
-        const t = -0.04 + (x / (L.graphW - 1)) * 0.04;
-        const fundamental = Math.sin(2 * Math.PI * 50 * t);
-        const harmonic3 = 0.06 * Math.sin(2 * Math.PI * 150 * t);
-        const harmonic5 = 0.03 * Math.sin(2 * Math.PI * 250 * t);
-        const wave = fundamental + harmonic3 + harmonic5;
-        const y = Math.max(top, Math.min(bottom, mid - wave * 96));
-
-        if (x === 0)
-          ctx.moveTo(L.graphX + x + 0.5, y + 0.5);
+      model.graphPoints.forEach((point, index) => {
+        if (index === 0)
+          ctx.moveTo(L.graphX + point.x + 0.5, point.voltageY + 0.5);
         else
-          ctx.lineTo(L.graphX + x + 0.5, y + 0.5);
-      }
+          ctx.lineTo(L.graphX + point.x + 0.5, point.voltageY + 0.5);
+      });
+
+      ctx.stroke();
+
+      ctx.strokeStyle = C.waveI;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      model.graphPoints.forEach((point, index) => {
+        if (index === 0)
+          ctx.moveTo(L.graphX + point.x + 0.5, point.currentY + 0.5);
+        else
+          ctx.lineTo(L.graphX + point.x + 0.5, point.currentY + 0.5);
+      });
 
       ctx.stroke();
     }
 
-    function drawRightPanel() {
+    function drawRightPanel(model) {
       const lines = [
-        "Sampling: 5 (KPS)",
-        "Voltage: 220.0 (V)",
-        "Current: 0.03 (A)",
-        "Phase Diff: 0.49 (rad)",
+        { text: `Frequency: ${fmt(model.frequencyHz)} (Hz)`, color: C.textSoft },
+        { text: `U_rms: ${fmt(model.voltageRms)} (V)`, color: C.waveU },
+        { text: `I_rms: ${fmt(model.currentRms)} (A)`, color: C.waveI },
+        { text: `Phase Diff: ${fmtSigned(model.phaseDiffDeg)} (deg)`, color: C.textWhite },
+        { text: `Active P: ${fmt(model.activePower)} (W)`, color: C.accent },
+        { text: `Reactive Q: ${fmtSigned(model.reactivePower)} (var)`, color: C.textSoft },
+        { text: `Apparent S: ${fmt(model.apparentPower)} (VA)`, color: C.textWhite },
+        { text: `Power Factor: ${fmt(model.powerFactor)}`, color: C.waveU }
       ];
 
-      text("Parameterss", L.rightTitleX, L.rightTitleY, C.accent, 24);
-
-      rect(522, 125, 28, 4, C.waveU);
-      rect(638, 125, 28, 4, C.waveI);
-      text("U", L.legend1X, L.legend1Y, C.waveU);
-      text("I", L.legend2X, L.legend2Y, C.waveI);
+      text("Parameters", L.rightTitleX, L.rightTitleY, C.accent, 24);
 
       lines.forEach((line, index) => {
         const y = L.lineY0 + index * L.lineStep;
-        const color =
-          index === 1 ? C.waveU :
-          index === 2 ? C.waveI :
-          index === 0 ? C.textSoft :
-          C.textWhite;
-
-        text(line, L.lineX, y, color, 20);
+        text(line.text, L.lineX, y, line.color, 20);
 
         if (index < lines.length - 1) {
           rect(L.rightX + 12, y + 24, L.rightW - 24, 1, "#243243");
@@ -249,34 +440,38 @@
       });
     }
 
-    function draw() {
+    function draw(model) {
       rect(0, 0, 800, 480, C.bg);
 
       rect(0, 0, 800, L.titleBarH, C.titleBg);
       rect(0, L.titleBarH - 1, 800, 1, C.accent);
 
-      rect(L.leftX, L.leftY, L.leftW, L.leftH, C.panelBg);
       rect(L.rightX, L.rightY, L.rightW, L.rightH, C.panelDark);
       rect(L.dividerX, L.leftY, L.dividerW, L.leftH, C.panelBorder);
 
       strokeRect(L.rightX + 0.5, L.rightY + 0.5, L.rightW - 1, L.rightH - 1, C.panelBorder);
 
-      rect(L.buttonX, L.buttonY, L.buttonW, L.buttonH, C.buttonBg);
-      strokeRect(L.buttonX + 0.5, L.buttonY + 0.5, L.buttonW - 1, L.buttonH - 1, C.buttonBorder);
-      rect(L.autoButtonX, L.autoButtonY, L.autoButtonW, L.autoButtonH, C.buttonBg);
-      strokeRect(L.autoButtonX + 0.5, L.autoButtonY + 0.5, L.autoButtonW - 1, L.autoButtonH - 1, C.buttonBorder);
+      drawButton(L.buttonX, L.buttonY, L.buttonW, L.buttonH, "MODE", false);
+      drawButton(
+        L.autoButtonX,
+        L.autoButtonY,
+        L.autoButtonW,
+        L.autoButtonH,
+        state.freezeActive ? "Auto" : "Freeze",
+        state.freezePressed
+      );
 
       drawGrid();
-      drawWave();
-      text("MODE: Single - TIime", L.titleTextX, L.titleTextY, C.textWhite);
-      text("Freeze", L.buttonTextX, L.buttonTextY, C.textWhite);
-      text("Auto", L.autoButtonTextX, L.autoButtonTextY, C.textWhite);
+      drawWave(model);
+      text("MODE: Single - Time", L.titleTextX, L.titleTextY, C.textWhite);
       text("Time Domain Analysis", L.plotTitleX, L.plotTitleY, C.textSoft);
       text("Voltage ( V)", L.axisLeftX, L.axisLabelY, C.waveU, 20);
       text("Current (A)", L.axisRightX, L.axisLabelY, C.waveI, 20);
       text("Time(ms)", L.axisTimeX, L.axisTimeY, C.textDim, 20);
+      text(`Upp: ${fmt(model.voltageP2P)} (V)`, L.bottomMetricUX, L.bottomMetricY, C.waveU, 20);
+      text(`Ipp: ${fmt(model.currentP2P)} (A)`, L.bottomMetricIX, L.bottomMetricY + 24, C.waveI, 20);
 
-      ["+5", "+4", "+3", "+2", "+1", " 0", "-1", "-2", "-3", "-4", "-5"].forEach((label, index) => {
+      ["+12", " +8", " +4", "  0", " -4", " -8", "-12"].forEach((label, index) => {
         text(label, L.voltageTickX, L.voltageTickY0 + index * L.voltageTickStep, C.waveU, 20);
       });
 
@@ -284,16 +479,75 @@
         text(label, L.currentTickX, L.currentTickY0 + index * L.currentTickStep, C.waveI, 20);
       });
 
-      text("-40", L.axisTick0X, L.axisTickY, C.textDim, 20);
-      text("-30", L.axisTick1X, L.axisTickY, C.textDim, 20);
-      text("-20", L.axisTick2X, L.axisTickY, C.textDim, 20);
-      text("-10", L.axisTick3X, L.axisTickY, C.textDim, 20);
+      text("-60", L.axisTick0X, L.axisTickY, C.textDim, 20);
+      text("-45", L.axisTick1X, L.axisTickY, C.textDim, 20);
+      text("-30", L.axisTick2X, L.axisTickY, C.textDim, 20);
+      text("-15", L.axisTick3X, L.axisTickY, C.textDim, 20);
       text("  0", L.axisTick4X, L.axisTickY, C.textDim, 20);
 
-      drawRightPanel();
+      drawRightPanel(model);
     }
 
-    draw();
+    function toggleFreeze() {
+      if (state.freezeActive) {
+        state.freezeActive = false;
+        state.frozenModel = null;
+      } else {
+        state.freezeActive = true;
+        state.frozenModel = state.liveModel || buildPreviewModel(state.animSec);
+      }
+    }
+
+    function finishFreezePress(event, cancelled = false) {
+      if (state.freezePointerId !== event.pointerId) return;
+
+      const point = canvasPointFromEvent(event);
+      const durationMs = performance.now() - state.freezePressStartMs;
+      const shouldToggle =
+        !cancelled &&
+        isInFreezeButton(point.x, point.y) &&
+        durationMs >= UI.freezeMinPressMs &&
+        durationMs <= UI.freezeMaxPressMs;
+
+      state.freezePressed = false;
+      state.freezePointerId = null;
+      if (shouldToggle) toggleFreeze();
+    }
+
+    canvas.style.touchAction = "none";
+
+    canvas.addEventListener("pointerdown", (event) => {
+      const point = canvasPointFromEvent(event);
+      if (!isInFreezeButton(point.x, point.y)) return;
+      state.freezePointerId = event.pointerId;
+      state.freezePressStartMs = performance.now();
+      state.freezePressed = true;
+      if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      if (state.freezePointerId !== event.pointerId) return;
+      const point = canvasPointFromEvent(event);
+      state.freezePressed = isInFreezeButton(point.x, point.y);
+    });
+
+    canvas.addEventListener("pointerup", (event) => finishFreezePress(event, false));
+    canvas.addEventListener("pointercancel", (event) => finishFreezePress(event, true));
+
+    function animate(nowMs) {
+      if (!state.freezeActive) {
+        state.animSec = nowMs * 0.001;
+        state.liveModel = buildPreviewModel(state.animSec);
+      } else if (!state.frozenModel) {
+        state.frozenModel = state.liveModel || buildPreviewModel(state.animSec);
+      }
+
+      draw(state.freezeActive ? state.frozenModel : state.liveModel);
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
   </script>
 </body>
 </html>

@@ -1,15 +1,27 @@
 `timescale 1ns / 1ps
 
 /*
- * Module: adc_frame_capture_runtime
- * Purpose:
- *   Capture a runtime-configurable frame of ADC samples into a ping-pong buffer.
- *   One bank is written by the front end while the other bank can be read back.
+ * 模块: adc_frame_capture_runtime
+ * 功能:
+ *   运行时可配置帧长的 ADC 采样缓存模块，使用乒乓 RAM 提供读写并行。
  *
- * Notes:
- *   - frame_samples_n is a runtime input, not a fixed parameter.
- *   - frame_samples_n is clamped into [1, MAX_FRAME_SAMPLES - 1].
- *   - The read port is synchronous so Vivado can infer block RAM cleanly.
+ * 输入:
+ *   clk: 系统时钟。
+ *   rst_n: 低有效复位信号。
+ *   frame_samples_n: 当前帧需要采集的样本点数。
+ *   sample_valid: 输入样本有效标志。
+ *   sample_data: 输入样本数据。
+ *   rd_en: 读端口使能。
+ *   rd_bank: 读端口选择的缓冲 bank。
+ *   rd_addr: 读端口地址。
+ *
+ * 输出:
+ *   frame_ready: 一帧采样写满后的完成脉冲。
+ *   ready_bank: 可供读取的缓冲 bank。
+ *   ready_sample_count: 已完成帧的实际样本数。
+ *   wr_bank_active: 当前写入中的缓冲 bank。
+ *   wr_addr_active: 当前写地址。
+ *   rd_data: 读端口输出数据。
  */
 module adc_frame_capture_runtime #(
     parameter integer DATA_WIDTH        = 32,

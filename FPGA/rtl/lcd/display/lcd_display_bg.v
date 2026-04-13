@@ -1,14 +1,15 @@
 /*
- * Module: lcd_display_bg
- * Function:
- *   Draw the static page background. Repeated rectangle tests are wrapped by
- *   helper functions to keep the combinational layer readable.
- */
-/*
- * è¯¦ç»è¯´æï¼
- *   è¿æ¯é¡µé¢éæèæ¯å±ãææä¸éæ°æ®ååçå¾å½¢ï¼ä¾å¦æ é¢æ ãæé®æ¡ã
- *   åæ°åºåºæ¿ãåæ ç³»è¾¹æ¡ãç½æ ¼çº¿ä¸ä¸»è½´ï¼åå¨è¿éå®æçè²ã
- *   ä¸å±ä¼ç»§ç»­å å æå­å±åæ³¢å½¢å±ã
+ * 模块: lcd_display_bg
+ * 功能:
+ *   生成 LCD 页面背景层颜色。
+ *
+ * 输入:
+ *   pixel_xpos: 当前扫描像素的 X 坐标。
+ *   pixel_ypos: 当前扫描像素的 Y 坐标。
+ *   freeze_button_pressed: 信号。
+ *
+ * 输出:
+ *   base_color: 背景层颜色输出。
  */
 module lcd_display_bg(
     input      [10:0] pixel_xpos,
@@ -17,7 +18,7 @@ module lcd_display_bg(
     output reg [23:0] base_color
 );
 
-// é¡µé¢ä½¿ç¨å°çä¸»è¦éè²ã
+// 茅隆碌茅聺垄盲陆驴莽聰篓氓聢掳莽職聞盲赂禄猫娄聛茅聟聧猫聣虏茫聙聜
 localparam [23:0] BG_COLOR      = 24'h0B1524;
 localparam [23:0] TITLE_BG      = 24'h173B63;
 localparam [23:0] PANEL_DARK    = 24'h101A28;
@@ -34,7 +35,7 @@ localparam [23:0] WAVE_I_COLOR  = 24'hFFD84E;
 localparam [23:0] ACCENT_COLOR  = 24'h58B6FF;
 localparam [23:0] SEPARATOR_CLR = 24'h243243;
 
-// åçé¢åºåçåæ ä¸å°ºå¯¸åæ°ã
+// 氓聬聞莽聲聦茅聺垄氓聦潞氓聼聼莽職聞氓聺聬忙聽聡盲赂聨氓掳潞氓炉赂氓聫聜忙聲掳茫聙聜
 localparam [10:0] TITLE_BAR_H = 11'd44;
 localparam [10:0] LEFT_X      = 11'd0;
 localparam [10:0] LEFT_Y      = 11'd64;
@@ -74,7 +75,7 @@ localparam [10:0] LINE_STEP   = 11'd28;
 
 wire graph_inner;
 
-// å¤æ­å½ååç´ æ¯å¦ä½äºæä¸ªç©å½¢åé¨ã
+// 氓聢陇忙聳颅氓陆聯氓聣聧氓聝聫莽麓聽忙聵炉氓聬娄盲陆聧盲潞聨忙聼聬盲赂陋莽聼漏氓陆垄氓聠聟茅聝篓茫聙聜
 function in_rect;
     input [10:0] x0;
     input [10:0] y0;
@@ -86,7 +87,7 @@ function in_rect;
     end
 endfunction
 
-// å¤æ­å½ååç´ æ¯å¦ä½äºç©å½¢è¾¹æ¡ä¸ã
+// 氓聢陇忙聳颅氓陆聯氓聣聧氓聝聫莽麓聽忙聵炉氓聬娄盲陆聧盲潞聨莽聼漏氓陆垄猫戮鹿忙隆聠盲赂聤茫聙聜
 function on_rect_border;
     input [10:0] x0;
     input [10:0] y0;
@@ -102,7 +103,7 @@ endfunction
 assign graph_inner = (pixel_xpos > GRAPH_X) && (pixel_xpos < GRAPH_X + GRAPH_W - 1) &&
                      (pixel_ypos > GRAPH_Y) && (pixel_ypos < GRAPH_Y + GRAPH_H - 1);
 
-// ç»åç»å¶é¡ºåºï¼åºè² -> é¢æ¿/æé® -> åæ åº -> ç½æ ¼ä¸åæ è½´ã
+// 莽禄聞氓聬聢莽禄聵氓聢露茅隆潞氓潞聫茂录職氓潞聲猫聣虏 -> 茅聺垄忙聺驴/忙聦聣茅聮庐 -> 氓聺聬忙聽聡氓聦潞 -> 莽陆聭忙聽录盲赂聨氓聺聬忙聽聡猫陆麓茫聙聜
 always @(*) begin
     base_color = BG_COLOR;
 

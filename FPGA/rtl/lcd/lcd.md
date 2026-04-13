@@ -1,5 +1,9 @@
 # LCD UI Notes
 
+> 中文说明：
+> 本文件记录当前 LCD 页面布局、字体、颜色、坐标区和右侧参数区设计约束，
+> 用于同步 `lcd.html` 与 `lcd_display.v` 的界面定义。
+
 This file documents the current LCD screen implemented in
 `FPGA/rtl/lcd/display/lcd_display.v`.
 
@@ -18,11 +22,11 @@ This file documents the current LCD screen implemented in
 | Item | Value |
 | --- | --- |
 | Title bar | `x=0, y=0, w=800, h=44` |
-| Left panel | `x=0, y=64, w=480, h=392`, no outer border |
+| Left panel | `x=0, y=64, w=480, h=392`, no outer border and no background plate |
 | Right panel | `x=500, y=64, w=276, h=392` |
 | Divider | `x=486, y=64, w=4, h=392` |
-| Freeze button | `x=572, y=6, w=102, h=32` |
-| Auto button | `x=692, y=6, w=80, h=32` |
+| Mode button | `x=572, y=6, w=87, h=32` |
+| Freeze button | `x=672, y=6, w=110, h=32` |
 
 ## Plot Area
 
@@ -32,37 +36,37 @@ This file documents the current LCD screen implemented in
 | Zero horizontal line | centered at `y=264` |
 | Left vertical axis | `x=36`, highlighted bright line |
 | Right vertical axis / time zero line | `x=419`, same highlighted bright line as left |
-| Time window | `40 ms` |
-| Signal cycles in window | `2 cycles @ 50 Hz` |
-| Voltage-aligned horizontal pitch | `24 px` |
+| Time window | `60 ms` |
+| Signal cycles in window | `3 cycles @ 50 Hz` |
+| Voltage-aligned horizontal pitch | `40 px` |
 | Horizontal grid pitch | `96 px` |
 
 ## Left-Side Text
 
 | Text | Position |
 | --- | --- |
-| `MODE: Single - TIime` | `x=32, y=6`, `16x32` |
-| `Freeze` | `x=578, y=6`, `16x32` |
-| `Auto` | `x=700, y=6`, `16x32` |
+| `MODE: Single - Time` | `x=32, y=6`, `16x32` |
+| `MODE` | `x=583, y=6`, `16x32` |
+| `Freeze` | `x=680, y=6`, `16x32` |
 | `Time Domain Analysis` | `x=68, y=72`, `16x32` |
 | `Voltage ( V)` | `x=40, y=118`, `10x20`, top-left of graph |
 | `Current (A)` | `x=306, y=118`, `10x20`, top-right of graph |
 | `Time(ms)` | `x=336, y=416`, `10x20`, bottom-right of graph |
-| Voltage scale | `+5` to `-5`, `10x20`, `x=12`, step `24 px` |
+| Voltage scale | `+12 / +8 / +4 / 0 / -4 / -8 / -12`, `10x20`, `x=2`, step `40 px` |
 | Current scale | `+0.3` to `-0.3`, `10x20`, `x=424`, step `40 px` |
-| Time ticks | `-40 / -30 / -20 / -10 / 0`, `10x20`, `y=392` |
+| Time ticks | `-60 / -45 / -30 / -15 / 0`, `10x20`, `y=392` |
+| `Upp: XX.XX (V)` | `x=68, y=425`, `10x20`, bottom-left |
+| `Ipp: X.XX (A)` | `x=68, y=449`, `10x20`, bottom-left |
 
 ## Right-Side Text
 
 | Row | Text |
 | --- | --- |
-| Header | `Parameterss` |
-| Legend 1 | `U` |
-| Legend 2 | `I` |
-| 1 | `Sampling: 5 (KPS)` |
-| 2 | `Voltage: [sign]XX.XX (V)` |
-| 3 | `Current: 0.03 (A)` |
-| 4 | `Phase Diff: 0.49 (rad)` |
+| Header | `Parameters` |
+| 1 | `Frequency: XXX.XX (Hz)` |
+| 2 | `U_rms: XX.XX (V)` |
+| 3 | `I_rms: X.XX (A)` |
+| 4 | `Phase Diff: sXXX.XX (deg)` |
 
 ## Color Map
 
@@ -70,7 +74,6 @@ This file documents the current LCD screen implemented in
 | --- | --- |
 | Background | `0B1524` |
 | Title bar | `173B63` |
-| Left panel | `142235` |
 | Right panel | `101A28` |
 | Panel border | `4F6D8F` |
 | Graph background | `020406` |
@@ -89,12 +92,15 @@ This file documents the current LCD screen implemented in
 
 ## Waveform Model
 
-- The plot now renders a voltage waveform in the graph area using the `39E46F` trace color.
-- The waveform is displayed with an oscilloscope-style trigger method: rising zero-cross trigger, `40 ms` history window, and the trigger instant aligned to the right-side `t=0` axis.
-- The current implementation draws the voltage trace only; the current axis and legend remain reserved for a future current-signal path.
-- The right-side parameter panel keeps only the required header, U/I legend, and 4 parameter lines.
+- The plot now renders both voltage and current waveforms in the graph area using `39E46F` and `FFD84E`.
+- The waveform is displayed with an oscilloscope-style trigger method: rising zero-cross trigger, `60 ms` history window, and the trigger instant aligned to the right-side `t=0` axis.
+- `CH1` from the parallel ADC is used as the voltage path and `CH2` is used as the current path.
+- The current waveform is captured with the same voltage-trigger snapshot so the plot shows the relative phase directly.
+- The phase item shows the signed phase of voltage relative to current, in degrees. Positive means voltage leads current.
+- The right-side parameter panel keeps only the required header and 4 parameter lines.
 - Numeric tick labels are rendered for voltage, current, and time.
-- The horizontal reference lines in the graph are aligned to the left voltage axis labels `+5` to `-5`, giving 11 equally spaced voltage levels across the plot height.
+- The horizontal reference lines in the graph are aligned to the left voltage axis labels `+12 / +8 / +4 / 0 / -4 / -8 / -12`.
+- `Upp` and `Ipp` are shown under the left plot area instead of occupying right-panel rows.
 
 ## Notes
 
@@ -106,7 +112,13 @@ This file documents the current LCD screen implemented in
 - `lcd.html` in the same folder is a browser preview of the current Verilog layout.
 - The waveform frame is frozen on each valid trigger event so the `50 Hz` signal appears visually stable instead of sweeping too fast.
 - `font_rom_16x32.v` has dedicated lowercase `y/z` glyphs so `Time Domain Analysis` renders correctly on the FPGA LCD.
-- The `Voltage` item in the right-side panel is now driven by the `ADC_TEMP` chain in `main.v`, using the sampled ADC result instead of a fixed string.
+- The right-side `U_rms` item is driven by the active parallel-ADC `CH1` path, and `I_rms` is driven by `CH2`.
+- The right-side `Frequency` item is derived from the voltage rising zero-cross period.
+- `Upp` and `Ipp` are derived from the peak-to-peak span observed in the same raw sample stream over the current slow refresh window.
+- The RMS display now uses a `x100` full-scale mapping: `10.00V` for the voltage path and `0.30A` for the current path.
+- The RMS path uses equal-interval discrete RMS evaluation and then applies a 64-result moving average before display.
+- The right-side RMS text area is throttled to refresh once every `500 ms` at the current `wave_clk=50 MHz` assumption.
+- The phase-difference text is also throttled to refresh once every `500 ms` and is shown as a signed degree value.
 
 ## Maintenance Prompt
 

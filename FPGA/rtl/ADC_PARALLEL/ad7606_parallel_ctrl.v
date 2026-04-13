@@ -1,22 +1,30 @@
 `timescale 1ns / 1ps
 
-//==============================================================================
-// Module Name: ad7606_parallel_ctrl
-// Function:
-//   CM2248/AD7606 并行接口底层控制器。
-//   主要功能如下：
-//   1. 上电后输出一次 RESET 脉冲；
-//   2. 在收到 start 上升沿后输出一次 CONVST 触发转换；
-//   3. 等待 BUSY 先拉高再拉低，确认 ADC 已完成本次转换；
-//   4. 通过 CS# / RD# 依次读取 8 路 16bit 并行数据；
-//   5. 使用物理 FRSTDATA 校验第 1 路读数窗口是否对齐；
-//   6. 在 8 路数据全部读取完成后输出 data_valid_o 单拍脉冲。
-//==============================================================================
 /*
- * 详细说明：
- *   AD7606 并行接口底层时序控制器。收到 `start` 后，模块依次完成：
- *   RESET/CONVST/BUSY 等待/8 路并行读数，并利用 FRSTDATA 校验首通道
- *   是否对齐。
+ * 模块: ad7606_parallel_ctrl
+ * 功能:
+ *   AD7606 并行接口底层控制模块，完成复位、转换触发和 8 通道读数。
+ *
+ * 输入:
+ *   clk: 系统时钟。
+ *   rst_n: 低有效复位信号。
+ *   start: 启动一次采样或处理流程。
+ *   soft_reset: 软复位脉冲。
+ *   busy_i: AD7606 BUSY 输入。
+ *   frstdata_i: AD7606 FRSTDATA 输入。
+ *   data_i: AD7606 并行数据总线输入。
+ *
+ * 输出:
+ *   reset_o: AD7606 RESET 输出。
+ *   convst_o: AD7606 CONVST 输出。
+ *   cs_n_o: AD7606 CS# 输出。
+ *   rd_n_o: AD7606 RD# 输出。
+ *   data_frame_o: 8 通道采样拼接后的整帧数据。
+ *   data_valid_o: 整帧数据有效脉冲。
+ *   sample_active_o: 采样过程忙标志。
+ *   timeout_o: 采样异常超时标志。
+ *   channel_o: 当前读出的 AD7606 通道号。
+ *   state_o: AD7606 控制状态机状态。
  */
 module ad7606_parallel_ctrl #(
     parameter integer RESET_HIGH_CYCLES   = 500,

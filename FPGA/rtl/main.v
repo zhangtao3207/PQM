@@ -1,6 +1,55 @@
-//============================================================================
-// Module Name: main
-//============================================================================
+/*
+ * 模块: main
+ * 功能:
+ *   项目顶层模块，连接 ADC、LCD、触摸、数据处理与显示链路。
+ *
+ * 输入:
+ *   sys_clk: 系统时钟。
+ *   sys_rst_n: 低有效系统复位信号。
+ *   uart_rxd: 信号。
+ *   Busy: 信号。
+ *   Frstdata: 信号。
+ *   DB0: 信号。
+ *   DB1: 信号。
+ *   DB2: 信号。
+ *   DB3: 信号。
+ *   DB4: 信号。
+ *   DB5: 信号。
+ *   DB6: 信号。
+ *   DB7: 信号。
+ *   DB8: 信号。
+ *   DB9: 信号。
+ *   DB10: 信号。
+ *   DB11: 信号。
+ *   DB12: 信号。
+ *   DB13: 信号。
+ *   DB14: 信号。
+ *   DB15: 信号。
+ *
+ * 输出:
+ *   uart_txd: 信号。
+ *   touch_scl: 触摸 I2C SCL 输出。
+ *   touch_rst_n: 触摸芯片低有效复位输出。
+ *   lcd_de: LCD 数据有效信号。
+ *   lcd_hs: LCD 行同步输出。
+ *   lcd_vs: LCD 场同步输出。
+ *   lcd_bl: LCD 背光使能输出。
+ *   lcd_clk: LCD 时钟输出。
+ *   lcd_rst_n: 低有效复位信号。
+ *   OS1: 信号。
+ *   OS0: 信号。
+ *   OS2: 信号。
+ *   Convst: 信号。
+ *   RD: 信号。
+ *   RESET: 信号。
+ *   cs: 信号。
+ *   Range: 信号。
+ *
+ * 双向:
+ *   touch_sda: 触摸 I2C SDA 双向信号。
+ *   touch_int: 触摸中断/握手双向引脚。
+ *   lcd_rgb: LCD RGB 数据总线。
+ */
 module main(
     input            sys_clk,
     input            sys_rst_n,
