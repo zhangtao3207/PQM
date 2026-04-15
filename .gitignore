@@ -1,0 +1,34 @@
+# Vivado generated project artifacts
+FPGA/prj/PQM.cache/
+FPGA/prj/PQM.hw/
+FPGA/prj/PQM.ip_user_files/
+FPGA/prj/PQM.runs/
+FPGA/prj/PQM.sim/
+
+# Common tool logs / temp files
+*.jou
+*.log
+*.pb
+*.wdf
+*.wpc
+*.rpx
+*.rpt
+*.str
+*.dcp
+*.bit
+*.bin
+*.ltx
+*.backup.jou
+*.backup.vdi
+*.begin.rst
+*.end.rst
+__synthesis_is_running__
+__synthesis_is_complete__
+
+# Xilinx local work dirs
+.Xil/
+*.cache/
+
+# Local hidden backup trees
+FPGA/rtl/.ADC_SERIAL/
+FPGA/rtl/.ADC_TEMP/

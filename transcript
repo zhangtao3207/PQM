@@ -1,0 +1,6 @@
+# help radix
+# Partial command name. Choices are: radix define, radix delete, radix list, radix names, radix signal
+# Usage: radix [-binary | -octal | -decimal | -hexadecimal | -unsigned | -ascii | -time] [-enumnumeric | -enumsymbolic | -showbase | -symbolic]
+#  quit -f
+pen>]] [-gateexpr [<expression>]] [-usegating [off | on]] [-strobeperiod [<period>[<unit>]]] [-strobestart [<start_time>[<unit>]]] [-usesignaltriggers [0 | 1]] [-usestrobe [0 | 1]] [-childrowmargin [<pixels>]] [-cursorlockcolor [<color>]] [-gridauto [off | on]] [-gridcolor [<color>]] [-griddelta [<pixels>]] [-gridoffset [<time>[<unit>]]] [-gridperiod [<time>[<unit>]]] [-namecolwidth [<width>]] [-rowmargin [<pixels>]] [-signalnamewidth [<value>]] [-timecolor [<color>]] [-timeline [0 | 1]] [-timelineunits [fs | ps | ns | us | ms | sec | min | hr]] [-valuecolwidth [<width>]] [-vectorcolor [<color>]] [-waveselectcolor [<color>]] [-waveselectenable [0 | 1]]
+#  quit -f

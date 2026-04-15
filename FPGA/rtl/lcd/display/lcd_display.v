@@ -46,10 +46,13 @@ localparam [23:0] BG_COLOR      = 24'h0B1524;
 localparam [23:0] TEXT_WHITE    = 24'hF2F6FA;
 localparam [23:0] WAVE_U_COLOR  = 24'h39E46F;
 localparam [23:0] WAVE_I_COLOR  = 24'hFFD84E;
-localparam integer TEXT_REFRESH_CYCLES = 1_250_000;  // 25ms @ 50MHz wave_clk
-localparam [10:0] GRAPH_X       = 11'd36;
+localparam integer TEXT_REFRESH_CYCLES = 1_000_000;  // 20ms @ 50MHz wave_clk
+localparam integer U_FULL_SCALE_X100 = 1000;          // 电压正满量程: 10.00V
+localparam integer I_FULL_SCALE_X100 = 300;           // 电流正满量程: 3.00A
+localparam integer WAVE_FULL_SCALE_CODE = 21845;      // 波形满量程输入对应的峰值 raw 码幅度
+localparam [10:0] GRAPH_X       = 11'd66;
 localparam [10:0] GRAPH_Y       = 11'd144;
-localparam [10:0] GRAPH_W       = 11'd384;
+localparam [10:0] GRAPH_W       = 11'd354;
 localparam [10:0] GRAPH_H       = 11'd240;
 localparam [10:0] FREEZE_BTN_X  = 11'd672;
 localparam [10:0] FREEZE_BTN_Y  = 11'd6;
@@ -134,10 +137,14 @@ reg         u_wave_display_bank_sync1;
 reg         u_wave_display_bank_sync2;
 reg         u_wave_frame_valid_sync1;
 reg         u_wave_frame_valid_sync2;
+reg         u_wave_front_bank_lcd;
+reg         u_wave_front_valid_lcd;
 reg         i_wave_display_bank_sync1;
 reg         i_wave_display_bank_sync2;
 reg         i_wave_frame_valid_sync1;
 reg         i_wave_frame_valid_sync2;
+reg         i_wave_front_bank_lcd;
+reg         i_wave_front_valid_lcd;
 reg         freeze_active_lcd;
 reg         touch_pressed_sync1;
 reg         touch_pressed_sync2;
@@ -254,9 +261,9 @@ wire        freeze_button_touch_hit;
 wire        freeze_button_start_hit;
 wire        freeze_button_pressed;
 wire        freeze_button_click_qualified;
+wire        freeze_active_next_lcd;
+wire        screen_update_enable_lcd;
 wire        freeze_active_wave;
-wire        u_wave_sample_valid_gated;
-wire        i_wave_sample_valid_gated;
 wire        frame_edge_lcd;
 wire [TEXT_PACKET_WIDTH-1:0] text_packet_wave;
 wire [TEXT_PACKET_WIDTH-1:0] text_packet_front_lcd;
@@ -301,18 +308,18 @@ blk_mem_gen_font_10x20 u_font_10x20_rom(
 );
 // 电压通道：生成电压波形帧、U_rms 和 Upp
 wave_display_capture #(
-    .VERT_SCALE_NUM     (5),
-    .VERT_SCALE_DEN     (6)
+    .FULL_SCALE_CODE(WAVE_FULL_SCALE_CODE)
 ) u_u_wave_display_capture (
     .wave_clk          (wave_clk),
     .sys_rst_n         (sys_rst_n),
-    .wave_sample_valid (u_wave_sample_valid_gated),
+    .wave_sample_valid (u_wave_sample_valid),
     .wave_sample_code  (u_wave_sample_code),
     .wave_zero_code    (u_wave_zero_code),
     .wave_zero_valid   (u_wave_zero_valid),
     .trigger_force     (1'b0),
     .trigger_force_snapshot_ptr(9'd0),
     .trigger_use_external(1'b0),
+    .display_freeze    (freeze_active_wave),
     .wave_frame_valid  (u_wave_frame_valid),
     .wave_display_bank (u_wave_display_bank),
     .wave_ram_we       (u_wave_ram_we),
@@ -324,18 +331,18 @@ wave_display_capture #(
 
 // 电流通道：共享电压触发时刻，生成 I_rms 和 Ipp
 wave_display_capture #(
-    .VERT_SCALE_NUM     (1),
-    .VERT_SCALE_DEN     (1)
+    .FULL_SCALE_CODE(WAVE_FULL_SCALE_CODE)
 ) u_i_wave_display_capture (
     .wave_clk          (wave_clk),
     .sys_rst_n         (sys_rst_n),
-    .wave_sample_valid (i_wave_sample_valid_gated),
+    .wave_sample_valid (i_wave_sample_valid),
     .wave_sample_code  (i_wave_sample_code),
     .wave_zero_code    (i_wave_zero_code),
     .wave_zero_valid   (i_wave_zero_valid),
     .trigger_force     (u_trigger_pulse),
     .trigger_force_snapshot_ptr(u_trigger_snapshot_ptr),
     .trigger_use_external(1'b1),
+    .display_freeze    (freeze_active_wave),
     .wave_frame_valid  (i_wave_frame_valid),
     .wave_display_bank (i_wave_display_bank),
     .wave_ram_we       (i_wave_ram_we),
@@ -347,8 +354,8 @@ wave_display_capture #(
 
 text_display_preprocess #(
     .SAMPLE_WIDTH      (16),
-    .U_FULL_SCALE_X100 (1000),
-    .I_FULL_SCALE_X100 (30),
+    .U_FULL_SCALE_X100 (U_FULL_SCALE_X100),
+    .I_FULL_SCALE_X100 (I_FULL_SCALE_X100),
     .START_DELAY_CYCLES(TEXT_REFRESH_CYCLES)
 ) u_text_display_preprocess (
     .clk               (wave_clk),
@@ -452,7 +459,10 @@ lcd_display_bg u_lcd_display_bg(
     .base_color            (base_color)
 );
 
-lcd_display_text u_lcd_display_text(
+lcd_display_text #(
+    .U_FULL_SCALE_X100 (U_FULL_SCALE_X100),
+    .I_FULL_SCALE_X100 (I_FULL_SCALE_X100)
+) u_lcd_display_text(
     .pixel_xpos          (pixel_xpos),
     .pixel_ypos          (pixel_ypos),
     .u_rms_tens          (u_rms_tens_lcd),
@@ -561,18 +571,19 @@ assign freeze_button_click_qualified =
     freeze_button_start_hit &&
     (touch_press_time_ms >= FREEZE_MIN_PRESS_MS) &&
     (touch_press_time_ms <= FREEZE_MAX_PRESS_MS);
+assign freeze_active_next_lcd = freeze_button_click_qualified ? ~freeze_active_lcd : freeze_active_lcd;
+assign screen_update_enable_lcd = !freeze_active_next_lcd;
 assign freeze_active_wave = freeze_active_wave_sync2;
-assign u_wave_sample_valid_gated = u_wave_sample_valid && !freeze_active_wave;
-assign i_wave_sample_valid_gated = i_wave_sample_valid && !freeze_active_wave;
 
 assign graph_en      = (pixel_xpos >= GRAPH_X) && (pixel_xpos < (GRAPH_X + GRAPH_W)) &&
                        (pixel_ypos > GRAPH_Y) && (pixel_ypos < (GRAPH_Y + GRAPH_H - 1));
 assign graph_col_ext = pixel_xpos - GRAPH_X;
 assign graph_col     = graph_col_ext[8:0];
-assign u_wave_ram_raddr = graph_en ? {u_wave_display_bank_sync2, graph_col} :
-                                     {u_wave_display_bank_sync2, 9'd0};
-assign i_wave_ram_raddr = graph_en ? {i_wave_display_bank_sync2, graph_col} :
-                                     {i_wave_display_bank_sync2, 9'd0};
+// LCD 域只使用帧边界切换后的 front bank，避免扫描波形区域时跨 bank 撕裂。
+assign u_wave_ram_raddr = graph_en ? {u_wave_front_bank_lcd, graph_col} :
+                                     {u_wave_front_bank_lcd, 9'd0};
+assign i_wave_ram_raddr = graph_en ? {i_wave_front_bank_lcd, graph_col} :
+                                     {i_wave_front_bank_lcd, 9'd0};
 
 // ========== 波形像素检测（参数化）==========
 // 电压通道 (U)
@@ -580,7 +591,7 @@ wave_pixel_detector #(
     .GRAPH_Y(GRAPH_Y)
 ) u_wave_pixel_detector_u (
     .graph_en_d1          (graph_en_d1),
-    .wave_frame_valid_sync(u_wave_frame_valid_sync2),
+    .wave_frame_valid_sync(u_wave_front_valid_lcd),
     .wave_ram_dout        (u_wave_ram_doutb),
     .wave_prev_valid_d1   (u_wave_prev_valid_d1),
     .wave_prev_y_d1       (u_wave_prev_y_d1),
@@ -601,7 +612,7 @@ wave_pixel_detector #(
     .GRAPH_Y(GRAPH_Y)
 ) u_wave_pixel_detector_i (
     .graph_en_d1          (graph_en_d1),
-    .wave_frame_valid_sync(i_wave_frame_valid_sync2),
+    .wave_frame_valid_sync(i_wave_front_valid_lcd),
     .wave_ram_dout        (i_wave_ram_doutb),
     .wave_prev_valid_d1   (i_wave_prev_valid_d1),
     .wave_prev_y_d1       (i_wave_prev_y_d1),
@@ -702,10 +713,14 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         u_wave_display_bank_sync2 <= 1'b0;
         u_wave_frame_valid_sync1  <= 1'b0;
         u_wave_frame_valid_sync2  <= 1'b0;
+        u_wave_front_bank_lcd     <= 1'b0;
+        u_wave_front_valid_lcd    <= 1'b0;
         i_wave_display_bank_sync1 <= 1'b0;
         i_wave_display_bank_sync2 <= 1'b0;
         i_wave_frame_valid_sync1  <= 1'b0;
         i_wave_frame_valid_sync2  <= 1'b0;
+        i_wave_front_bank_lcd     <= 1'b0;
+        i_wave_front_valid_lcd    <= 1'b0;
         freeze_active_lcd         <= 1'b0;
         touch_pressed_sync1       <= 1'b0;
         touch_pressed_sync2       <= 1'b0;
@@ -717,7 +732,7 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         touch_pressed_sync2       <= touch_pressed_sync1;
         touch_pressed_sync3       <= touch_pressed_sync2;
         if (freeze_button_click_qualified)
-            freeze_active_lcd <= ~freeze_active_lcd;
+            freeze_active_lcd <= freeze_active_next_lcd;
 
         u_wave_display_bank_sync1 <= u_wave_display_bank;
         u_wave_display_bank_sync2 <= u_wave_display_bank_sync1;
@@ -729,31 +744,45 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         i_wave_frame_valid_sync2  <= i_wave_frame_valid_sync1;
         lcd_frame_done_toggle_d1   <= lcd_frame_done_toggle;
 
+        // 非冻结状态下才在 LCD 帧边界提交最新波形 front bank；首帧允许立即装载。
+        if ((screen_update_enable_lcd && frame_edge_lcd) || !u_wave_front_valid_lcd) begin
+            u_wave_front_bank_lcd  <= u_wave_display_bank_sync2;
+            u_wave_front_valid_lcd <= u_wave_frame_valid_sync2;
+        end
+
+        if ((screen_update_enable_lcd && frame_edge_lcd) || !i_wave_front_valid_lcd) begin
+            i_wave_front_bank_lcd  <= i_wave_display_bank_sync2;
+            i_wave_front_valid_lcd <= i_wave_frame_valid_sync2;
+        end
+
         base_color_d1      <= base_color;
         text_color_d1      <= text_color;
         text_en_d1         <= text_en;
         text_font_small_d1 <= text_font_small;
         text_rel_x_d1      <= text_rel_x;
         text_blank_d1      <= text_blank;
-        {
-            u_rms_tens_lcd, u_rms_units_lcd, u_rms_decile_lcd, u_rms_percentiles_lcd, u_rms_digits_valid_lcd,
-            i_rms_tens_lcd, i_rms_units_lcd, i_rms_decile_lcd, i_rms_percentiles_lcd, i_rms_digits_valid_lcd,
-            phase_neg_lcd, phase_hundreds_lcd, phase_tens_lcd, phase_units_lcd, phase_decile_lcd, phase_percentiles_lcd, phase_valid_lcd,
-            freq_hundreds_lcd, freq_tens_lcd, freq_units_lcd, freq_decile_lcd, freq_percentiles_lcd, freq_valid_lcd,
-            u_pp_tens_lcd, u_pp_units_lcd, u_pp_decile_lcd, u_pp_percentiles_lcd, u_pp_digits_valid_lcd,
-            i_pp_tens_lcd, i_pp_units_lcd, i_pp_decile_lcd, i_pp_percentiles_lcd, i_pp_digits_valid_lcd,
-            active_p_neg_lcd, active_p_tens_lcd, active_p_units_lcd, active_p_decile_lcd, active_p_percentiles_lcd,
-            reactive_q_neg_lcd, reactive_q_tens_lcd, reactive_q_units_lcd, reactive_q_decile_lcd, reactive_q_percentiles_lcd,
-            apparent_s_tens_lcd, apparent_s_units_lcd, apparent_s_decile_lcd, apparent_s_percentiles_lcd,
-            power_factor_neg_lcd, power_factor_units_lcd, power_factor_decile_lcd, power_factor_percentiles_lcd,
-            power_metrics_valid_lcd
-        } <= text_packet_front_lcd;
+        // Freeze 时只锁住 LCD 当前显示数值，后台文字测量和 text packet 仍继续刷新。
+        if (screen_update_enable_lcd) begin
+            {
+                u_rms_tens_lcd, u_rms_units_lcd, u_rms_decile_lcd, u_rms_percentiles_lcd, u_rms_digits_valid_lcd,
+                i_rms_tens_lcd, i_rms_units_lcd, i_rms_decile_lcd, i_rms_percentiles_lcd, i_rms_digits_valid_lcd,
+                phase_neg_lcd, phase_hundreds_lcd, phase_tens_lcd, phase_units_lcd, phase_decile_lcd, phase_percentiles_lcd, phase_valid_lcd,
+                freq_hundreds_lcd, freq_tens_lcd, freq_units_lcd, freq_decile_lcd, freq_percentiles_lcd, freq_valid_lcd,
+                u_pp_tens_lcd, u_pp_units_lcd, u_pp_decile_lcd, u_pp_percentiles_lcd, u_pp_digits_valid_lcd,
+                i_pp_tens_lcd, i_pp_units_lcd, i_pp_decile_lcd, i_pp_percentiles_lcd, i_pp_digits_valid_lcd,
+                active_p_neg_lcd, active_p_tens_lcd, active_p_units_lcd, active_p_decile_lcd, active_p_percentiles_lcd,
+                reactive_q_neg_lcd, reactive_q_tens_lcd, reactive_q_units_lcd, reactive_q_decile_lcd, reactive_q_percentiles_lcd,
+                apparent_s_tens_lcd, apparent_s_units_lcd, apparent_s_decile_lcd, apparent_s_percentiles_lcd,
+                power_factor_neg_lcd, power_factor_units_lcd, power_factor_decile_lcd, power_factor_percentiles_lcd,
+                power_metrics_valid_lcd
+            } <= text_packet_front_lcd;
+        end
 
         graph_en_d1  <= graph_en;
         graph_col_d1 <= graph_col;
         graph_row_d1 <= pixel_ypos;
 
-        if (graph_en_d1 && u_wave_frame_valid_sync2) begin
+        if (graph_en_d1 && u_wave_front_valid_lcd) begin
             u_wave_prev_valid_d1 <= 1'b1;
             u_wave_prev_y_d1     <= u_wave_ram_doutb;
             u_wave_prev_col_d1   <= graph_col_d1;
@@ -762,7 +791,7 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
             u_wave_prev_valid_d1 <= 1'b0;
         end
 
-        if (graph_en_d1 && i_wave_frame_valid_sync2) begin
+        if (graph_en_d1 && i_wave_front_valid_lcd) begin
             i_wave_prev_valid_d1 <= 1'b1;
             i_wave_prev_y_d1     <= i_wave_ram_doutb;
             i_wave_prev_col_d1   <= graph_col_d1;

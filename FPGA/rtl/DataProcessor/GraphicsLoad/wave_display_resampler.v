@@ -4,7 +4,7 @@
  * 模块: wave_display_resampler
  * 功能:
  *   按显示帧节拍从原始采样流中提取用于绘制波形的显示点，并将采样码值换算为屏幕 Y 坐标。
- *   模块内部维护重采样节拍、幅值缩放除法与点提交时序，对外输出触发采样脉冲与显示点结果。
+ *   模块内部维护重采样节拍、幅值缩放乘除法与点提交时序，对外输出触发采样脉冲与显示点结果。
  *
  * 输入:
  *   clk: 模块工作时钟
@@ -27,8 +27,7 @@ module wave_display_resampler #(
     parameter integer GRAPH_H            = 240,
     parameter integer GRAPH_HALF_H       = 120,
     parameter integer DIV_WIDTH          = 32,
-    parameter integer VERT_SCALE_NUM     = 1,
-    parameter integer VERT_SCALE_DEN     = 1,
+    parameter integer FULL_SCALE_CODE    = (1 << (WIDTH - 1)) - 1,
     parameter [WIDTH-1:0] CENTER_DEFAULT = {1'b1, {(WIDTH - 1){1'b0}}}
 )(
     input  wire             clk,
@@ -43,8 +42,13 @@ module wave_display_resampler #(
     output reg              resample_pending
 );
 
-// 串行除法器内部数据位宽与半量程码值配置
-localparam integer HALF_SCALE_CODE = (1 << (WIDTH - 1));
+// 串行除法器内部数据位宽与波形满量程码值配置。
+localparam [DIV_WIDTH-1:0] FULL_SCALE_DIVISOR   = FULL_SCALE_CODE;
+localparam [DIV_WIDTH-1:0] FULL_SCALE_ROUND_BIAS= FULL_SCALE_DIVISOR >> 1;
+localparam integer GRAPH_FULL_SCALE_PX = GRAPH_HALF_H - 2;
+localparam integer AMP_DELTA_WIDTH = WIDTH + 1;
+localparam integer AMP_SCALE_WIDTH = 15;
+localparam integer AMP_PRODUCT_WIDTH = AMP_DELTA_WIDTH + AMP_SCALE_WIDTH;
 
 // 显示重采样状态与幅值换算中间量
 reg  [21:0]          resample_acc;
@@ -54,23 +58,46 @@ reg  [DIV_WIDTH-1:0] divisor;
 reg                  sample_positive;
 
 // 组合线网：零点选择、节拍累计、点提交判定
-wire [WIDTH-1:0] display_zero_code;
-wire [21:0]      resample_sum;
-wire             div_busy;
-wire             div_done;
-wire             div_zero;
-wire [DIV_WIDTH-1:0] div_quotient;
+wire [WIDTH-1:0]             display_zero_code;
+wire [WIDTH:0]               sample_delta_abs;
+wire signed [WIDTH:0]        sample_delta_abs_signed;
+wire signed [AMP_SCALE_WIDTH-1:0] graph_full_scale_px_signed;
+wire signed [AMP_PRODUCT_WIDTH-1:0] amp_product_signed;
+wire [DIV_WIDTH-1:0]         amp_product_unsigned;
+wire [21:0]                  resample_sum;
+wire                         div_busy;
+wire                         div_done;
+wire                         div_zero;
+wire [DIV_WIDTH-1:0]         div_quotient;
 
 integer amp_px;
 integer y_next;
 reg [7:0] y_clamped;
 
 assign display_zero_code    = zero_valid ? zero_code : CENTER_DEFAULT;
+assign sample_delta_abs     = (sample_code >= display_zero_code) ?
+                              {1'b0, (sample_code - display_zero_code)} :
+                              {1'b0, (display_zero_code - sample_code)};
+assign sample_delta_abs_signed = $signed(sample_delta_abs);
+assign graph_full_scale_px_signed = GRAPH_FULL_SCALE_PX;
+assign amp_product_unsigned = amp_product_signed[AMP_PRODUCT_WIDTH-1] ?
+                              {DIV_WIDTH{1'b0}} :
+                              amp_product_signed[DIV_WIDTH-1:0];
 assign resample_sum         = resample_acc + POINT_COUNT;
 assign trigger_sample_valid = !resample_pending && !div_busy && (resample_sum >= FRAME_TICKS);
 assign point_valid          = div_done && resample_pending;
 
-// 幅值缩放除法器：将采样偏移量映射到半屏像素高度
+// 幅值缩放乘法器：先将采样偏移量乘以图框半高，后续再按满量程码值归一化。
+multiplier_signed #(
+    .A_WIDTH(AMP_DELTA_WIDTH),
+    .B_WIDTH(AMP_SCALE_WIDTH)
+) u_wave_amp_multiplier (
+    .multiplicand(sample_delta_abs_signed),
+    .multiplier  (graph_full_scale_px_signed),
+    .product     (amp_product_signed)
+);
+
+// 幅值缩放除法器：将满量程码值偏移映射到图框半高。
 divider_unsigned #(
     .WIDTH(DIV_WIDTH)
 ) u_wave_amp_divider (
@@ -106,20 +133,9 @@ always @(posedge clk or negedge rst_n) begin
                 point_sample_code <= sample_code;
                 resample_pending  <= 1'b1;
                 div_start         <= 1'b1;
-
-                if (sample_code >= display_zero_code) begin
-                    sample_positive <= 1'b1;
-                    divisor         <= HALF_SCALE_CODE * VERT_SCALE_DEN;
-                    dividend        <= ({{(DIV_WIDTH - WIDTH){1'b0}}, (sample_code - display_zero_code)} *
-                                        (GRAPH_HALF_H - 2) * VERT_SCALE_NUM) +
-                                       ((HALF_SCALE_CODE * VERT_SCALE_DEN) >> 1);
-                end else begin
-                    sample_positive <= 1'b0;
-                    divisor         <= HALF_SCALE_CODE * VERT_SCALE_DEN;
-                    dividend        <= ({{(DIV_WIDTH - WIDTH){1'b0}}, (display_zero_code - sample_code)} *
-                                        (GRAPH_HALF_H - 2) * VERT_SCALE_NUM) +
-                                       ((HALF_SCALE_CODE * VERT_SCALE_DEN) >> 1);
-                end
+                sample_positive   <= (sample_code >= display_zero_code);
+                divisor           <= FULL_SCALE_DIVISOR;
+                dividend          <= amp_product_unsigned + FULL_SCALE_ROUND_BIAS;
             end else begin
                 // 未到输出显示点的时刻时，持续累计显示帧节拍
                 resample_acc <= resample_sum;

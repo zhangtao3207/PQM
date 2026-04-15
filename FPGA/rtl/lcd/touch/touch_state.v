@@ -1,30 +1,26 @@
-`ifndef TOUCH_STATE_V
-`define TOUCH_STATE_V
 /*
  * 模块: touch_state
  * 功能:
- *   触摸状态解析模块，将坐标流转换为按下、点击、长按和拖拽状态。
- *
+ *   解析触摸坐标有效信号和坐标数据，生成按下、释放、点击、长按和拖拽事件。
  * 输入:
  *   clk: 系统时钟。
- *   rst_n: 低有效复位信号。
- *   touch_valid: 触摸坐标有效标志。
- *   touch_data: 触摸坐标打包数据。
- *
+ *   rst_n: 低有效异步复位信号。
+ *   touch_valid: 原始触摸坐标有效标志。
+ *   touch_data: 原始触摸坐标打包数据，高 16 位为 X 坐标，低 16 位为 Y 坐标。
  * 输出:
- *   pressed: 触摸按下状态。
- *   unpressed: 触摸释放状态。
- *   click_pulse: 触摸点击脉冲。
- *   long_press_pulse: 触摸长按脉冲。
- *   drag_pulse: 触摸拖拽脉冲。
- *   click_state: 触摸点击状态。
- *   long_press_state: 触摸长按状态。
- *   drag_state: 触摸拖拽状态。
- *   start_x: 触摸起点 X 坐标。
- *   start_y: 触摸起点 Y 坐标。
- *   end_x: 触摸终点 X 坐标。
- *   end_y: 触摸终点 Y 坐标。
- *   press_time_ms: 按压时长，单位 ms。
+ *   pressed: 消抖后的触摸按下状态。
+ *   unpressed: 消抖后的触摸释放状态。
+ *   click_pulse: 释放时判定为点击事件的单周期脉冲。
+ *   long_press_pulse: 按压超过长按阈值时产生的单周期脉冲。
+ *   drag_pulse: 释放时判定为拖拽事件的单周期脉冲。
+ *   click_state: 当前周期点击事件状态。
+ *   long_press_state: 当前按压是否已经进入长按状态。
+ *   drag_state: 当前按压是否已经进入拖拽状态。
+ *   start_x: 本次触摸稳定后的起点 X 坐标。
+ *   start_y: 本次触摸稳定后的起点 Y 坐标。
+ *   end_x: 本次触摸最新终点 X 坐标。
+ *   end_y: 本次触摸最新终点 Y 坐标。
+ *   press_time_ms: 当前按压持续时间，单位为 ms。
  */
 module touch_state #(
     parameter CLK_FREQ_HZ      = 50_000_000,
@@ -78,9 +74,10 @@ wire [15:0] dy = (cur_y >= start_y) ? (cur_y - start_y) : (start_y - cur_y);
 wire [16:0] drag_dist = {1'b0, dx} + {1'b0, dy};
 wire        drag_hit  = (drag_dist >= DRAG_THRESH_PX);
 
+// 由按下状态直接生成释放状态，供上层显示或状态机使用。
 assign unpressed = ~pressed;
 
-// 对原始触摸有效信号做消抖，避免抖动造成多次边沿触发。
+// 在 clk 域对原始 touch_valid 做消抖，并锁存稳定触摸期间的最新坐标。
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         touch_valid_filt    <= 1'b0;
@@ -107,7 +104,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-// 根据稳定后的触摸状态生成点击、长按、拖动等高层事件。
+// 在 clk 域根据消抖后的触摸边沿和坐标变化，生成点击、长按和拖拽事件。
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         pressed            <= 1'b0;
@@ -153,7 +150,7 @@ always @(posedge clk or negedge rst_n) begin
         else if(touch_valid_filt_d0) begin
             pressed <= 1'b1;
             if(!start_locked) begin
-                // Use first stable sampled point as gesture start to avoid stale-coordinate misjudge.
+                // 使用第一个稳定采样点作为手势起点，避免旧坐标导致误判。
                 start_x      <= cur_x;
                 start_y      <= cur_y;
                 end_x        <= cur_x;
@@ -193,7 +190,7 @@ always @(posedge clk or negedge rst_n) begin
                 click_pulse <= 1'b1;
                 click_state <= 1'b1;
             end
-            // Return to unpressed state after release.
+            // 释放后清空持续状态，等待下一次触摸重新判定。
             long_press_state <= 1'b0;
             drag_state       <= 1'b0;
             start_locked     <= 1'b0;
@@ -203,4 +200,3 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
-`endif

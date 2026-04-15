@@ -1,4 +1,3 @@
-`include "touch_state.v"
 
 /*
  * 模块: touch_top

@@ -68,7 +68,10 @@
  *   text_rel_y: 信号。
  *   text_color: 信号。
  */
-module lcd_display_text(
+module lcd_display_text #(
+    parameter integer U_FULL_SCALE_X100 = 1000,
+    parameter integer I_FULL_SCALE_X100 = 300
+)(
     input      [10:0] pixel_xpos,
     input      [10:0] pixel_ypos,
     input      [7:0]  u_rms_tens,
@@ -169,14 +172,14 @@ localparam [10:0] AUTO_AUTO_TXT_X   = 11'd696;
 localparam [10:0] AUTO_TXT_Y   = 11'd6;
 localparam [10:0] PLOT_TXT_X   = 11'd68;
 localparam [10:0] PLOT_TXT_Y   = 11'd72;
-localparam [10:0] AXIS_V_X     = 11'd40;
+localparam [10:0] AXIS_V_X     = 11'd60;
 localparam [10:0] AXIS_V_Y     = 11'd118;
 localparam [10:0] AXIS_I_X     = 11'd306;
 localparam [10:0] AXIS_I_Y     = 11'd118;
-localparam [10:0] AXIS_TICK0_X = 11'd36;
-localparam [10:0] AXIS_TICK1_X = 11'd117;
-localparam [10:0] AXIS_TICK2_X = 11'd213;
-localparam [10:0] AXIS_TICK3_X = 11'd309;
+localparam [10:0] AXIS_TICK0_X = 11'd66;
+localparam [10:0] AXIS_TICK1_X = 11'd140;
+localparam [10:0] AXIS_TICK2_X = 11'd229;
+localparam [10:0] AXIS_TICK3_X = 11'd317;
 localparam [10:0] AXIS_TICK4_X = 11'd389;
 localparam [10:0] AXIS_TICK_Y  = 11'd392;
 localparam [10:0] AXIS_T_X     = 11'd336;
@@ -203,11 +206,11 @@ localparam integer BTN_LEN      = 4;
 localparam integer AUTO_FREEZE_LEN = 6;
 localparam integer AUTO_AUTO_LEN   = 4;
 localparam integer PLOT_LEN     = 20;
-localparam integer AXIS_V_LEN   = 12;
+localparam integer AXIS_V_LEN   = 11;
 localparam integer AXIS_I_LEN   = 11;
 localparam integer AXIS_T_LEN   = 8;
-localparam integer V_TICK_LEN   = 3;
-localparam integer I_TICK_LEN   = 4;
+localparam integer V_TICK_LEN   = 5;
+localparam integer I_TICK_LEN   = 5;
 localparam integer T_TICK_LEN   = 3;
 localparam integer RP_HEAD_LEN  = 10;
 localparam integer FREQ_LEN     = 22;
@@ -224,13 +227,108 @@ localparam [8*BTN_LEN-1:0]     BTN_STR     = "MODE";
 localparam [8*AUTO_FREEZE_LEN-1:0] AUTO_FREEZE_STR = "Freeze";
 localparam [8*AUTO_AUTO_LEN-1:0]   AUTO_AUTO_STR   = "Auto";
 localparam [8*PLOT_LEN-1:0]    PLOT_STR    = "Time Domain Analysis";
-localparam [8*AXIS_V_LEN-1:0]  AXIS_V_STR  = "Voltage ( V)";
+localparam [8*AXIS_V_LEN-1:0]  AXIS_V_STR  = "Voltage (V)";
 localparam [8*AXIS_I_LEN-1:0]  AXIS_I_STR  = "Current (A)";
 localparam [8*AXIS_T_LEN-1:0]  AXIS_T_STR  = "Time(ms)";
 localparam [8*RP_HEAD_LEN-1:0] RP_HEAD_STR = "Parameters";
 
+// 将 x100 满量程按 7 档刻度需要的 1/3 比例做常量化舍入，避免在显示逻辑中新增除法。
+function integer div3_round_const;
+    input integer value;
+    integer work;
+    begin
+        work = value + 1;
+        div3_round_const = 0;
+        while (work >= 3) begin
+            work = work - 3;
+            div3_round_const = div3_round_const + 1;
+        end
+    end
+endfunction
+
+localparam integer U_TICK_FULL_X100       = U_FULL_SCALE_X100;
+localparam integer U_TICK_TWO_THIRDS_X100 = div3_round_const(U_FULL_SCALE_X100 + U_FULL_SCALE_X100);
+localparam integer U_TICK_ONE_THIRD_X100  = div3_round_const(U_FULL_SCALE_X100);
+localparam integer I_TICK_FULL_X100       = I_FULL_SCALE_X100;
+localparam integer I_TICK_TWO_THIRDS_X100 = div3_round_const(I_FULL_SCALE_X100 + I_FULL_SCALE_X100);
+localparam integer I_TICK_ONE_THIRD_X100  = div3_round_const(I_FULL_SCALE_X100);
+
+wire [7:0] u_tick_full_tens;
+wire [7:0] u_tick_full_units;
+wire [7:0] u_tick_full_decile;
+wire [7:0] u_tick_two_thirds_tens;
+wire [7:0] u_tick_two_thirds_units;
+wire [7:0] u_tick_two_thirds_decile;
+wire [7:0] u_tick_one_third_tens;
+wire [7:0] u_tick_one_third_units;
+wire [7:0] u_tick_one_third_decile;
+wire [7:0] i_tick_full_tens;
+wire [7:0] i_tick_full_units;
+wire [7:0] i_tick_full_decile;
+wire [7:0] i_tick_two_thirds_tens;
+wire [7:0] i_tick_two_thirds_units;
+wire [7:0] i_tick_two_thirds_decile;
+wire [7:0] i_tick_one_third_tens;
+wire [7:0] i_tick_one_third_units;
+wire [7:0] i_tick_one_third_decile;
+
 integer line_slot;
 integer tick_slot;
+
+// 将满量程及 1/3、2/3 刻度值拆成显示用十进制位，刻度文本不再单独硬编码物理量。
+value_x100_to_digits u_u_tick_full_digits (
+    .value_x100 (U_TICK_FULL_X100 + 5),
+    .hundreds   (),
+    .tens       (u_tick_full_tens),
+    .units      (u_tick_full_units),
+    .decile     (u_tick_full_decile),
+    .percentiles()
+);
+
+value_x100_to_digits u_u_tick_two_thirds_digits (
+    .value_x100 (U_TICK_TWO_THIRDS_X100 + 5),
+    .hundreds   (),
+    .tens       (u_tick_two_thirds_tens),
+    .units      (u_tick_two_thirds_units),
+    .decile     (u_tick_two_thirds_decile),
+    .percentiles()
+);
+
+value_x100_to_digits u_u_tick_one_third_digits (
+    .value_x100 (U_TICK_ONE_THIRD_X100 + 5),
+    .hundreds   (),
+    .tens       (u_tick_one_third_tens),
+    .units      (u_tick_one_third_units),
+    .decile     (u_tick_one_third_decile),
+    .percentiles()
+);
+
+value_x100_to_digits u_i_tick_full_digits (
+    .value_x100 (I_TICK_FULL_X100 + 5),
+    .hundreds   (),
+    .tens       (i_tick_full_tens),
+    .units      (i_tick_full_units),
+    .decile     (i_tick_full_decile),
+    .percentiles()
+);
+
+value_x100_to_digits u_i_tick_two_thirds_digits (
+    .value_x100 (I_TICK_TWO_THIRDS_X100 + 5),
+    .hundreds   (),
+    .tens       (i_tick_two_thirds_tens),
+    .units      (i_tick_two_thirds_units),
+    .decile     (i_tick_two_thirds_decile),
+    .percentiles()
+);
+
+value_x100_to_digits u_i_tick_one_third_digits (
+    .value_x100 (I_TICK_ONE_THIRD_X100 + 5),
+    .hundreds   (),
+    .tens       (i_tick_one_third_tens),
+    .units      (i_tick_one_third_units),
+    .decile     (i_tick_one_third_decile),
+    .percentiles()
+);
 
 // ASCII 氓聢掳氓颅聴盲陆聯莽麓垄氓录聲莽職聞莽禄聼盲赂聙忙聵聽氓掳聞茫聙聜
 function [6:0] ascii_to_idx;
@@ -404,37 +502,63 @@ function [7:0] text_char_from_str;
     end
 endfunction
 
-// 氓路娄盲戮搂莽聰碌氓聨聥氓聢禄氓潞娄忙聳聡忙聹卢忙聼楼猫隆篓茫聙聜
+// 7 档纵向刻度统一显示为“符号 + 两位整数 + 一位小数”。
+function [7:0] tick_tens_ascii;
+    input [7:0] tens_digit;
+    begin
+        tick_tens_ascii = (tens_digit == 8'd0) ? " " : digit_to_ascii(tens_digit);
+    end
+endfunction
+
+function [7:0] tick_value_ascii;
+    input [7:0] sign_char;
+    input [7:0] tens_digit;
+    input [7:0] units_digit;
+    input [7:0] decile_digit;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0: tick_value_ascii = sign_char;
+            1: tick_value_ascii = tick_tens_ascii(tens_digit);
+            2: tick_value_ascii = digit_to_ascii(units_digit);
+            3: tick_value_ascii = ".";
+            4: tick_value_ascii = digit_to_ascii(decile_digit);
+            default: tick_value_ascii = " ";
+        endcase
+    end
+endfunction
+
+// 电压纵向刻度：按 U_FULL_SCALE_X100 拆成 +FS、+2/3FS、+1/3FS、0、-1/3FS、-2/3FS、-FS。
 function [7:0] voltage_tick_ascii;
     input integer tick_index;
     input integer char_slot;
     begin
         case (tick_index)
-            0:  voltage_tick_ascii = text_char_from_str("+12", V_TICK_LEN, char_slot);
-            1:  voltage_tick_ascii = text_char_from_str(" +8", V_TICK_LEN, char_slot);
-            2:  voltage_tick_ascii = text_char_from_str(" +4", V_TICK_LEN, char_slot);
-            3:  voltage_tick_ascii = text_char_from_str("  0", V_TICK_LEN, char_slot);
-            4:  voltage_tick_ascii = text_char_from_str(" -4", V_TICK_LEN, char_slot);
-            5:  voltage_tick_ascii = text_char_from_str(" -8", V_TICK_LEN, char_slot);
-            6:  voltage_tick_ascii = text_char_from_str("-12", V_TICK_LEN, char_slot);
+            0:  voltage_tick_ascii = tick_value_ascii("+", u_tick_full_tens, u_tick_full_units, u_tick_full_decile, char_slot);
+            1:  voltage_tick_ascii = tick_value_ascii("+", u_tick_two_thirds_tens, u_tick_two_thirds_units, u_tick_two_thirds_decile, char_slot);
+            2:  voltage_tick_ascii = tick_value_ascii("+", u_tick_one_third_tens, u_tick_one_third_units, u_tick_one_third_decile, char_slot);
+            3:  voltage_tick_ascii = tick_value_ascii(" ", 8'd0, 8'd0, 8'd0, char_slot);
+            4:  voltage_tick_ascii = tick_value_ascii("-", u_tick_one_third_tens, u_tick_one_third_units, u_tick_one_third_decile, char_slot);
+            5:  voltage_tick_ascii = tick_value_ascii("-", u_tick_two_thirds_tens, u_tick_two_thirds_units, u_tick_two_thirds_decile, char_slot);
+            6:  voltage_tick_ascii = tick_value_ascii("-", u_tick_full_tens, u_tick_full_units, u_tick_full_decile, char_slot);
             default: voltage_tick_ascii = " ";
         endcase
     end
 endfunction
 
-// 氓聫鲁盲戮搂莽聰碌忙碌聛氓聢禄氓潞娄忙聳聡忙聹卢忙聼楼猫隆篓茫聙聜
+// 电流纵向刻度：按 I_FULL_SCALE_X100 拆成 +FS、+2/3FS、+1/3FS、0、-1/3FS、-2/3FS、-FS。
 function [7:0] current_tick_ascii;
     input integer tick_index;
     input integer char_slot;
     begin
         case (tick_index)
-            0: current_tick_ascii = text_char_from_str("+0.3", I_TICK_LEN, char_slot);
-            1: current_tick_ascii = text_char_from_str("+0.2", I_TICK_LEN, char_slot);
-            2: current_tick_ascii = text_char_from_str("+0.1", I_TICK_LEN, char_slot);
-            3: current_tick_ascii = text_char_from_str(" 0.0", I_TICK_LEN, char_slot);
-            4: current_tick_ascii = text_char_from_str("-0.1", I_TICK_LEN, char_slot);
-            5: current_tick_ascii = text_char_from_str("-0.2", I_TICK_LEN, char_slot);
-            6: current_tick_ascii = text_char_from_str("-0.3", I_TICK_LEN, char_slot);
+            0: current_tick_ascii = tick_value_ascii("+", i_tick_full_tens, i_tick_full_units, i_tick_full_decile, char_slot);
+            1: current_tick_ascii = tick_value_ascii("+", i_tick_two_thirds_tens, i_tick_two_thirds_units, i_tick_two_thirds_decile, char_slot);
+            2: current_tick_ascii = tick_value_ascii("+", i_tick_one_third_tens, i_tick_one_third_units, i_tick_one_third_decile, char_slot);
+            3: current_tick_ascii = tick_value_ascii(" ", 8'd0, 8'd0, 8'd0, char_slot);
+            4: current_tick_ascii = tick_value_ascii("-", i_tick_one_third_tens, i_tick_one_third_units, i_tick_one_third_decile, char_slot);
+            5: current_tick_ascii = tick_value_ascii("-", i_tick_two_thirds_tens, i_tick_two_thirds_units, i_tick_two_thirds_decile, char_slot);
+            6: current_tick_ascii = tick_value_ascii("-", i_tick_full_tens, i_tick_full_units, i_tick_full_decile, char_slot);
             default: current_tick_ascii = " ";
         endcase
     end
@@ -472,7 +596,7 @@ function [7:0] freq_line_ascii;
     end
 endfunction
 
-// U_rms 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
+// U_rms line formatter.
 function [7:0] u_rms_line_ascii;
     input integer char_slot;
     begin
