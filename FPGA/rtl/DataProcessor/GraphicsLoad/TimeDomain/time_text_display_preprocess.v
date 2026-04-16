@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: text_display_preprocess
+ * 模块: time_text_display_preprocess
  * 功能:
  *   在 LCD 帧完成事件后调度 RMS、峰峰值、相位、频率、标幺换算和数字拆分流程，
  *   将电压、电流、相位、频率和功率相关结果统一提交给文本显示链路。
@@ -74,7 +74,7 @@
  *   power_factor_percentiles: 功率因数百分位数字。
  *   power_metrics_valid: 功率相关显示结果有效标志。
  */
-module text_display_preprocess #(
+module time_text_display_preprocess #(
     parameter integer SAMPLE_WIDTH          = 16,
     parameter integer RMS_MAX_FRAME_SAMPLES = 8192,
     parameter integer RMS_N_WIDTH           = (RMS_MAX_FRAME_SAMPLES <= 2) ? 2 : $clog2(RMS_MAX_FRAME_SAMPLES),
@@ -251,12 +251,12 @@ assign base_packet_valid       = rms_valid_latched && u_pp_valid_latched && i_pp
 assign power_packet_valid      = power_metrics_valid_latched;
 
 // 原始测量调度器统一启动 RawDataCal 模块，并返回同一批次的 raw/valid 结果。
-parameters_initiator #(
+time_parameters_initiator #(
     .SAMPLE_WIDTH(SAMPLE_WIDTH),
     .MAX_FRAME_SAMPLES(RMS_MAX_FRAME_SAMPLES),
     .N_WIDTH(RMS_N_WIDTH),
     .MEASURE_FRAME_SAMPLES(RMS_FRAME_SAMPLES)
-) u_parameters_initiator (
+) u_time_parameters_initiator (
     .clk             (clk),
     .rst_n           (rst_n),
     .start           (parameters_start),
@@ -290,9 +290,9 @@ parameters_initiator #(
 );
 
 // 将 RMS、峰峰值、相位、频率和功率相关原始量换算为 x100 定点显示值。
-x100_normalizer #(
+time_x100_normalizer #(
     .CODE_WIDTH(SAMPLE_WIDTH), .U_FULL_SCALE_X100(U_FULL_SCALE_X100), .I_FULL_SCALE_X100(I_FULL_SCALE_X100)
-) u_x100_normalizer (
+) u_time_x100_normalizer (
     .clk(clk), .rst_n(rst_n), .start(x100_start),
     .u_rms_raw(u_rms_raw_pending), .i_rms_raw(i_rms_raw_pending), .rms_valid(rms_valid_latched),
     .u_pp_raw(u_pp_raw_pending), .i_pp_raw(i_pp_raw_pending), .u_pp_valid(u_pp_valid_latched), .i_pp_valid(i_pp_valid_latched),
@@ -307,7 +307,7 @@ x100_normalizer #(
 );
 
 // 将 x100 定点值拆分成文本显示需要的符号位和十进制数字位。
-data_separator u_data_separator (
+time_data_separator u_time_data_separator (
     .clk(clk), .rst_n(rst_n), .start(separator_start),
     .u_rms_x100(u_rms_x100_wire), .i_rms_x100(i_rms_x100_wire), .rms_valid(rms_valid_latched),
     .u_pp_x100(u_pp_x100_wire), .i_pp_x100(i_pp_x100_wire), .u_pp_valid(u_pp_valid_latched), .i_pp_valid(i_pp_valid_latched),
@@ -456,7 +456,7 @@ always @(posedge clk or negedge rst_n) begin
                 end
             end
             ST_START_BASIC: begin
-                // 启动 parameters_initiator 原始测量调度阶段，并清空本轮 raw 结果锁存。
+                // 启动 time_parameters_initiator 原始测量调度阶段，并清空本轮 raw 结果锁存。
                 parameters_start         <= 1'b1;
                 rms_valid_latched        <= 1'b0;
                 u_pp_valid_latched       <= 1'b0;
@@ -478,7 +478,7 @@ always @(posedge clk or negedge rst_n) begin
                 state                    <= ST_WAIT_BASIC;
             end
             ST_WAIT_BASIC: begin
-                // parameters_initiator 返回批次完成后，锁存同一批 raw/valid 结果再进入 x100 换算阶段。
+                // time_parameters_initiator 返回批次完成后，锁存同一批 raw/valid 结果再进入 x100 换算阶段。
                 if (parameters_done) begin
                     u_rms_raw_pending        <= u_rms_raw_wire;
                     i_rms_raw_pending        <= i_rms_raw_wire;

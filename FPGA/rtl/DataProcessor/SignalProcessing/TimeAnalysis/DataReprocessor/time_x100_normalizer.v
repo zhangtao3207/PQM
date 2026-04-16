@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: x100_normalizer
+ * 模块: time_x100_normalizer
  * 功能:
  *   接收各测量模块输出的 32 位补码 raw 数据，
  *   在一批 raw 数据稳定后，统一完成显示链路所需的 x100 换算。
@@ -39,7 +39,7 @@
  *   apparent_s_x100: 视在功率的 x100 补码结果。
  *   power_factor_x100: 功率因数的 x100 补码结果。
  */
-module x100_normalizer #(
+module time_x100_normalizer #(
     parameter integer CODE_WIDTH        = 16,
     parameter integer U_FULL_SCALE_X100 = 1000,
     parameter integer I_FULL_SCALE_X100 = 300,

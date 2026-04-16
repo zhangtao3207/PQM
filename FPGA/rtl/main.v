@@ -349,11 +349,11 @@ AD7606_Parallel_DRIVER  u_AD7606_Parallel_DRIVER (
 //==========================================================================
 // ADC zero-code tracker
 //==========================================================================
-zero_code_tracker #(
+time_zero_code_tracker #(
     .WIDTH          (16),
     .EST_SHIFT      (8),
     .WARMUP_SAMPLES (512)
-) u_adc_u_zero_code_tracker (
+) u_adc_u_time_zero_code_tracker (
     .clk           (sys_clk),
     .rst_n         (rst_n),
     .sample_valid  (adc_u_wave_sample_valid),
@@ -362,11 +362,11 @@ zero_code_tracker #(
     .zero_valid    (adc_u_zero_valid)
 );
 
-zero_code_tracker #(
+time_zero_code_tracker #(
     .WIDTH          (16),
     .EST_SHIFT      (8),
     .WARMUP_SAMPLES (512)
-) u_adc_i_zero_code_tracker (
+) u_adc_i_time_zero_code_tracker (
     .clk           (sys_clk),
     .rst_n         (rst_n),
     .sample_valid  (adc_i_wave_sample_valid),

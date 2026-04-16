@@ -1,6 +1,6 @@
 
 /*
- * 模块: data_separator
+ * 模块: time_data_separator
  * 功能:
  *   在所有 x100 数据已经稳定后，统一提取符号位并拆分出显示所需的十进制各位。
  * 输入:
@@ -28,7 +28,7 @@
  *   各量的 sign/hundreds/tens/units/decile/percentiles/valid:
  *     提供给显示链路的标准化数字位与符号位。
  */
-module data_separator (
+module time_data_separator (
     input  wire                    clk,
     input  wire                    rst_n,
     input  wire                    start,

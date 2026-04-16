@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: wave_display_resampler
+ * 模块: time_wave_display_resampler
  * 功能:
  *   按显示帧节拍从原始采样流中提取用于绘制波形的显示点，并将采样码值换算为屏幕 Y 坐标。
  *   模块内部维护重采样节拍、幅值缩放乘除法与点提交时序，对外输出触发采样脉冲与显示点结果。
@@ -20,7 +20,7 @@
  *   point_y: 本次提交显示点的屏幕 Y 坐标
  *   resample_pending: 已启动一次点生成、正在等待除法结果返回
  */
-module wave_display_resampler #(
+module time_wave_display_resampler #(
     parameter integer WIDTH              = 16,
     parameter integer POINT_COUNT        = 384,
     parameter integer FRAME_TICKS        = 3_000_000,

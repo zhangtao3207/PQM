@@ -46,6 +46,8 @@ localparam [23:0] BG_COLOR      = 24'h0B1524;
 localparam [23:0] TEXT_WHITE    = 24'hF2F6FA;
 localparam [23:0] WAVE_U_COLOR  = 24'h39E46F;
 localparam [23:0] WAVE_I_COLOR  = 24'hFFD84E;
+localparam [23:0] ACCENT_COLOR  = 24'h58B6FF;
+localparam [23:0] PHASE_NEG_COLOR = 24'hFF5A5F;
 localparam integer TEXT_REFRESH_CYCLES = 1_000_000;  // 20ms @ 50MHz wave_clk
 localparam integer U_FULL_SCALE_X100 = 1000;          // 电压正满量程: 10.00V
 localparam integer I_FULL_SCALE_X100 = 300;           // 电流正满量程: 3.00A
@@ -54,13 +56,30 @@ localparam [10:0] GRAPH_X       = 11'd66;
 localparam [10:0] GRAPH_Y       = 11'd144;
 localparam [10:0] GRAPH_W       = 11'd354;
 localparam [10:0] GRAPH_H       = 11'd240;
+localparam [10:0] MODE_BTN_X    = 11'd572;
+localparam [10:0] MODE_BTN_Y    = 11'd6;
+localparam [10:0] MODE_BTN_W    = 11'd87;
+localparam [10:0] MODE_BTN_H    = 11'd32;
 localparam [10:0] FREEZE_BTN_X  = 11'd672;
 localparam [10:0] FREEZE_BTN_Y  = 11'd6;
 localparam [10:0] FREEZE_BTN_W  = 11'd110;
 localparam [10:0] FREEZE_BTN_H  = 11'd32;
+localparam [10:0] HARM_PREV_X   = 11'd325;
+localparam [10:0] HARM_NEXT_X   = 11'd375;
+localparam [10:0] HARM_BTN_Y    = 11'd180;
+localparam [10:0] HARM_BTN_W    = 11'd38;
+localparam [10:0] HARM_BTN_H    = 11'd28;
+localparam [10:0] FREQ_GRAPH_X  = 11'd30;
+localparam [10:0] FREQ_GRAPH_W  = 11'd400;
+localparam [10:0] FREQ_MAG_Y    = 11'd144;
+localparam [10:0] FREQ_MAG_BASE_Y = 11'd324;
+localparam [10:0] FREQ_PHASE_Y  = 11'd344;
+localparam [10:0] FREQ_PHASE_BASE_Y = 11'd422;
+localparam [4:0]  HARMONIC_MAX_WINDOW_INDEX = 5'd19;
 localparam integer TOUCH_PRESSED_BIT   = 4;
 localparam [15:0] FREEZE_MIN_PRESS_MS  = 16'd30;
 localparam [15:0] FREEZE_MAX_PRESS_MS  = 16'd500;
+localparam [15:0] HARMONIC_LONG_PRESS_MS = 16'd700;
 localparam integer TEXT_PACKET_WIDTH   = 339;
 
 // LCD 像素时钟域中的一级流水线寄存器，用于对齐背景、文字和波形像素
@@ -125,6 +144,16 @@ reg         power_metrics_valid_lcd;
 reg         graph_en_d1;
 reg  [8:0]  graph_col_d1;
 reg  [10:0] graph_row_d1;
+reg         freq_mag_u_pixel_on_d1;
+reg         freq_mag_i_pixel_on_d1;
+reg         freq_phase_pixel_on_d1;
+reg         freq_phase_negative_d1;
+reg         freq_display_bank_sync1;
+reg         freq_display_bank_sync2;
+reg         freq_frame_valid_sync1;
+reg         freq_frame_valid_sync2;
+reg         freq_front_bank_lcd;
+reg         freq_front_valid_lcd;
 reg         u_wave_prev_valid_d1;
 reg  [7:0]  u_wave_prev_y_d1;
 reg  [8:0]  u_wave_prev_col_d1;
@@ -146,6 +175,8 @@ reg         i_wave_frame_valid_sync2;
 reg         i_wave_front_bank_lcd;
 reg         i_wave_front_valid_lcd;
 reg         freeze_active_lcd;
+reg         frequency_page_active_lcd;
+reg  [4:0]  harmonic_window_index_lcd;
 reg         touch_pressed_sync1;
 reg         touch_pressed_sync2;
 reg         touch_pressed_sync3;
@@ -253,14 +284,28 @@ wire        u_trigger_pulse;
 wire [8:0]  u_trigger_snapshot_ptr;
 
 wire        graph_en;
+wire        time_graph_en;
 wire [10:0] graph_col_ext;
 wire [8:0]  graph_col;
 wire        touch_pressed_lcd;
 wire        touch_pressed_fall_lcd;
+wire        mode_button_touch_hit;
+wire        mode_button_start_hit;
+wire        mode_button_pressed;
+wire        mode_button_click_qualified;
 wire        freeze_button_touch_hit;
 wire        freeze_button_start_hit;
 wire        freeze_button_pressed;
 wire        freeze_button_click_qualified;
+wire        harmonic_prev_touch_hit;
+wire        harmonic_next_touch_hit;
+wire        harmonic_prev_start_hit;
+wire        harmonic_next_start_hit;
+wire        harmonic_prev_pressed;
+wire        harmonic_next_pressed;
+wire        harmonic_prev_click_qualified;
+wire        harmonic_next_click_qualified;
+wire        harmonic_home_qualified;
 wire        freeze_active_next_lcd;
 wire        screen_update_enable_lcd;
 wire        freeze_active_wave;
@@ -277,6 +322,45 @@ wire [11:0] font_addr_16x32;
 wire [10:0] font_addr_10x20;
 wire [15:0] font_row_16x32_rom;
 wire [11:0] font_row_10x20_rom;
+wire        freq_mag_u_pixel_on;
+wire        freq_mag_i_pixel_on;
+wire        freq_phase_pixel_on;
+wire        freq_phase_negative;
+wire [10:0] freq_mag_col_ext;
+wire [10:0] freq_phase_col_ext;
+wire [4:0]  freq_mag_bucket;
+wire [3:0]  freq_mag_sub_col;
+wire [3:0]  freq_phase_sub_col;
+wire [7:0]  freq_u_bar_height;
+wire [7:0]  freq_i_bar_height;
+wire [7:0]  freq_phase_bar_height;
+wire        freq_sample_valid;
+wire        freq_harmonic_ready;
+wire        freq_harmonic_valid;
+wire        freq_harmonic_last;
+wire [8:0]  freq_harmonic_order_stream;
+wire        freq_harmonic_present_stream;
+wire [15:0] freq_harmonic_u_pct_x100;
+wire [15:0] freq_harmonic_i_pct_x100;
+wire        freq_phase_diff_valid_stream;
+wire signed [15:0] freq_phase_diff_deg_x100;
+wire        freq_display_bank;
+wire        freq_frame_valid;
+wire        freq_ram_we;
+wire [9:0]  freq_ram_waddr;
+wire [9:0]  freq_ram_raddr;
+wire [7:0]  freq_u_mag_wdata;
+wire [7:0]  freq_i_mag_wdata;
+wire [7:0]  freq_phase_wdata;
+wire [7:0]  freq_flag_wdata;
+wire [7:0]  freq_u_mag_ram_doutb;
+wire [7:0]  freq_i_mag_ram_doutb;
+wire [7:0]  freq_phase_ram_doutb;
+wire [7:0]  freq_flag_ram_doutb;
+wire [8:0]  freq_window_base;
+wire [8:0]  freq_display_harmonic_order;
+wire        freq_harmonic_present_lcd;
+wire        freq_phase_valid_lcd;
 
 assign font_addr_16x32 = text_blank ? 12'd0 : ({5'd0, font_char_idx} << 5) + {6'd0, text_rel_y[4:0]};
 assign font_addr_10x20 = text_blank ? 11'd0 : (({4'd0, font_char_idx} << 4) + ({6'd0, font_char_idx} << 2) + {5'd0, text_rel_y[4:0]});
@@ -307,9 +391,9 @@ blk_mem_gen_font_10x20 u_font_10x20_rom(
     .douta (font_row_10x20_rom)
 );
 // 电压通道：生成电压波形帧、U_rms 和 Upp
-wave_display_capture #(
+time_wave_display_capture #(
     .FULL_SCALE_CODE(WAVE_FULL_SCALE_CODE)
-) u_u_wave_display_capture (
+) u_u_time_wave_display_capture (
     .wave_clk          (wave_clk),
     .sys_rst_n         (sys_rst_n),
     .wave_sample_valid (u_wave_sample_valid),
@@ -330,9 +414,9 @@ wave_display_capture #(
 );
 
 // 电流通道：共享电压触发时刻，生成 I_rms 和 Ipp
-wave_display_capture #(
+time_wave_display_capture #(
     .FULL_SCALE_CODE(WAVE_FULL_SCALE_CODE)
-) u_i_wave_display_capture (
+) u_i_time_wave_display_capture (
     .wave_clk          (wave_clk),
     .sys_rst_n         (sys_rst_n),
     .wave_sample_valid (i_wave_sample_valid),
@@ -352,12 +436,12 @@ wave_display_capture #(
     .trigger_snapshot_ptr()
 );
 
-text_display_preprocess #(
+time_text_display_preprocess #(
     .SAMPLE_WIDTH      (16),
     .U_FULL_SCALE_X100 (U_FULL_SCALE_X100),
     .I_FULL_SCALE_X100 (I_FULL_SCALE_X100),
     .START_DELAY_CYCLES(TEXT_REFRESH_CYCLES)
-) u_text_display_preprocess (
+) u_time_text_display_preprocess (
     .clk               (wave_clk),
     .rst_n             (sys_rst_n),
     .lcd_frame_done_toggle(lcd_frame_done_toggle),
@@ -442,6 +526,131 @@ text_packet_double_buffer #(
     .packet_front_lcd          (text_packet_front_lcd)
 );
 
+// 频域分析链路始终保持运行，不受 LCD 页面切换影响。
+freq_analysis_top u_freq_analysis_top (
+    .sample_clk                 (wave_clk),
+    .fft_clk                    (wave_clk),
+    .rst_n                      (sys_rst_n),
+    .analysis_enable            (1'b1),
+    .sample_valid               (freq_sample_valid),
+    .sample_frame_marker        (freq_sample_valid),
+    .u_sample_code              (u_wave_sample_code),
+    .u_zero_code                (u_wave_zero_code),
+    .u_zero_valid               (u_wave_zero_valid),
+    .i_sample_code              (i_wave_sample_code),
+    .i_zero_code                (i_wave_zero_code),
+    .i_zero_valid               (i_wave_zero_valid),
+    .m_mag_ready                (1'b1),
+    .m_harmonic_ready           (freq_harmonic_ready),
+    .sample_accepted            (),
+    .sample_dropped             (),
+    .fifo_full                  (),
+    .fifo_prog_full             (),
+    .fifo_empty                 (),
+    .fifo_prog_empty            (),
+    .fifo_overflow_warn         (),
+    .fifo_overflow              (),
+    .fifo_underflow_warn        (),
+    .fifo_underflow             (),
+    .fifo_fft_frame_ready       (),
+    .fifo_wr_data_count         (),
+    .fifo_rd_data_count         (),
+    .fifo_wr_marker_count       (),
+    .fifo_rd_marker_count       (),
+    .fifo_wr_fft_frame_count    (),
+    .fifo_rd_fft_frame_count    (),
+    .fft_config_done            (),
+    .fft_input_busy             (),
+    .fft_input_tvalid           (),
+    .fft_input_tready           (),
+    .fft_input_tlast            (),
+    .fft_output_valid           (),
+    .fft_output_last            (),
+    .fft_bin_index              (),
+    .fft_status_tdata           (),
+    .fft_status_valid           (),
+    .event_frame_started        (),
+    .event_tlast_unexpected     (),
+    .event_tlast_missing        (),
+    .event_fft_overflow         (),
+    .event_status_channel_halt  (),
+    .event_data_in_channel_halt (),
+    .event_data_out_channel_halt(),
+    .selected_raw_frame_active  (),
+    .selected_raw_frame_done    (),
+    .selected_frame_done        (),
+    .selected_raw_bin_count     (),
+    .selected_bin_count         (),
+    .selected_last_raw_bin_count(),
+    .selected_last_bin_count    (),
+    .selected_frame_count       (),
+    .m_mag_valid                (),
+    .m_mag_last                 (),
+    .m_bin_index                (),
+    .m_u_real                   (),
+    .m_u_imag                   (),
+    .m_i_real                   (),
+    .m_i_imag                   (),
+    .m_u_mag_sq                 (),
+    .m_u_mag                    (),
+    .m_i_mag_sq                 (),
+    .m_i_mag                    (),
+    .mag_calc_busy              (),
+    .mag_frame_done             (),
+    .mag_frame_count            (),
+    .m_harmonic_valid           (freq_harmonic_valid),
+    .m_harmonic_last            (freq_harmonic_last),
+    .m_harmonic_order           (freq_harmonic_order_stream),
+    .m_harmonic_present         (freq_harmonic_present_stream),
+    .m_harmonic_u_real          (),
+    .m_harmonic_u_imag          (),
+    .m_harmonic_i_real          (),
+    .m_harmonic_i_imag          (),
+    .m_harmonic_u_mag           (),
+    .m_harmonic_i_mag           (),
+    .m_harmonic_u_pct_x100      (freq_harmonic_u_pct_x100),
+    .m_harmonic_i_pct_x100      (freq_harmonic_i_pct_x100),
+    .m_phase_vector_valid       (),
+    .m_phase_dot                (),
+    .m_phase_cross              (),
+    .m_phase_diff_valid         (freq_phase_diff_valid_stream),
+    .m_phase_diff_deg_x100      (freq_phase_diff_deg_x100),
+    .harmonic_stats_busy        (),
+    .harmonic_capture_frame_done(),
+    .harmonic_frame_done        (),
+    .harmonic_frame_count       (),
+    .harmonic_u_total_mag       (),
+    .harmonic_i_total_mag       (),
+    .phase_deg_busy             (),
+    .phase_deg_frame_done       (),
+    .phase_deg_frame_count      ()
+);
+
+// 频域显示适配层将谐波流转换为 LCD 可直接读取的幅值和相位高度数据。
+freq_display_adapter u_freq_display_adapter (
+    .clk                    (wave_clk),
+    .rst_n                  (sys_rst_n),
+    .enable                 (1'b1),
+    .s_harmonic_valid       (freq_harmonic_valid),
+    .s_harmonic_ready       (freq_harmonic_ready),
+    .s_harmonic_last        (freq_harmonic_last),
+    .s_harmonic_order       (freq_harmonic_order_stream),
+    .s_harmonic_present     (freq_harmonic_present_stream),
+    .s_u_pct_x100           (freq_harmonic_u_pct_x100),
+    .s_i_pct_x100           (freq_harmonic_i_pct_x100),
+    .s_phase_diff_valid     (freq_phase_diff_valid_stream),
+    .s_phase_diff_deg_x100  (freq_phase_diff_deg_x100),
+    .freq_ram_we            (freq_ram_we),
+    .freq_ram_waddr         (freq_ram_waddr),
+    .freq_u_mag_wdata       (freq_u_mag_wdata),
+    .freq_i_mag_wdata       (freq_i_mag_wdata),
+    .freq_phase_wdata       (freq_phase_wdata),
+    .freq_flag_wdata        (freq_flag_wdata),
+    .display_bank           (freq_display_bank),
+    .frame_valid            (freq_frame_valid),
+    .frame_sequence         ()
+);
+
 always @(posedge wave_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
         freeze_active_wave_sync1 <= 1'b0;
@@ -455,7 +664,11 @@ end
 lcd_display_bg u_lcd_display_bg(
     .pixel_xpos            (pixel_xpos),
     .pixel_ypos            (pixel_ypos),
+    .frequency_page_active (frequency_page_active_lcd),
+    .mode_button_pressed   (mode_button_pressed),
     .freeze_button_pressed (freeze_button_pressed),
+    .harmonic_prev_pressed (harmonic_prev_pressed),
+    .harmonic_next_pressed (harmonic_next_pressed),
     .base_color            (base_color)
 );
 
@@ -518,6 +731,7 @@ lcd_display_text #(
     .power_factor_percentiles(power_factor_percentiles_lcd),
     .power_metrics_valid (power_metrics_valid_lcd),
     .freeze_active       (freeze_active_lcd),
+    .frequency_page_active(frequency_page_active_lcd),
     .text_en             (text_en),
     .text_font_small     (text_font_small),
     .text_char_idx       (text_char_idx),
@@ -554,11 +768,85 @@ blk_mem_gen_ram0 u_i_wave_frame_ram(
     .doutb (i_wave_ram_doutb)
 );
 
+// 频域电压幅值显示 RAM，写端来自频域适配层，读端随 LCD 扫描读取。
+blk_mem_gen_ram0 u_freq_u_mag_display_ram(
+    .clka  (wave_clk),
+    .ena   (1'b1),
+    .wea   ({freq_ram_we}),
+    .addra (freq_ram_waddr),
+    .dina  (freq_u_mag_wdata),
+    .douta (),
+    .clkb  (lcd_pclk),
+    .web   ({1'b0}),
+    .addrb (freq_ram_raddr),
+    .dinb  (8'd0),
+    .doutb (freq_u_mag_ram_doutb)
+);
+
+// 频域电流幅值显示 RAM，保持与电压幅值 RAM 相同的 bank 和谐波地址。
+blk_mem_gen_ram0 u_freq_i_mag_display_ram(
+    .clka  (wave_clk),
+    .ena   (1'b1),
+    .wea   ({freq_ram_we}),
+    .addra (freq_ram_waddr),
+    .dina  (freq_i_mag_wdata),
+    .douta (),
+    .clkb  (lcd_pclk),
+    .web   ({1'b0}),
+    .addrb (freq_ram_raddr),
+    .dinb  (8'd0),
+    .doutb (freq_i_mag_ram_doutb)
+);
+
+// 频域相位高度显示 RAM，存储 U-I 相位角折算后的柱图高度。
+blk_mem_gen_ram0 u_freq_phase_display_ram(
+    .clka  (wave_clk),
+    .ena   (1'b1),
+    .wea   ({freq_ram_we}),
+    .addra (freq_ram_waddr),
+    .dina  (freq_phase_wdata),
+    .douta (),
+    .clkb  (lcd_pclk),
+    .web   ({1'b0}),
+    .addrb (freq_ram_raddr),
+    .dinb  (8'd0),
+    .doutb (freq_phase_ram_doutb)
+);
+
+// 频域显示标志 RAM，保存谐波有效、相位有效和相位符号。
+blk_mem_gen_ram0 u_freq_flag_display_ram(
+    .clka  (wave_clk),
+    .ena   (1'b1),
+    .wea   ({freq_ram_we}),
+    .addra (freq_ram_waddr),
+    .dina  (freq_flag_wdata),
+    .douta (),
+    .clkb  (lcd_pclk),
+    .web   ({1'b0}),
+    .addrb (freq_ram_raddr),
+    .dinb  (8'd0),
+    .doutb (freq_flag_ram_doutb)
+);
+
 assign text_blank        = (text_char_idx == FONT_BLANK);
 assign font_char_idx     = text_blank ? 7'd0 : text_char_idx;
 assign frame_edge_lcd    = lcd_frame_done_toggle ^ lcd_frame_done_toggle_d1;
+assign freq_sample_valid = u_wave_sample_valid && i_wave_sample_valid;
 assign touch_pressed_lcd = touch_pressed_sync2;
 assign touch_pressed_fall_lcd = touch_pressed_sync3 && !touch_pressed_sync2;
+assign mode_button_touch_hit =
+    (touch_x >= MODE_BTN_X) && (touch_x < (MODE_BTN_X + MODE_BTN_W)) &&
+    (touch_y >= MODE_BTN_Y) && (touch_y < (MODE_BTN_Y + MODE_BTN_H));
+assign mode_button_start_hit =
+    (touch_start_x >= MODE_BTN_X) && (touch_start_x < (MODE_BTN_X + MODE_BTN_W)) &&
+    (touch_start_y >= MODE_BTN_Y) && (touch_start_y < (MODE_BTN_Y + MODE_BTN_H));
+assign mode_button_pressed = touch_pressed_lcd && mode_button_touch_hit;
+assign mode_button_click_qualified =
+    touch_pressed_fall_lcd &&
+    mode_button_touch_hit &&
+    mode_button_start_hit &&
+    (touch_press_time_ms >= FREEZE_MIN_PRESS_MS) &&
+    (touch_press_time_ms <= FREEZE_MAX_PRESS_MS);
 assign freeze_button_touch_hit =
     (touch_x >= FREEZE_BTN_X) && (touch_x < (FREEZE_BTN_X + FREEZE_BTN_W)) &&
     (touch_y >= FREEZE_BTN_Y) && (touch_y < (FREEZE_BTN_Y + FREEZE_BTN_H));
@@ -568,7 +856,41 @@ assign freeze_button_start_hit =
 assign freeze_button_pressed = touch_pressed_lcd && freeze_button_touch_hit;
 assign freeze_button_click_qualified =
     touch_pressed_fall_lcd &&
+    freeze_button_touch_hit &&
     freeze_button_start_hit &&
+    (touch_press_time_ms >= FREEZE_MIN_PRESS_MS) &&
+    (touch_press_time_ms <= FREEZE_MAX_PRESS_MS);
+assign harmonic_prev_touch_hit =
+    frequency_page_active_lcd &&
+    (touch_x >= HARM_PREV_X) && (touch_x < (HARM_PREV_X + HARM_BTN_W)) &&
+    (touch_y >= HARM_BTN_Y) && (touch_y < (HARM_BTN_Y + HARM_BTN_H));
+assign harmonic_next_touch_hit =
+    frequency_page_active_lcd &&
+    (touch_x >= HARM_NEXT_X) && (touch_x < (HARM_NEXT_X + HARM_BTN_W)) &&
+    (touch_y >= HARM_BTN_Y) && (touch_y < (HARM_BTN_Y + HARM_BTN_H));
+assign harmonic_prev_start_hit =
+    (touch_start_x >= HARM_PREV_X) && (touch_start_x < (HARM_PREV_X + HARM_BTN_W)) &&
+    (touch_start_y >= HARM_BTN_Y) && (touch_start_y < (HARM_BTN_Y + HARM_BTN_H));
+assign harmonic_next_start_hit =
+    (touch_start_x >= HARM_NEXT_X) && (touch_start_x < (HARM_NEXT_X + HARM_BTN_W)) &&
+    (touch_start_y >= HARM_BTN_Y) && (touch_start_y < (HARM_BTN_Y + HARM_BTN_H));
+assign harmonic_prev_pressed = touch_pressed_lcd && harmonic_prev_touch_hit;
+assign harmonic_next_pressed = touch_pressed_lcd && harmonic_next_touch_hit;
+assign harmonic_home_qualified =
+    touch_pressed_fall_lcd &&
+    harmonic_prev_touch_hit &&
+    harmonic_prev_start_hit &&
+    (touch_press_time_ms >= HARMONIC_LONG_PRESS_MS);
+assign harmonic_prev_click_qualified =
+    touch_pressed_fall_lcd &&
+    harmonic_prev_touch_hit &&
+    harmonic_prev_start_hit &&
+    (touch_press_time_ms >= FREEZE_MIN_PRESS_MS) &&
+    (touch_press_time_ms <= FREEZE_MAX_PRESS_MS);
+assign harmonic_next_click_qualified =
+    touch_pressed_fall_lcd &&
+    harmonic_next_touch_hit &&
+    harmonic_next_start_hit &&
     (touch_press_time_ms >= FREEZE_MIN_PRESS_MS) &&
     (touch_press_time_ms <= FREEZE_MAX_PRESS_MS);
 assign freeze_active_next_lcd = freeze_button_click_qualified ? ~freeze_active_lcd : freeze_active_lcd;
@@ -577,13 +899,52 @@ assign freeze_active_wave = freeze_active_wave_sync2;
 
 assign graph_en      = (pixel_xpos >= GRAPH_X) && (pixel_xpos < (GRAPH_X + GRAPH_W)) &&
                        (pixel_ypos > GRAPH_Y) && (pixel_ypos < (GRAPH_Y + GRAPH_H - 1));
+assign time_graph_en = !frequency_page_active_lcd && graph_en;
 assign graph_col_ext = pixel_xpos - GRAPH_X;
 assign graph_col     = graph_col_ext[8:0];
 // LCD 域只使用帧边界切换后的 front bank，避免扫描波形区域时跨 bank 撕裂。
-assign u_wave_ram_raddr = graph_en ? {u_wave_front_bank_lcd, graph_col} :
+assign u_wave_ram_raddr = time_graph_en ? {u_wave_front_bank_lcd, graph_col} :
                                      {u_wave_front_bank_lcd, 9'd0};
-assign i_wave_ram_raddr = graph_en ? {i_wave_front_bank_lcd, graph_col} :
+assign i_wave_ram_raddr = time_graph_en ? {i_wave_front_bank_lcd, graph_col} :
                                      {i_wave_front_bank_lcd, 9'd0};
+
+assign freq_mag_col_ext   = pixel_xpos - FREQ_GRAPH_X;
+assign freq_phase_col_ext = pixel_xpos - FREQ_GRAPH_X;
+assign freq_mag_bucket    = freq_mag_col_ext[8:4];
+assign freq_mag_sub_col   = freq_mag_col_ext[3:0];
+assign freq_phase_sub_col = freq_phase_col_ext[3:0];
+assign freq_window_base = {harmonic_window_index_lcd, 4'b0000} +
+                          {1'b0, harmonic_window_index_lcd, 3'b000} +
+                          {4'b0000, harmonic_window_index_lcd};
+assign freq_display_harmonic_order = freq_window_base + {4'd0, freq_mag_bucket};
+assign freq_ram_raddr = {freq_front_bank_lcd, freq_display_harmonic_order};
+assign freq_harmonic_present_lcd = freq_front_valid_lcd && freq_flag_ram_doutb[0];
+assign freq_phase_valid_lcd = freq_harmonic_present_lcd && freq_flag_ram_doutb[1];
+assign freq_u_bar_height = freq_u_mag_ram_doutb;
+assign freq_i_bar_height = freq_i_mag_ram_doutb;
+assign freq_phase_bar_height = freq_phase_ram_doutb;
+assign freq_phase_negative = freq_flag_ram_doutb[2];
+assign freq_mag_u_pixel_on =
+    frequency_page_active_lcd &&
+    freq_harmonic_present_lcd &&
+    (pixel_xpos >= FREQ_GRAPH_X) && (pixel_xpos < (FREQ_GRAPH_X + FREQ_GRAPH_W)) &&
+    (pixel_ypos >= (FREQ_MAG_BASE_Y - {3'd0, freq_u_bar_height})) &&
+    (pixel_ypos < FREQ_MAG_BASE_Y) &&
+    (freq_mag_sub_col <= 4'd3);
+assign freq_mag_i_pixel_on =
+    frequency_page_active_lcd &&
+    freq_harmonic_present_lcd &&
+    (pixel_xpos >= FREQ_GRAPH_X) && (pixel_xpos < (FREQ_GRAPH_X + FREQ_GRAPH_W)) &&
+    (pixel_ypos >= (FREQ_MAG_BASE_Y - {3'd0, freq_i_bar_height})) &&
+    (pixel_ypos < FREQ_MAG_BASE_Y) &&
+    (freq_mag_sub_col >= 4'd5) && (freq_mag_sub_col <= 4'd8);
+assign freq_phase_pixel_on =
+    frequency_page_active_lcd &&
+    freq_phase_valid_lcd &&
+    (pixel_xpos >= FREQ_GRAPH_X) && (pixel_xpos < (FREQ_GRAPH_X + FREQ_GRAPH_W)) &&
+    (pixel_ypos >= (FREQ_PHASE_BASE_Y - {3'd0, freq_phase_bar_height})) &&
+    (pixel_ypos < FREQ_PHASE_BASE_Y) &&
+    (freq_phase_sub_col <= 4'd6);
 
 // ========== 波形像素检测（参数化）==========
 // 电压通道 (U)
@@ -701,6 +1062,16 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         graph_en_d1           <= 1'b0;
         graph_col_d1          <= 9'd0;
         graph_row_d1          <= 11'd0;
+        freq_mag_u_pixel_on_d1 <= 1'b0;
+        freq_mag_i_pixel_on_d1 <= 1'b0;
+        freq_phase_pixel_on_d1 <= 1'b0;
+        freq_phase_negative_d1 <= 1'b0;
+        freq_display_bank_sync1 <= 1'b0;
+        freq_display_bank_sync2 <= 1'b0;
+        freq_frame_valid_sync1  <= 1'b0;
+        freq_frame_valid_sync2  <= 1'b0;
+        freq_front_bank_lcd     <= 1'b0;
+        freq_front_valid_lcd    <= 1'b0;
         u_wave_prev_valid_d1  <= 1'b0;
         u_wave_prev_y_d1      <= 8'd0;
         u_wave_prev_col_d1    <= 9'd0;
@@ -722,6 +1093,8 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         i_wave_front_bank_lcd     <= 1'b0;
         i_wave_front_valid_lcd    <= 1'b0;
         freeze_active_lcd         <= 1'b0;
+        frequency_page_active_lcd <= 1'b0;
+        harmonic_window_index_lcd <= 5'd0;
         touch_pressed_sync1       <= 1'b0;
         touch_pressed_sync2       <= 1'b0;
         touch_pressed_sync3       <= 1'b0;
@@ -733,6 +1106,14 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         touch_pressed_sync3       <= touch_pressed_sync2;
         if (freeze_button_click_qualified)
             freeze_active_lcd <= freeze_active_next_lcd;
+        if (mode_button_click_qualified)
+            frequency_page_active_lcd <= ~frequency_page_active_lcd;
+        if (harmonic_home_qualified)
+            harmonic_window_index_lcd <= 5'd0;
+        else if (harmonic_prev_click_qualified && (harmonic_window_index_lcd != 5'd0))
+            harmonic_window_index_lcd <= harmonic_window_index_lcd - 5'd1;
+        else if (harmonic_next_click_qualified && (harmonic_window_index_lcd < HARMONIC_MAX_WINDOW_INDEX))
+            harmonic_window_index_lcd <= harmonic_window_index_lcd + 5'd1;
 
         u_wave_display_bank_sync1 <= u_wave_display_bank;
         u_wave_display_bank_sync2 <= u_wave_display_bank_sync1;
@@ -742,6 +1123,10 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         i_wave_display_bank_sync2 <= i_wave_display_bank_sync1;
         i_wave_frame_valid_sync1  <= i_wave_frame_valid;
         i_wave_frame_valid_sync2  <= i_wave_frame_valid_sync1;
+        freq_display_bank_sync1   <= freq_display_bank;
+        freq_display_bank_sync2   <= freq_display_bank_sync1;
+        freq_frame_valid_sync1    <= freq_frame_valid;
+        freq_frame_valid_sync2    <= freq_frame_valid_sync1;
         lcd_frame_done_toggle_d1   <= lcd_frame_done_toggle;
 
         // 非冻结状态下才在 LCD 帧边界提交最新波形 front bank；首帧允许立即装载。
@@ -753,6 +1138,12 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         if ((screen_update_enable_lcd && frame_edge_lcd) || !i_wave_front_valid_lcd) begin
             i_wave_front_bank_lcd  <= i_wave_display_bank_sync2;
             i_wave_front_valid_lcd <= i_wave_frame_valid_sync2;
+        end
+
+        // 频域显示 bank 与页面模式解耦，只在 LCD 帧边界更新前台 bank，避免切页影响 FFT 链路。
+        if ((screen_update_enable_lcd && frame_edge_lcd) || !freq_front_valid_lcd) begin
+            freq_front_bank_lcd  <= freq_display_bank_sync2;
+            freq_front_valid_lcd <= freq_frame_valid_sync2;
         end
 
         base_color_d1      <= base_color;
@@ -778,9 +1169,13 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
             } <= text_packet_front_lcd;
         end
 
-        graph_en_d1  <= graph_en;
+        graph_en_d1  <= time_graph_en;
         graph_col_d1 <= graph_col;
         graph_row_d1 <= pixel_ypos;
+        freq_mag_u_pixel_on_d1 <= freq_mag_u_pixel_on;
+        freq_mag_i_pixel_on_d1 <= freq_mag_i_pixel_on;
+        freq_phase_pixel_on_d1 <= freq_phase_pixel_on;
+        freq_phase_negative_d1 <= freq_phase_negative;
 
         if (graph_en_d1 && u_wave_front_valid_lcd) begin
             u_wave_prev_valid_d1 <= 1'b1;
@@ -802,9 +1197,15 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
 
         if (text_pixel_on)
             pixel_data <= text_color_d1;
-        else if (i_wave_pixel_on)
+        else if (freq_phase_pixel_on_d1)
+            pixel_data <= freq_phase_negative_d1 ? PHASE_NEG_COLOR : ACCENT_COLOR;
+        else if (freq_mag_i_pixel_on_d1)
             pixel_data <= WAVE_I_COLOR;
-        else if (u_wave_pixel_on)
+        else if (freq_mag_u_pixel_on_d1)
+            pixel_data <= WAVE_U_COLOR;
+        else if (!frequency_page_active_lcd && i_wave_pixel_on)
+            pixel_data <= WAVE_I_COLOR;
+        else if (!frequency_page_active_lcd && u_wave_pixel_on)
             pixel_data <= WAVE_U_COLOR;
         else
             pixel_data <= base_color_d1;

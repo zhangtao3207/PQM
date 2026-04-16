@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: wave_display_capture
+ * 模块: time_wave_display_capture
  * 功能:
  *   单通道波形显示预处理顶层，只负责波形抓帧与触发联动。
  *   输出内容仅包含:
@@ -10,11 +10,11 @@
  *   3. 触发脉冲与触发快照位置
  *
  * 说明:
- *   - 文字显示相关预处理已统一移出到 text_display_preprocess
+ *   - 文字显示相关预处理已统一移出到 time_text_display_preprocess
  *   - 波形触发、重采样、历史缓存和整帧写出均由独立子模块承担
  *   - display_freeze 只冻结显示帧提交，内部采样、重采样和历史缓存继续运行
  */
-module wave_display_capture #(
+module time_wave_display_capture #(
     parameter integer SAMPLE_WIDTH    = 16,
     parameter integer FULL_SCALE_CODE = (1 << (SAMPLE_WIDTH - 1)) - 1
 )(
@@ -107,12 +107,12 @@ assign wave_trigger_clear =
     (!trigger_use_external && wave_point_commit && !wave_frame_valid &&
      (wave_hist_full || (wave_wr_ptr == (WAVE_POINT_COUNT - 1)))));
 
-wave_trigger_core #(
+time_wave_trigger_core #(
     .WIDTH            (SAMPLE_WIDTH),
     .CENTER_IIR_SHIFT (CENTER_IIR_SHIFT),
     .TRIGGER_HYST     (WAVE_TRIGGER_HYST),
     .CENTER_DEFAULT   (CENTER_DEFAULT)
-) u_wave_trigger_core (
+) u_time_wave_trigger_core (
     .clk                 (wave_clk),
     .rst_n               (sys_rst_n),
     .sample_valid        (wave_sample_valid),
@@ -126,7 +126,7 @@ wave_trigger_core #(
     .trigger_fire        (wave_internal_trigger_fire)
 );
 
-wave_display_resampler #(
+time_wave_display_resampler #(
     .WIDTH         (SAMPLE_WIDTH),
     .POINT_COUNT   (WAVE_POINT_COUNT),
     .FRAME_TICKS   (WAVE_FRAME_TICKS),
@@ -135,7 +135,7 @@ wave_display_resampler #(
     .DIV_WIDTH     (WAVE_DIV_WIDTH),
     .FULL_SCALE_CODE(FULL_SCALE_CODE),
     .CENTER_DEFAULT(CENTER_DEFAULT)
-) u_wave_display_resampler (
+) u_time_wave_display_resampler (
     .clk                (wave_clk),
     .rst_n              (sys_rst_n),
     .sample_code        (wave_sample_code),
@@ -148,12 +148,12 @@ wave_display_resampler #(
     .resample_pending   (wave_resample_pending)
 );
 
-wave_history_buffer #(
+time_wave_history_buffer #(
     .POINT_COUNT      (WAVE_POINT_COUNT),
     .POINT_ADDR_WIDTH (9),
     .Y_WIDTH          (8),
     .Y_RESET          (8'd120)
-) u_wave_history_buffer (
+) u_time_wave_history_buffer (
     .clk        (wave_clk),
     .rst_n      (sys_rst_n),
     .point_valid(wave_history_point_valid),
@@ -165,13 +165,13 @@ wave_history_buffer #(
     .rd_data    (wave_hist_rd_data)
 );
 
-wave_frame_writer #(
+time_wave_frame_writer #(
     .POINT_COUNT      (WAVE_POINT_COUNT),
     .POINT_ADDR_WIDTH (9),
     .RAM_ADDR_WIDTH   (10),
     .Y_WIDTH          (8),
     .Y_RESET          (8'd120)
-) u_wave_frame_writer (
+) u_time_wave_frame_writer (
     .clk          (wave_clk),
     .rst_n        (sys_rst_n),
     .start_copy   (wave_frame_copy_start),

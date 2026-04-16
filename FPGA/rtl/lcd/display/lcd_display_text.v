@@ -58,7 +58,8 @@
  *   power_factor_decile: 信号。
  *   power_factor_percentiles: 信号。
  *   power_metrics_valid: 有效标志。
- *   freeze_active: 信号。
+ *   freeze_active: Freeze/Auto 按钮当前显示状态。
+ *   frequency_page_active: 当前是否显示频域页面。
  *
  * 输出:
  *   text_en: 使能信号。
@@ -127,6 +128,7 @@ module lcd_display_text #(
     input      [7:0]  power_factor_percentiles,
     input             power_metrics_valid,
     input             freeze_active,
+    input             frequency_page_active,
     output reg        text_en,
     output reg        text_font_small,
     output reg [6:0]  text_char_idx,
@@ -153,6 +155,9 @@ localparam [6:0] FONT_PLUS       = 7'd74;
 localparam [6:0] FONT_MINUS      = 7'd75;
 localparam [6:0] FONT_DOT        = 7'd84;
 localparam [6:0] FONT_COLON      = 7'd89;
+localparam [6:0] FONT_PERCENT    = 7'd90;
+localparam [6:0] FONT_LESS       = 7'd91;
+localparam [6:0] FONT_GREATER    = 7'd92;
 
 // 忙聳聡氓颅聴茅垄聹猫聣虏氓庐職盲鹿聣茫聙聜
 localparam [23:0] TEXT_WHITE   = 24'hF2F6FA;
@@ -199,6 +204,14 @@ localparam [10:0] U_PP_X       = 11'd68;
 localparam [10:0] U_PP_Y       = 11'd425;
 localparam [10:0] I_PP_X       = 11'd68;
 localparam [10:0] I_PP_Y       = 11'd449;
+localparam [10:0] FREQ_LABEL_X = 11'd30;
+localparam [10:0] FREQ_MAG_LABEL_Y = 11'd118;
+localparam [10:0] FREQ_PHASE_LABEL_Y = 11'd456;
+localparam [10:0] FREQ_HARM_LABEL_X = 11'd266;
+localparam [10:0] FREQ_HARM_LABEL_Y = 11'd456;
+localparam [10:0] FREQ_PREV_TXT_X = 11'd339;
+localparam [10:0] FREQ_NEXT_TXT_X = 11'd389;
+localparam [10:0] FREQ_BTN_TXT_Y  = 11'd184;
 
 localparam integer MAX_TEXT_LEN = 25;
 localparam integer TITLE_LEN    = 19;
@@ -221,6 +234,16 @@ localparam integer REACTIVE_LEN = 24;
 localparam integer APPARENT_LEN = 23;
 localparam integer PF_LEN       = 20;
 localparam integer PP_LEN       = 14;
+localparam integer FREQ_TITLE_LEN = 24;
+localparam integer FREQ_PLOT_LEN = 20;
+localparam integer FREQ_MAG_LABEL_LEN = 13;
+localparam integer FREQ_PHASE_LABEL_LEN = 16;
+localparam integer FREQ_HARM_LABEL_LEN = 14;
+localparam integer FREQ_FUND_LEN = 24;
+localparam integer FREQ_U1_LEN = 17;
+localparam integer FREQ_I1_LEN = 17;
+localparam integer FREQ_THD_LEN = 16;
+localparam integer FREQ_DOM_LEN = 14;
 
 localparam [8*TITLE_LEN-1:0]   TITLE_STR   = "MODE: Single - Time";
 localparam [8*BTN_LEN-1:0]     BTN_STR     = "MODE";
@@ -350,6 +373,9 @@ function [6:0] ascii_to_idx;
                 "-": ascii_to_idx = FONT_MINUS;
                 ".": ascii_to_idx = FONT_DOT;
                 ":": ascii_to_idx = FONT_COLON;
+                "%": ascii_to_idx = FONT_PERCENT;
+                "<": ascii_to_idx = FONT_LESS;
+                ">": ascii_to_idx = FONT_GREATER;
                 default: ascii_to_idx = FONT_BLANK;
             endcase
         end
@@ -592,6 +618,166 @@ function [7:0] freq_line_ascii;
             20: freq_line_ascii = "z";
             21: freq_line_ascii = ")";
             default: freq_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// 频域页右侧基波频率行，复用现有频率测量数字位，不新增频域算法。
+function [7:0] freq_fund_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_fund_line_ascii = "F";
+            1:  freq_fund_line_ascii = "u";
+            2:  freq_fund_line_ascii = "n";
+            3:  freq_fund_line_ascii = "d";
+            4:  freq_fund_line_ascii = "a";
+            5:  freq_fund_line_ascii = "m";
+            6:  freq_fund_line_ascii = "e";
+            7:  freq_fund_line_ascii = "n";
+            8:  freq_fund_line_ascii = "t";
+            9:  freq_fund_line_ascii = "a";
+            10: freq_fund_line_ascii = "l";
+            11: freq_fund_line_ascii = ":";
+            12: freq_fund_line_ascii = " ";
+            13: freq_fund_line_ascii = freq_valid ? ((freq_hundreds == 8'd0) ? " " : digit_to_ascii(freq_hundreds)) : " ";
+            14: freq_fund_line_ascii = freq_valid ? digit_to_ascii(freq_tens) : " ";
+            15: freq_fund_line_ascii = freq_valid ? digit_to_ascii(freq_units) : " ";
+            16: freq_fund_line_ascii = ".";
+            17: freq_fund_line_ascii = freq_valid ? digit_to_ascii(freq_decile) : " ";
+            18: freq_fund_line_ascii = freq_valid ? digit_to_ascii(freq_percentiles) : " ";
+            19: freq_fund_line_ascii = " ";
+            20: freq_fund_line_ascii = "(";
+            21: freq_fund_line_ascii = "H";
+            22: freq_fund_line_ascii = "z";
+            23: freq_fund_line_ascii = ")";
+            default: freq_fund_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// 频域幅值、THD 和主导谐波行只同步界面占位，不在 LCD 层引入新的分析计算。
+function [7:0] freq_u1_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_u1_line_ascii = "U";
+            1:  freq_u1_line_ascii = "1";
+            2:  freq_u1_line_ascii = " ";
+            3:  freq_u1_line_ascii = "M";
+            4:  freq_u1_line_ascii = "a";
+            5:  freq_u1_line_ascii = "g";
+            6:  freq_u1_line_ascii = ":";
+            7:  freq_u1_line_ascii = " ";
+            8:  freq_u1_line_ascii = "-";
+            9:  freq_u1_line_ascii = "-";
+            10: freq_u1_line_ascii = ".";
+            11: freq_u1_line_ascii = "-";
+            12: freq_u1_line_ascii = "-";
+            13: freq_u1_line_ascii = " ";
+            14: freq_u1_line_ascii = "(";
+            15: freq_u1_line_ascii = "V";
+            16: freq_u1_line_ascii = ")";
+            default: freq_u1_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+function [7:0] freq_i1_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_i1_line_ascii = "I";
+            1:  freq_i1_line_ascii = "1";
+            2:  freq_i1_line_ascii = " ";
+            3:  freq_i1_line_ascii = "M";
+            4:  freq_i1_line_ascii = "a";
+            5:  freq_i1_line_ascii = "g";
+            6:  freq_i1_line_ascii = ":";
+            7:  freq_i1_line_ascii = " ";
+            8:  freq_i1_line_ascii = "-";
+            9:  freq_i1_line_ascii = "-";
+            10: freq_i1_line_ascii = ".";
+            11: freq_i1_line_ascii = "-";
+            12: freq_i1_line_ascii = "-";
+            13: freq_i1_line_ascii = " ";
+            14: freq_i1_line_ascii = "(";
+            15: freq_i1_line_ascii = "A";
+            16: freq_i1_line_ascii = ")";
+            default: freq_i1_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+function [7:0] freq_thd_u_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_thd_u_line_ascii = "T";
+            1:  freq_thd_u_line_ascii = "H";
+            2:  freq_thd_u_line_ascii = "D";
+            3:  freq_thd_u_line_ascii = "-";
+            4:  freq_thd_u_line_ascii = "U";
+            5:  freq_thd_u_line_ascii = ":";
+            6:  freq_thd_u_line_ascii = " ";
+            7:  freq_thd_u_line_ascii = "-";
+            8:  freq_thd_u_line_ascii = "-";
+            9:  freq_thd_u_line_ascii = ".";
+            10: freq_thd_u_line_ascii = "-";
+            11: freq_thd_u_line_ascii = "-";
+            12: freq_thd_u_line_ascii = " ";
+            13: freq_thd_u_line_ascii = "(";
+            14: freq_thd_u_line_ascii = "%";
+            15: freq_thd_u_line_ascii = ")";
+            default: freq_thd_u_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+function [7:0] freq_thd_i_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_thd_i_line_ascii = "T";
+            1:  freq_thd_i_line_ascii = "H";
+            2:  freq_thd_i_line_ascii = "D";
+            3:  freq_thd_i_line_ascii = "-";
+            4:  freq_thd_i_line_ascii = "I";
+            5:  freq_thd_i_line_ascii = ":";
+            6:  freq_thd_i_line_ascii = " ";
+            7:  freq_thd_i_line_ascii = "-";
+            8:  freq_thd_i_line_ascii = "-";
+            9:  freq_thd_i_line_ascii = ".";
+            10: freq_thd_i_line_ascii = "-";
+            11: freq_thd_i_line_ascii = "-";
+            12: freq_thd_i_line_ascii = " ";
+            13: freq_thd_i_line_ascii = "(";
+            14: freq_thd_i_line_ascii = "%";
+            15: freq_thd_i_line_ascii = ")";
+            default: freq_thd_i_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+function [7:0] freq_dominant_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_dominant_line_ascii = "D";
+            1:  freq_dominant_line_ascii = "o";
+            2:  freq_dominant_line_ascii = "m";
+            3:  freq_dominant_line_ascii = "i";
+            4:  freq_dominant_line_ascii = "n";
+            5:  freq_dominant_line_ascii = "a";
+            6:  freq_dominant_line_ascii = "n";
+            7:  freq_dominant_line_ascii = "t";
+            8:  freq_dominant_line_ascii = " ";
+            9:  freq_dominant_line_ascii = "H";
+            10: freq_dominant_line_ascii = ":";
+            11: freq_dominant_line_ascii = " ";
+            12: freq_dominant_line_ascii = "-";
+            13: freq_dominant_line_ascii = "-";
+            default: freq_dominant_line_ascii = " ";
         endcase
     end
 endfunction
@@ -1142,6 +1328,42 @@ task try_power_factor_line_region;
     end
 endtask
 
+// 频域页右侧参数区使用静态界面占位和已有频率数字位，不改变测量数据链路。
+task try_freq_panel_line_region;
+    input [10:0] base_y;
+    input [10:0] right_x;
+    input integer text_len;
+    input [2:0]  line_id;
+    input [23:0] color_value;
+    reg   [10:0] delta_x;
+    reg   [7:0]  line_char;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= LINE_X) && (pixel_xpos < right_x) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x   = pixel_xpos - LINE_X;
+            line_slot = small_text_slot(delta_x, text_len);
+
+            case (line_id)
+                3'd0: line_char = freq_fund_line_ascii(line_slot);
+                3'd1: line_char = freq_u1_line_ascii(line_slot);
+                3'd2: line_char = freq_i1_line_ascii(line_slot);
+                3'd3: line_char = freq_thd_u_line_ascii(line_slot);
+                3'd4: line_char = freq_thd_i_line_ascii(line_slot);
+                3'd5: line_char = freq_dominant_line_ascii(line_slot);
+                default: line_char = " ";
+            endcase
+
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(line_char);
+            text_color      = color_value;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
 // 莽禄聞氓聬聢忙聣芦忙聫聫忙聣聙忙聹聣忙聳聡氓颅聴氓聦潞氓聼聼茂录聦氓聭陆盲赂颅盲录聵氓聟聢莽潞搂盲赂聨猫掳聝莽聰篓茅隆潞氓潞聫盲赂聙猫聡麓茫聙聜
 always @(*) begin
     text_en         = 1'b0;
@@ -1153,37 +1375,69 @@ always @(*) begin
     line_slot       = 0;
     tick_slot       = 0;
 
-    try_big_text_region(TITLE_TXT_X, TITLE_TXT_Y, TITLE_LEN, TEXT_WHITE, TITLE_STR);
+    if (frequency_page_active)
+        try_big_text_region(TITLE_TXT_X, TITLE_TXT_Y, FREQ_TITLE_LEN, TEXT_WHITE, "MODE: Single - Frequency");
+    else
+        try_big_text_region(TITLE_TXT_X, TITLE_TXT_Y, TITLE_LEN, TEXT_WHITE, TITLE_STR);
     try_big_text_region(BTN_TXT_X,   BTN_TXT_Y,   BTN_LEN,   TEXT_WHITE, BTN_STR);
     if (freeze_active)
         try_big_text_region(AUTO_AUTO_TXT_X, AUTO_TXT_Y, AUTO_AUTO_LEN, TEXT_WHITE, AUTO_AUTO_STR);
     else
         try_big_text_region(AUTO_FREEZE_TXT_X, AUTO_TXT_Y, AUTO_FREEZE_LEN, TEXT_WHITE, AUTO_FREEZE_STR);
-    try_big_text_region(PLOT_TXT_X,  PLOT_TXT_Y,  PLOT_LEN,  TEXT_SOFT,  PLOT_STR);
 
-    try_small_text_region(AXIS_V_X, AXIS_V_Y, AXIS_V_LEN, WAVE_U_COLOR, AXIS_V_STR);
-    try_small_text_region(AXIS_I_X, AXIS_I_Y, AXIS_I_LEN, WAVE_I_COLOR, AXIS_I_STR);
-    try_voltage_tick_region(V_TICK_X, V_TICK_Y0);
-    try_current_tick_region(I_TICK_X, I_TICK_Y0);
+    if (frequency_page_active) begin
+        try_big_text_region(PLOT_TXT_X, PLOT_TXT_Y, FREQ_PLOT_LEN, TEXT_SOFT, "Freq Domain Analysis");
+        try_small_text_region(FREQ_LABEL_X, FREQ_MAG_LABEL_Y, FREQ_MAG_LABEL_LEN, WAVE_U_COLOR, "Magnitude (%)");
+        try_small_text_region(FREQ_LABEL_X, FREQ_PHASE_LABEL_Y, FREQ_PHASE_LABEL_LEN, ACCENT_COLOR, "Phase Diff (deg)");
+        try_small_text_region(FREQ_HARM_LABEL_X, FREQ_HARM_LABEL_Y, FREQ_HARM_LABEL_LEN, TEXT_DIM, "Harmonic Order");
+        try_small_text_region(FREQ_PREV_TXT_X, FREQ_BTN_TXT_Y, 1, TEXT_WHITE, "<");
+        try_small_text_region(FREQ_NEXT_TXT_X, FREQ_BTN_TXT_Y, 1, TEXT_WHITE, ">");
 
-    try_small_text_region(AXIS_TICK0_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-60");
-    try_small_text_region(AXIS_TICK1_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-45");
-    try_small_text_region(AXIS_TICK2_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-30");
-    try_small_text_region(AXIS_TICK3_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-15");
-    try_small_text_region(AXIS_TICK4_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "  0");
-    try_small_text_region(AXIS_T_X, AXIS_T_Y, AXIS_T_LEN, TEXT_DIM, AXIS_T_STR);
+        try_small_text_region(FREQ_LABEL_X - 11'd22, FREQ_MAG_LABEL_Y + 11'd18, 3, TEXT_DIM, "100");
+        try_small_text_region(FREQ_LABEL_X - 11'd18, FREQ_MAG_LABEL_Y + 11'd54, 2, TEXT_DIM, "80");
+        try_small_text_region(FREQ_LABEL_X - 11'd18, FREQ_MAG_LABEL_Y + 11'd90, 2, TEXT_DIM, "60");
+        try_small_text_region(FREQ_LABEL_X - 11'd18, FREQ_MAG_LABEL_Y + 11'd126, 2, TEXT_DIM, "40");
+        try_small_text_region(FREQ_LABEL_X - 11'd18, FREQ_MAG_LABEL_Y + 11'd162, 2, TEXT_DIM, "20");
+        try_small_text_region(FREQ_LABEL_X - 11'd10, FREQ_MAG_LABEL_Y + 11'd198, 1, TEXT_DIM, "0");
+        try_small_text_region(FREQ_LABEL_X - 11'd26, FREQ_PHASE_LABEL_Y - 11'd119, 3, TEXT_DIM, "180");
+        try_small_text_region(FREQ_LABEL_X - 11'd20, FREQ_PHASE_LABEL_Y - 11'd79, 2, TEXT_DIM, "90");
+        try_small_text_region(FREQ_LABEL_X - 11'd10, FREQ_PHASE_LABEL_Y - 11'd39, 1, TEXT_DIM, "0");
 
-    try_small_text_region(RP_TITLE_X, RP_TITLE_Y, RP_HEAD_LEN, ACCENT_COLOR, RP_HEAD_STR);
-    try_freq_line_region(LINE_X, LINE_Y0);
-    try_u_rms_line_region(LINE_X, LINE_Y0 + LINE_STEP);
-    try_i_rms_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 2));
-    try_phase_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 3));
-    try_active_p_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 4));
-    try_reactive_q_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 5));
-    try_apparent_s_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 6));
-    try_power_factor_line_region(LINE_X, LINE_Y0 + (LINE_STEP * 7));
-    try_u_pp_line_region(U_PP_X, U_PP_Y);
-    try_i_pp_line_region(I_PP_X, I_PP_Y);
+        try_small_text_region(RP_TITLE_X, RP_TITLE_Y, RP_HEAD_LEN, ACCENT_COLOR, RP_HEAD_STR);
+        try_freq_panel_line_region(LINE_Y0, 11'd756, FREQ_FUND_LEN, 3'd0, TEXT_SOFT);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP, 11'd686, FREQ_U1_LEN, 3'd1, WAVE_U_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP, 11'd686, FREQ_I1_LEN, 3'd2, WAVE_I_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP, 11'd676, FREQ_THD_LEN, 3'd3, WAVE_U_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd676, FREQ_THD_LEN, 3'd4, WAVE_I_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd656, FREQ_DOM_LEN, 3'd5, TEXT_WHITE);
+    end
+    else begin
+        try_big_text_region(PLOT_TXT_X,  PLOT_TXT_Y,  PLOT_LEN,  TEXT_SOFT,  PLOT_STR);
+
+        try_small_text_region(AXIS_V_X, AXIS_V_Y, AXIS_V_LEN, WAVE_U_COLOR, AXIS_V_STR);
+        try_small_text_region(AXIS_I_X, AXIS_I_Y, AXIS_I_LEN, WAVE_I_COLOR, AXIS_I_STR);
+        try_voltage_tick_region(V_TICK_X, V_TICK_Y0);
+        try_current_tick_region(I_TICK_X, I_TICK_Y0);
+
+        try_small_text_region(AXIS_TICK0_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-60");
+        try_small_text_region(AXIS_TICK1_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-45");
+        try_small_text_region(AXIS_TICK2_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-30");
+        try_small_text_region(AXIS_TICK3_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "-15");
+        try_small_text_region(AXIS_TICK4_X, AXIS_TICK_Y, T_TICK_LEN, TEXT_DIM, "  0");
+        try_small_text_region(AXIS_T_X, AXIS_T_Y, AXIS_T_LEN, TEXT_DIM, AXIS_T_STR);
+
+        try_small_text_region(RP_TITLE_X, RP_TITLE_Y, RP_HEAD_LEN, ACCENT_COLOR, RP_HEAD_STR);
+        try_freq_line_region(LINE_X, LINE_Y0);
+        try_u_rms_line_region(LINE_X, LINE_Y0 + LINE_STEP);
+        try_i_rms_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP);
+        try_phase_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP);
+        try_active_p_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP);
+        try_reactive_q_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP);
+        try_apparent_s_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP);
+        try_power_factor_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP);
+        try_u_pp_line_region(U_PP_X, U_PP_Y);
+        try_i_pp_line_region(I_PP_X, I_PP_Y);
+    end
 end
 
 endmodule

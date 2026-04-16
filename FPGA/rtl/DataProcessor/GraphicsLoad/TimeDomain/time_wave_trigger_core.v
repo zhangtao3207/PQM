@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: wave_trigger_core
+ * 模块: time_wave_trigger_core
  * 功能:
  *   对输入波形执行中心值跟踪、滞回阈值生成与触发判定。
  *   模块使用原始样本更新中心估计，使用显示重采样节拍更新触发判定输入，
@@ -22,7 +22,7 @@
  *   center_code: 当前跟踪得到的中心码值
  *   trigger_fire: 触发命中脉冲，高电平持续一个时钟周期
  */
-module wave_trigger_core #(
+module time_wave_trigger_core #(
     parameter integer WIDTH              = 16,
     parameter integer CENTER_IIR_SHIFT   = 22,
     parameter [WIDTH-1:0] TRIGGER_HYST   = {WIDTH{1'b0}},

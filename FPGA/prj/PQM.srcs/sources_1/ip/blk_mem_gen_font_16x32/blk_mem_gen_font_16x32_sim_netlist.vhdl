@@ -1,10 +1,10 @@
 -- Copyright 1986-2018 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2018.3 (win64) Build 2405991 Thu Dec  6 23:38:27 MST 2018
--- Date        : Thu Apr  2 23:48:25 2026
+-- Date        : Fri Apr 17 00:12:44 2026
 -- Host        : DESKTOP-6DUCG5H running 64-bit major release  (build 9200)
--- Command     : write_vhdl -force -mode funcsim -rename_top blk_mem_gen_font_16x32 -prefix
---               blk_mem_gen_font_16x32_ blk_mem_gen_font_16x32_sim_netlist.vhdl
+-- Command     : write_vhdl -force -mode funcsim
+--               C:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/blk_mem_gen_font_16x32/blk_mem_gen_font_16x32_sim_netlist.vhdl
 -- Design      : blk_mem_gen_font_16x32
 -- Purpose     : This VHDL netlist is a functional simulation representation of the design and should not be modified or
 --               synthesized. This netlist cannot be used for SDF annotated simulation.
@@ -23,6 +23,8 @@ entity blk_mem_gen_font_16x32_blk_mem_gen_mux is
     ram_douta : in STD_LOGIC_VECTOR ( 8 downto 0 );
     \douta[15]\ : in STD_LOGIC_VECTOR ( 6 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_16x32_blk_mem_gen_mux : entity is "blk_mem_gen_mux";
 end blk_mem_gen_font_16x32_blk_mem_gen_mux;
 
 architecture STRUCTURE of blk_mem_gen_font_16x32_blk_mem_gen_mux is
@@ -261,6 +263,8 @@ entity blk_mem_gen_font_16x32_blk_mem_gen_prim_wrapper_init is
     clka : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 11 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_16x32_blk_mem_gen_prim_wrapper_init : entity is "blk_mem_gen_prim_wrapper_init";
 end blk_mem_gen_font_16x32_blk_mem_gen_prim_wrapper_init;
 
 architecture STRUCTURE of blk_mem_gen_font_16x32_blk_mem_gen_prim_wrapper_init is
@@ -498,8 +502,8 @@ begin
       INIT_31 => X"0080008000800080008000800080008000800080008000800080008000800080",
       INIT_32 => X"03C003C001800000000000000000000000000000000000000000000000000000",
       INIT_33 => X"0000000000000000018003C003C0018000000000000000000000000000000180",
-      INIT_34 => X"0000000000000000000000002100318018C00C600E7007380738031800000000",
-      INIT_35 => X"0000000000000000000000000000000000000000000000000000000000000000",
+      INIT_34 => X"4480C680C680C640C640C640C62044206C103810000000000000000000000000",
+      INIT_35 => X"00000000000000001038106C084408C608C604C604C602C602C60244396C6D38",
       INIT_36 => X"0800040002000100008000400020001000080004000000000000000000000000",
       INIT_37 => X"0000000000000000000400080010002000400080010002000400080010001000",
       INIT_38 => X"0010002000400080010002000400080010002000000000000000000000000000",
@@ -739,6 +743,8 @@ entity blk_mem_gen_font_16x32_blk_mem_gen_prim_width is
     clka : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 11 downto 0 )
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_16x32_blk_mem_gen_prim_width : entity is "blk_mem_gen_prim_width";
 end blk_mem_gen_font_16x32_blk_mem_gen_prim_width;
 
 architecture STRUCTURE of blk_mem_gen_font_16x32_blk_mem_gen_prim_width is
@@ -811,6 +817,8 @@ entity blk_mem_gen_font_16x32_blk_mem_gen_generic_cstr is
     addra : in STD_LOGIC_VECTOR ( 11 downto 0 );
     clka : in STD_LOGIC
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_16x32_blk_mem_gen_generic_cstr : entity is "blk_mem_gen_generic_cstr";
 end blk_mem_gen_font_16x32_blk_mem_gen_generic_cstr;
 
 architecture STRUCTURE of blk_mem_gen_font_16x32_blk_mem_gen_generic_cstr is
@@ -922,6 +930,8 @@ entity blk_mem_gen_font_16x32_blk_mem_gen_top is
     addra : in STD_LOGIC_VECTOR ( 11 downto 0 );
     clka : in STD_LOGIC
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_16x32_blk_mem_gen_top : entity is "blk_mem_gen_top";
 end blk_mem_gen_font_16x32_blk_mem_gen_top;
 
 architecture STRUCTURE of blk_mem_gen_font_16x32_blk_mem_gen_top is
@@ -943,6 +953,8 @@ entity blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2_synth is
     addra : in STD_LOGIC_VECTOR ( 11 downto 0 );
     clka : in STD_LOGIC
   );
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2_synth : entity is "blk_mem_gen_v8_4_2_synth";
 end blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2_synth;
 
 architecture STRUCTURE of blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2_synth is
@@ -1174,6 +1186,8 @@ entity blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2 is
   attribute C_WRITE_WIDTH_B of blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2 : entity is 16;
   attribute C_XDEVICEFAMILY : string;
   attribute C_XDEVICEFAMILY of blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2 : entity is "zynq";
+  attribute ORIG_REF_NAME : string;
+  attribute ORIG_REF_NAME of blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2 : entity is "blk_mem_gen_v8_4_2";
   attribute downgradeipidentifiedwarnings : string;
   attribute downgradeipidentifiedwarnings of blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2 : entity is "yes";
 end blk_mem_gen_font_16x32_blk_mem_gen_v8_4_2;

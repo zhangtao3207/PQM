@@ -1,11 +1,11 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: parameters_initiator
+ * 模块: time_parameters_initiator
  * 功能:
  *   作为文字刷新链路的原始测量调度器，统一启动 RawDataCal 下的 raw 测量模块。
  *   先获取同一采样窗口的 p2p、相位和频率 raw，再由 p2p 推导 RMS raw，最后由 RMS 和相位推导功率 raw。
- *   所有 raw 结果和 valid 标志锁存完成后，再向 text_display_preprocess 返回 done。
+ *   所有 raw 结果和 valid 标志锁存完成后，再向 time_text_display_preprocess 返回 done。
  * 输入:
  *   clk: 原始测量调度工作时钟。
  *   rst_n: 低有效异步复位。
@@ -39,7 +39,7 @@
  *   power_factor_raw: 功率因数 32 位补码 raw 结果。
  *   power_metrics_valid: 功率相关 raw 结果是否有效。
  */
-module parameters_initiator #(
+module time_parameters_initiator #(
     parameter integer SAMPLE_WIDTH          = 16,
     parameter integer MAX_FRAME_SAMPLES     = 8192,
     parameter integer N_WIDTH               = (MAX_FRAME_SAMPLES <= 2) ? 2 : $clog2(MAX_FRAME_SAMPLES),

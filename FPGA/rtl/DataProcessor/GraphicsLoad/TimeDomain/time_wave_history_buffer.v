@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: wave_history_buffer
+ * 模块: time_wave_history_buffer
  * 功能:
  *   维护用于波形显示的环形历史缓存，在显示点提交时写入新的 Y 坐标，
  *   同时对外提供当前写指针、缓存写满标志、最后一个写入点以及随机读口。
@@ -19,7 +19,7 @@
  *   last_y: 最近一次写入的显示点 Y 坐标
  *   rd_data: 按 rd_idx 读出的历史缓存点数据
  */
-module wave_history_buffer #(
+module time_wave_history_buffer #(
     parameter integer POINT_COUNT      = 384,
     parameter integer POINT_ADDR_WIDTH = 9,
     parameter integer Y_WIDTH          = 8,

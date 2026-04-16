@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: zero_code_tracker
+ * 模块: time_zero_code_tracker
  * 功能:
  *   对输入的偏移二进制采样做慢速零点跟踪，输出可供过零检测与 RMS 去直流使用的 zero_code。
  *
@@ -11,7 +11,7 @@
  *   - 为避免误差较小时完全停滞，最小修正步长保持为 1 个码值。
  *   - 零点跟踪预热完成后输出 zero_valid=1。
  */
-module zero_code_tracker #(
+module time_zero_code_tracker #(
     parameter integer WIDTH          = 16,
     parameter integer EST_SHIFT      = 8,
     parameter integer WARMUP_SAMPLES = 256

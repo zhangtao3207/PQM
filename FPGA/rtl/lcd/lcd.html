@@ -76,7 +76,8 @@
       buttonBorder: "#DEE9F5",
       waveU: "#39E46F",
       waveI: "#FFD84E",
-      accent: "#58B6FF"
+      accent: "#58B6FF",
+      phaseNeg: "#FF5A5F"
     };
 
     const L = {
@@ -99,8 +100,8 @@
       freqGraphX: 30,
       freqGraphW: 400,
       freqMagY: 144,
-      freqMagH: 132,
-      freqPhaseY: 304,
+      freqMagH: 182,
+      freqPhaseY: 344,
       freqPhaseH: 80,
       plotTitleX: 68,
       plotTitleY: 72,
@@ -513,12 +514,12 @@
         ctx.stroke();
       }
 
-      const phaseMidY = L.freqPhaseY + Math.round(L.freqPhaseH / 2);
-      ctx.strokeStyle = C.graphYAxis;
-      ctx.beginPath();
-      ctx.moveTo(L.freqGraphX + 1, phaseMidY + 0.5);
-      ctx.lineTo(L.freqGraphX + L.freqGraphW - 1, phaseMidY + 0.5);
-      ctx.stroke();
+      for (let y = L.freqPhaseY + 20; y < L.freqPhaseY + L.freqPhaseH - 1; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(L.freqGraphX + 1, y + 0.5);
+        ctx.lineTo(L.freqGraphX + L.freqGraphW - 1, y + 0.5);
+        ctx.stroke();
+      }
 
       strokeRect(L.freqGraphX + 0.5, L.freqMagY + 0.5, L.freqGraphW - 1, L.freqMagH - 1, C.panelBorder, 1);
       strokeRect(L.freqGraphX + 0.5, L.freqPhaseY + 0.5, L.freqGraphW - 1, L.freqPhaseH - 1, C.panelBorder, 1);
@@ -548,7 +549,7 @@
             hz: harmonic * 50,
             uMag: uFundamental * uRelative,
             iMag: iFundamental * iRelative,
-            phaseDiffDeg: normalizePhaseRad((model.phaseDiffDeg + 18 * Math.sin(harmonic * 0.7)) * Math.PI / 180) * 180 / Math.PI
+            phaseDiffDeg: normalizePhaseRad((model.phaseDiffDeg - 35 + 70 * Math.sin(harmonic * 0.7)) * Math.PI / 180) * 180 / Math.PI
           };
         })
       ];
@@ -584,7 +585,7 @@
           (state.harmonicWindowIndex === 0 && index > 0 && index % 5 === 0) ||
           (state.harmonicWindowIndex > 0 && (index + 1) % 5 === 0)
         )
-          text(bin.harmonic === 0 ? "0" : String(bin.harmonic), x - 4, L.axisTickY, C.textDim, 16);
+          text(bin.harmonic === 0 ? "0" : String(bin.harmonic), x - 4, L.axisTickY + 40, C.textDim, 16);
       });
 
 
@@ -596,12 +597,12 @@
 
     function drawPhaseDiffBars(model) {
       const bins = buildHarmonicBins(model);
-      const phaseMidY = L.freqPhaseY + Math.round(L.freqPhaseH / 2);
+      const baseY = L.freqPhaseY + L.freqPhaseH - 2;
       const firstBarX = L.freqGraphX + 8;
       const lastBarX = L.freqGraphX + L.freqGraphW - 28;
       const binStep = (lastBarX - firstBarX) / (bins.length - 1);
       const barW = 7;
-      const scale = (L.freqPhaseH / 2) - 4;
+      const scale = L.freqPhaseH - 8;
 
       bins.forEach((bin, index) => {
         if (bin.harmonic === 0) return;
@@ -610,10 +611,7 @@
         const phase = Math.max(-180, Math.min(180, bin.phaseDiffDeg));
         const h = Math.round((Math.abs(phase) / 180) * scale);
 
-        if (phase >= 0)
-          rect(x, phaseMidY - h, barW, h, C.accent);
-        else
-          rect(x, phaseMidY, barW, h, C.accent);
+        rect(x, baseY - h, barW, h, phase >= 0 ? C.accent : C.phaseNeg);
       });
     }
 
@@ -625,9 +623,9 @@
         text(label, L.freqGraphX - 22, y - 8, C.textDim, 16);
       });
 
-      text("+180", L.freqGraphX - 30, L.freqPhaseY - 7, C.textDim, 14);
-      text("0", L.freqGraphX - 12, L.freqPhaseY + Math.round(L.freqPhaseH / 2) - 8, C.textDim, 14);
-      text("-180", L.freqGraphX - 30, L.freqPhaseY + L.freqPhaseH - 14, C.textDim, 14);
+      text("180", L.freqGraphX - 26, L.freqPhaseY - 7, C.textDim, 14);
+      text("90", L.freqGraphX - 20, L.freqPhaseY + Math.round(L.freqPhaseH / 2) - 8, C.textDim, 14);
+      text("0", L.freqGraphX - 12, L.freqPhaseY + L.freqPhaseH - 14, C.textDim, 14);
     }
 
     function drawHarmonicPageButtons() {
@@ -737,8 +735,8 @@
       text("MODE: Single - Frequency", L.titleTextX, L.titleTextY, C.textWhite);
       text("Freq Domain Analysis", L.plotTitleX, L.plotTitleY, C.textSoft);
       text("Magnitude (%)", L.freqGraphX, L.axisLabelY, C.waveU, 20);
-      text("Phase Diff (deg)", L.freqGraphX, L.freqPhaseY +110, C.accent, 18);
-      text("Harmonic Order", L.axisTimeX - 70, L.axisTimeY, C.textDim, 20);
+      text("Phase Diff (deg)", L.freqGraphX, L.axisTimeY + 40, C.accent, 18);
+      text("Harmonic Order", L.axisTimeX - 70, L.axisTimeY + 40, C.textDim, 20);
 
       text("Parameters", L.rightTitleX, L.rightTitleY, C.accent, 24);
       const lines = [

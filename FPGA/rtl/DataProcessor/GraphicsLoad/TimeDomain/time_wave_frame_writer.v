@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: wave_frame_writer
+ * 模块: time_wave_frame_writer
  * 功能:
  *   在收到抓帧请求后，从波形历史缓存的快照位置开始顺序读取显示点，
  *   并将一整帧波形数据写入外部显示 RAM 的非显示 bank。
@@ -25,7 +25,7 @@
  *   wave_ram_waddr: 显示 RAM 写地址
  *   wave_ram_wdata: 显示 RAM 写数据
  */
-module wave_frame_writer #(
+module time_wave_frame_writer #(
     parameter integer POINT_COUNT      = 384,
     parameter integer POINT_ADDR_WIDTH = 9,
     parameter integer RAM_ADDR_WIDTH   = 10,
