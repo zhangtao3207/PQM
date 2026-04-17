@@ -3,8 +3,8 @@
 // Tool Version: Vivado v.2018.3 (win64) Build 2405991 Thu Dec  6 23:38:27 MST 2018
 // Date        : Thu Apr 16 22:23:35 2026
 // Host        : DESKTOP-6DUCG5H running 64-bit major release  (build 9200)
-// Command     : write_verilog -force -mode funcsim
-//               c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/rom_atan_lut_1024/rom_atan_lut_1024_sim_netlist.v
+// Command     : write_verilog -force -mode funcsim -rename_top rom_atan_lut_1024 -prefix
+//               rom_atan_lut_1024_ rom_atan_lut_1024_sim_netlist.v
 // Design      : rom_atan_lut_1024
 // Purpose     : This verilog netlist is a functional simulation representation of the design and should not be modified
 //               or synthesized. This netlist cannot be used for SDF annotated simulation.
@@ -191,7 +191,6 @@ module rom_atan_lut_1024
         .web(1'b0));
 endmodule
 
-(* ORIG_REF_NAME = "blk_mem_gen_generic_cstr" *) 
 module rom_atan_lut_1024_blk_mem_gen_generic_cstr
    (douta,
     clka,
@@ -214,7 +213,6 @@ module rom_atan_lut_1024_blk_mem_gen_generic_cstr
         .ena(ena));
 endmodule
 
-(* ORIG_REF_NAME = "blk_mem_gen_prim_width" *) 
 module rom_atan_lut_1024_blk_mem_gen_prim_width
    (douta,
     clka,
@@ -237,7 +235,6 @@ module rom_atan_lut_1024_blk_mem_gen_prim_width
         .ena(ena));
 endmodule
 
-(* ORIG_REF_NAME = "blk_mem_gen_prim_wrapper_init" *) 
 module rom_atan_lut_1024_blk_mem_gen_prim_wrapper_init
    (douta,
     clka,
@@ -479,7 +476,6 @@ module rom_atan_lut_1024_blk_mem_gen_prim_wrapper_init
         .WEBWE({1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0}));
 endmodule
 
-(* ORIG_REF_NAME = "blk_mem_gen_top" *) 
 module rom_atan_lut_1024_blk_mem_gen_top
    (douta,
     clka,
@@ -527,7 +523,7 @@ endmodule
 (* C_WEA_WIDTH = "1" *) (* C_WEB_WIDTH = "1" *) (* C_WRITE_DEPTH_A = "1025" *) 
 (* C_WRITE_DEPTH_B = "1025" *) (* C_WRITE_MODE_A = "WRITE_FIRST" *) (* C_WRITE_MODE_B = "WRITE_FIRST" *) 
 (* C_WRITE_WIDTH_A = "14" *) (* C_WRITE_WIDTH_B = "14" *) (* C_XDEVICEFAMILY = "zynq" *) 
-(* ORIG_REF_NAME = "blk_mem_gen_v8_4_2" *) (* downgradeipidentifiedwarnings = "yes" *) 
+(* downgradeipidentifiedwarnings = "yes" *) 
 module rom_atan_lut_1024_blk_mem_gen_v8_4_2
    (clka,
     rsta,
@@ -745,7 +741,6 @@ module rom_atan_lut_1024_blk_mem_gen_v8_4_2
         .ena(ena));
 endmodule
 
-(* ORIG_REF_NAME = "blk_mem_gen_v8_4_2_synth" *) 
 module rom_atan_lut_1024_blk_mem_gen_v8_4_2_synth
    (douta,
     clka,

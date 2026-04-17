@@ -88,13 +88,13 @@ localparam [10:0] LINE_Y5     = LINE_Y4 + LINE_STEP;
 localparam [10:0] LINE_Y6     = LINE_Y5 + LINE_STEP;
 
 // 频域页布局坐标，与 rtl/lcd/lcd.html 中的预览稿保持一致。
-localparam [10:0] FREQ_GRAPH_X       = 11'd30;
-localparam [10:0] FREQ_GRAPH_W       = 11'd400;
+localparam [10:0] FREQ_GRAPH_X       = 11'd50;
+localparam [10:0] FREQ_GRAPH_W       = 11'd440;
 localparam [10:0] FREQ_MAG_Y         = 11'd144;
 localparam [10:0] FREQ_MAG_H         = 11'd182;
 localparam [10:0] FREQ_PHASE_Y       = 11'd344;
 localparam [10:0] FREQ_PHASE_H       = 11'd80;
-localparam [10:0] FREQ_GRID_X_STEP   = 11'd53;
+localparam [10:0] FREQ_GRID_X_STEP   = 11'd55;
 localparam [10:0] FREQ_MAG_Y_STEP    = 11'd26;
 localparam [10:0] FREQ_PHASE_Y_STEP  = 11'd20;
 localparam [10:0] FREQ_GRID_X1       = FREQ_GRAPH_X + FREQ_GRID_X_STEP;

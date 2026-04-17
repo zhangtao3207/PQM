@@ -60,6 +60,7 @@
  *   power_metrics_valid: 有效标志。
  *   freeze_active: Freeze/Auto 按钮当前显示状态。
  *   frequency_page_active: 当前是否显示频域页面。
+ *   harmonic_window_index: 频域页当前谐波窗口序号。
  *
  * 输出:
  *   text_en: 使能信号。
@@ -129,6 +130,7 @@ module lcd_display_text #(
     input             power_metrics_valid,
     input             freeze_active,
     input             frequency_page_active,
+    input      [4:0]  harmonic_window_index,
     output reg        text_en,
     output reg        text_font_small,
     output reg [6:0]  text_char_idx,
@@ -212,6 +214,15 @@ localparam [10:0] FREQ_HARM_LABEL_Y = 11'd456;
 localparam [10:0] FREQ_PREV_TXT_X = 11'd339;
 localparam [10:0] FREQ_NEXT_TXT_X = 11'd389;
 localparam [10:0] FREQ_BTN_TXT_Y  = 11'd184;
+localparam [10:0] FREQ_AXIS_TICK0_X  = 11'd45;
+localparam [10:0] FREQ_AXIS_TICK1_X  = 11'd63;
+localparam [10:0] FREQ_AXIS_TICK5_X  = 11'd133;
+localparam [10:0] FREQ_AXIS_TICK10_X = 11'd216;
+localparam [10:0] FREQ_AXIS_TICK15_X = 11'd304;
+localparam [10:0] FREQ_AXIS_TICK20_X = 11'd392;
+localparam [10:0] FREQ_AXIS_TICK25_X = 11'd470;
+localparam [10:0] FREQ_AXIS_TICK_Y   = 11'd426;
+localparam [10:0] FREQ_AXIS_TICK_W   = 11'd30;
 
 localparam integer MAX_TEXT_LEN = 25;
 localparam integer TITLE_LEN    = 19;
@@ -239,6 +250,7 @@ localparam integer FREQ_PLOT_LEN = 20;
 localparam integer FREQ_MAG_LABEL_LEN = 13;
 localparam integer FREQ_PHASE_LABEL_LEN = 16;
 localparam integer FREQ_HARM_LABEL_LEN = 14;
+localparam integer FREQ_AXIS_TICK_LEN = 3;
 localparam integer FREQ_FUND_LEN = 24;
 localparam integer FREQ_U1_LEN = 17;
 localparam integer FREQ_I1_LEN = 17;
@@ -512,6 +524,92 @@ function [7:0] digit_to_ascii;
             digit_to_ascii = "0" + digit[7:0];
         else
             digit_to_ascii = " ";
+    end
+endfunction
+
+// 计算频域横坐标刻度值。每个窗口覆盖 25 个谐波间隔，第 0 页额外标出 1 次谐波。
+function [8:0] freq_axis_tick_value;
+    input [4:0] page_index;
+    input [2:0] tick_index;
+    reg   [8:0] page_base;
+    begin
+        page_base = {page_index, 4'b0000} +
+                    {1'b0, page_index, 3'b000} +
+                    {4'b0000, page_index};
+
+        case (tick_index)
+            3'd0: freq_axis_tick_value = page_base;
+            3'd1: freq_axis_tick_value = (page_index == 5'd0) ? 9'd1 : (page_base + 9'd5);
+            3'd2: freq_axis_tick_value = (page_index == 5'd0) ? 9'd5 : (page_base + 9'd10);
+            3'd3: freq_axis_tick_value = (page_index == 5'd0) ? 9'd10 : (page_base + 9'd15);
+            3'd4: freq_axis_tick_value = (page_index == 5'd0) ? 9'd15 : (page_base + 9'd20);
+            3'd5: freq_axis_tick_value = page_base + 9'd25;
+            default: freq_axis_tick_value = page_base;
+        endcase
+    end
+endfunction
+
+// 将 0~500 的谐波刻度值转成三位左对齐 ASCII，不在文本路径中使用除法或取模。
+function [7:0] freq_axis_value_ascii;
+    input [8:0] value;
+    input integer char_slot;
+    reg [8:0] value_work;
+    reg [7:0] hundreds_digit;
+    reg [7:0] tens_digit;
+    reg [7:0] units_digit;
+    integer idx;
+    begin
+        value_work     = value;
+        hundreds_digit = 8'd0;
+        tens_digit     = 8'd0;
+        units_digit    = 8'd0;
+
+        for (idx = 0; idx < 5; idx = idx + 1) begin
+            if (value_work >= 9'd100) begin
+                value_work     = value_work - 9'd100;
+                hundreds_digit = hundreds_digit + 8'd1;
+            end
+        end
+
+        for (idx = 0; idx < 9; idx = idx + 1) begin
+            if (value_work >= 9'd10) begin
+                value_work = value_work - 9'd10;
+                tens_digit = tens_digit + 8'd1;
+            end
+        end
+
+        units_digit = {4'd0, value_work[3:0]};
+
+        if (hundreds_digit != 8'd0) begin
+            case (char_slot)
+                0: freq_axis_value_ascii = digit_to_ascii(hundreds_digit);
+                1: freq_axis_value_ascii = digit_to_ascii(tens_digit);
+                2: freq_axis_value_ascii = digit_to_ascii(units_digit);
+                default: freq_axis_value_ascii = " ";
+            endcase
+        end else if (tens_digit != 8'd0) begin
+            case (char_slot)
+                0: freq_axis_value_ascii = digit_to_ascii(tens_digit);
+                1: freq_axis_value_ascii = digit_to_ascii(units_digit);
+                default: freq_axis_value_ascii = " ";
+            endcase
+        end else begin
+            case (char_slot)
+                0: freq_axis_value_ascii = digit_to_ascii(units_digit);
+                default: freq_axis_value_ascii = " ";
+            endcase
+        end
+    end
+endfunction
+
+// 组合生成当前频域页指定刻度的字符。
+function [7:0] freq_axis_tick_ascii;
+    input [4:0] page_index;
+    input [2:0] tick_index;
+    input integer char_slot;
+    begin
+        freq_axis_tick_ascii =
+            freq_axis_value_ascii(freq_axis_tick_value(page_index, tick_index), char_slot);
     end
 endfunction
 
@@ -1364,6 +1462,27 @@ task try_freq_panel_line_region;
     end
 endtask
 
+// 在相位图下方绘制一组频域横坐标刻度，刻度值随当前谐波窗口变化。
+task try_freq_axis_tick_region;
+    input [10:0] base_x;
+    input [2:0]  tick_index;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + FREQ_AXIS_TICK_W) &&
+            (pixel_ypos >= FREQ_AXIS_TICK_Y) && (pixel_ypos < FREQ_AXIS_TICK_Y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, FREQ_AXIS_TICK_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(freq_axis_tick_ascii(harmonic_window_index, tick_index, line_slot));
+            text_color      = TEXT_DIM;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - FREQ_AXIS_TICK_Y;
+        end
+    end
+endtask
+
 // 莽禄聞氓聬聢忙聣芦忙聫聫忙聣聙忙聹聣忙聳聡氓颅聴氓聦潞氓聼聼茂录聦氓聭陆盲赂颅盲录聵氓聟聢莽潞搂盲赂聨猫掳聝莽聰篓茅隆潞氓潞聫盲赂聙猫聡麓茫聙聜
 always @(*) begin
     text_en         = 1'b0;
@@ -1402,6 +1521,21 @@ always @(*) begin
         try_small_text_region(FREQ_LABEL_X - 11'd26, FREQ_PHASE_LABEL_Y - 11'd119, 3, TEXT_DIM, "180");
         try_small_text_region(FREQ_LABEL_X - 11'd20, FREQ_PHASE_LABEL_Y - 11'd79, 2, TEXT_DIM, "90");
         try_small_text_region(FREQ_LABEL_X - 11'd10, FREQ_PHASE_LABEL_Y - 11'd39, 1, TEXT_DIM, "0");
+
+        try_freq_axis_tick_region(FREQ_AXIS_TICK0_X, 3'd0);
+        if (harmonic_window_index == 5'd0) begin
+            try_freq_axis_tick_region(FREQ_AXIS_TICK1_X, 3'd1);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK5_X, 3'd2);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK10_X, 3'd3);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK15_X, 3'd4);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK25_X, 3'd5);
+        end else begin
+            try_freq_axis_tick_region(FREQ_AXIS_TICK5_X, 3'd1);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK10_X, 3'd2);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK15_X, 3'd3);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK20_X, 3'd4);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK25_X, 3'd5);
+        end
 
         try_small_text_region(RP_TITLE_X, RP_TITLE_Y, RP_HEAD_LEN, ACCENT_COLOR, RP_HEAD_STR);
         try_freq_panel_line_region(LINE_Y0, 11'd756, FREQ_FUND_LEN, 3'd0, TEXT_SOFT);

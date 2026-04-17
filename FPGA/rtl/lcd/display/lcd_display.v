@@ -42,6 +42,7 @@ module lcd_display(
 localparam [5:0]  BIG_CHAR_W    = 6'd16;
 localparam [5:0]  SMALL_CHAR_W  = 6'd10;
 localparam [6:0]  FONT_BLANK    = 7'd127;
+localparam [6:0]  FONT_PERCENT  = 7'd90;
 localparam [23:0] BG_COLOR      = 24'h0B1524;
 localparam [23:0] TEXT_WHITE    = 24'hF2F6FA;
 localparam [23:0] WAVE_U_COLOR  = 24'h39E46F;
@@ -69,8 +70,8 @@ localparam [10:0] HARM_NEXT_X   = 11'd375;
 localparam [10:0] HARM_BTN_Y    = 11'd180;
 localparam [10:0] HARM_BTN_W    = 11'd38;
 localparam [10:0] HARM_BTN_H    = 11'd28;
-localparam [10:0] FREQ_GRAPH_X  = 11'd30;
-localparam [10:0] FREQ_GRAPH_W  = 11'd400;
+localparam [10:0] FREQ_GRAPH_X  = 11'd50;
+localparam [10:0] FREQ_GRAPH_W  = 11'd440;
 localparam [10:0] FREQ_MAG_Y    = 11'd144;
 localparam [10:0] FREQ_MAG_BASE_Y = 11'd324;
 localparam [10:0] FREQ_PHASE_Y  = 11'd344;
@@ -80,13 +81,14 @@ localparam integer TOUCH_PRESSED_BIT   = 4;
 localparam [15:0] FREEZE_MIN_PRESS_MS  = 16'd30;
 localparam [15:0] FREEZE_MAX_PRESS_MS  = 16'd500;
 localparam [15:0] HARMONIC_LONG_PRESS_MS = 16'd700;
-localparam integer TEXT_PACKET_WIDTH   = 339;
+localparam integer TEXT_PACKET_WIDTH   = 677;
 
 // LCD 像素时钟域中的一级流水线寄存器，用于对齐背景、文字和波形像素
 reg  [23:0] base_color_d1;
 reg  [23:0] text_color_d1;
 reg         text_en_d1;
 reg         text_font_small_d1;
+reg  [6:0]  text_char_idx_d1;
 reg  [5:0]  text_rel_x_d1;
 reg         text_blank_d1;
 reg  [7:0]  u_rms_tens_lcd;
@@ -141,6 +143,57 @@ reg  [7:0]  power_factor_units_lcd;
 reg  [7:0]  power_factor_decile_lcd;
 reg  [7:0]  power_factor_percentiles_lcd;
 reg         power_metrics_valid_lcd;
+reg  [7:0]  freq_thd_u_hundreds_lcd;
+reg  [7:0]  freq_thd_u_tens_lcd;
+reg  [7:0]  freq_thd_u_units_lcd;
+reg  [7:0]  freq_thd_u_decile_lcd;
+reg  [7:0]  freq_thd_u_percentiles_lcd;
+reg         freq_thd_u_valid_lcd;
+reg  [7:0]  freq_thd_i_hundreds_lcd;
+reg  [7:0]  freq_thd_i_tens_lcd;
+reg  [7:0]  freq_thd_i_units_lcd;
+reg  [7:0]  freq_thd_i_decile_lcd;
+reg  [7:0]  freq_thd_i_percentiles_lcd;
+reg         freq_thd_i_valid_lcd;
+reg  [7:0]  freq_u1_mag_hundreds_lcd;
+reg  [7:0]  freq_u1_mag_tens_lcd;
+reg  [7:0]  freq_u1_mag_units_lcd;
+reg  [7:0]  freq_u1_mag_decile_lcd;
+reg  [7:0]  freq_u1_mag_percentiles_lcd;
+reg         freq_u1_mag_valid_lcd;
+reg  [7:0]  freq_i1_mag_hundreds_lcd;
+reg  [7:0]  freq_i1_mag_tens_lcd;
+reg  [7:0]  freq_i1_mag_units_lcd;
+reg  [7:0]  freq_i1_mag_decile_lcd;
+reg  [7:0]  freq_i1_mag_percentiles_lcd;
+reg         freq_i1_mag_valid_lcd;
+reg         freq_phase1_neg_lcd;
+reg  [7:0]  freq_phase1_hundreds_lcd;
+reg  [7:0]  freq_phase1_tens_lcd;
+reg  [7:0]  freq_phase1_units_lcd;
+reg  [7:0]  freq_phase1_decile_lcd;
+reg  [7:0]  freq_phase1_percentiles_lcd;
+reg         freq_phase1_valid_lcd;
+reg  [7:0]  freq_dc_u_hundreds_lcd;
+reg  [7:0]  freq_dc_u_tens_lcd;
+reg  [7:0]  freq_dc_u_units_lcd;
+reg  [7:0]  freq_dc_u_decile_lcd;
+reg  [7:0]  freq_dc_u_percentiles_lcd;
+reg         freq_dc_u_valid_lcd;
+reg  [7:0]  freq_dc_i_hundreds_lcd;
+reg  [7:0]  freq_dc_i_tens_lcd;
+reg  [7:0]  freq_dc_i_units_lcd;
+reg  [7:0]  freq_dc_i_decile_lcd;
+reg  [7:0]  freq_dc_i_percentiles_lcd;
+reg         freq_dc_i_valid_lcd;
+reg  [7:0]  freq_dh_order_u_hundreds_lcd;
+reg  [7:0]  freq_dh_order_u_tens_lcd;
+reg  [7:0]  freq_dh_order_u_units_lcd;
+reg         freq_dh_order_u_valid_lcd;
+reg  [7:0]  freq_dh_order_i_hundreds_lcd;
+reg  [7:0]  freq_dh_order_i_tens_lcd;
+reg  [7:0]  freq_dh_order_i_units_lcd;
+reg         freq_dh_order_i_valid_lcd;
 reg         graph_en_d1;
 reg  [8:0]  graph_col_d1;
 reg  [10:0] graph_row_d1;
@@ -154,6 +207,8 @@ reg         freq_frame_valid_sync1;
 reg         freq_frame_valid_sync2;
 reg         freq_front_bank_lcd;
 reg         freq_front_valid_lcd;
+reg         freq_front_bank_wave_sync1;
+reg         freq_front_bank_wave_sync2;
 reg         u_wave_prev_valid_d1;
 reg  [7:0]  u_wave_prev_y_d1;
 reg  [8:0]  u_wave_prev_col_d1;
@@ -280,6 +335,57 @@ wire [7:0]  power_factor_units;
 wire [7:0]  power_factor_decile;
 wire [7:0]  power_factor_percentiles;
 wire        power_metrics_valid;
+wire [7:0]  freq_thd_u_hundreds;
+wire [7:0]  freq_thd_u_tens;
+wire [7:0]  freq_thd_u_units;
+wire [7:0]  freq_thd_u_decile;
+wire [7:0]  freq_thd_u_percentiles;
+wire        freq_thd_u_valid;
+wire [7:0]  freq_thd_i_hundreds;
+wire [7:0]  freq_thd_i_tens;
+wire [7:0]  freq_thd_i_units;
+wire [7:0]  freq_thd_i_decile;
+wire [7:0]  freq_thd_i_percentiles;
+wire        freq_thd_i_valid;
+wire [7:0]  freq_u1_mag_hundreds;
+wire [7:0]  freq_u1_mag_tens;
+wire [7:0]  freq_u1_mag_units;
+wire [7:0]  freq_u1_mag_decile;
+wire [7:0]  freq_u1_mag_percentiles;
+wire        freq_u1_mag_valid;
+wire [7:0]  freq_i1_mag_hundreds;
+wire [7:0]  freq_i1_mag_tens;
+wire [7:0]  freq_i1_mag_units;
+wire [7:0]  freq_i1_mag_decile;
+wire [7:0]  freq_i1_mag_percentiles;
+wire        freq_i1_mag_valid;
+wire        freq_phase1_neg;
+wire [7:0]  freq_phase1_hundreds;
+wire [7:0]  freq_phase1_tens;
+wire [7:0]  freq_phase1_units;
+wire [7:0]  freq_phase1_decile;
+wire [7:0]  freq_phase1_percentiles;
+wire        freq_phase1_valid;
+wire [7:0]  freq_dc_u_hundreds;
+wire [7:0]  freq_dc_u_tens;
+wire [7:0]  freq_dc_u_units;
+wire [7:0]  freq_dc_u_decile;
+wire [7:0]  freq_dc_u_percentiles;
+wire        freq_dc_u_valid;
+wire [7:0]  freq_dc_i_hundreds;
+wire [7:0]  freq_dc_i_tens;
+wire [7:0]  freq_dc_i_units;
+wire [7:0]  freq_dc_i_decile;
+wire [7:0]  freq_dc_i_percentiles;
+wire        freq_dc_i_valid;
+wire [7:0]  freq_dh_order_u_hundreds;
+wire [7:0]  freq_dh_order_u_tens;
+wire [7:0]  freq_dh_order_u_units;
+wire        freq_dh_order_u_valid;
+wire [7:0]  freq_dh_order_i_hundreds;
+wire [7:0]  freq_dh_order_i_tens;
+wire [7:0]  freq_dh_order_i_units;
+wire        freq_dh_order_i_valid;
 wire        u_trigger_pulse;
 wire [8:0]  u_trigger_snapshot_ptr;
 
@@ -315,13 +421,19 @@ wire [TEXT_PACKET_WIDTH-1:0] text_packet_front_lcd;
 
 wire [6:0]  font_char_idx;
 wire        text_result_commit_toggle;
+reg         text_result_commit_toggle_d1_wave;
+reg         freq_text_result_commit_toggle_d1_wave;
+reg         text_packet_commit_toggle_wave;
 wire        text_commit_pending_lcd;
 wire        text_swap_ack_toggle_lcd;
+wire        text_result_commit_edge_wave;
+wire        freq_text_result_commit_edge_wave;
 
 wire [11:0] font_addr_16x32;
 wire [10:0] font_addr_10x20;
 wire [15:0] font_row_16x32_rom;
 wire [11:0] font_row_10x20_rom;
+wire [3:0]  font_10x20_bit_idx;
 wire        freq_mag_u_pixel_on;
 wire        freq_mag_i_pixel_on;
 wire        freq_phase_pixel_on;
@@ -329,8 +441,8 @@ wire        freq_phase_negative;
 wire [10:0] freq_mag_col_ext;
 wire [10:0] freq_phase_col_ext;
 wire [4:0]  freq_mag_bucket;
-wire [3:0]  freq_mag_sub_col;
-wire [3:0]  freq_phase_sub_col;
+wire [4:0]  freq_mag_sub_col;
+wire [4:0]  freq_phase_sub_col;
 wire [7:0]  freq_u_bar_height;
 wire [7:0]  freq_i_bar_height;
 wire [7:0]  freq_phase_bar_height;
@@ -340,10 +452,45 @@ wire        freq_harmonic_valid;
 wire        freq_harmonic_last;
 wire [8:0]  freq_harmonic_order_stream;
 wire        freq_harmonic_present_stream;
+wire [16:0] freq_harmonic_u_mag_raw;
+wire [16:0] freq_harmonic_i_mag_raw;
 wire [15:0] freq_harmonic_u_pct_x100;
 wire [15:0] freq_harmonic_i_pct_x100;
 wire        freq_phase_diff_valid_stream;
 wire signed [15:0] freq_phase_diff_deg_x100;
+wire        freq_filtered_ready;
+wire        freq_filtered_valid;
+wire        freq_filtered_last;
+wire [8:0]  freq_filtered_order;
+wire        freq_filtered_present;
+wire [16:0] freq_filtered_u_mag;
+wire [16:0] freq_filtered_i_mag;
+wire [15:0] freq_filtered_u_pct_x100;
+wire [15:0] freq_filtered_i_pct_x100;
+wire        freq_filtered_phase_valid;
+wire signed [15:0] freq_filtered_phase_x100;
+wire        freq_filtered_fire;
+wire [31:0] freq_thd_u_raw_x100;
+wire [31:0] freq_thd_i_raw_x100;
+wire        freq_thd_u_raw_valid;
+wire        freq_thd_i_raw_valid;
+wire [31:0] freq_u1_mag_raw_x100;
+wire [31:0] freq_i1_mag_raw_x100;
+wire        freq_u1_mag_raw_valid;
+wire        freq_i1_mag_raw_valid;
+wire signed [31:0] freq_phase1_raw_x100;
+wire        freq_phase1_raw_valid;
+wire [31:0] freq_dc_u_raw_x100;
+wire [31:0] freq_dc_i_raw_x100;
+wire        freq_dc_u_raw_valid;
+wire        freq_dc_i_raw_valid;
+wire [8:0]  freq_dh_order_u_raw;
+wire [8:0]  freq_dh_order_i_raw;
+wire        freq_dh_order_u_raw_valid;
+wire        freq_dh_order_i_raw_valid;
+wire        freq_metrics_raw_valid;
+wire        freq_metrics_raw_commit_toggle;
+wire        freq_text_result_commit_toggle;
 wire        freq_display_bank;
 wire        freq_frame_valid;
 wire        freq_ram_we;
@@ -353,6 +500,7 @@ wire [7:0]  freq_u_mag_wdata;
 wire [7:0]  freq_i_mag_wdata;
 wire [7:0]  freq_phase_wdata;
 wire [7:0]  freq_flag_wdata;
+wire        freq_ram_store_we;
 wire [7:0]  freq_u_mag_ram_doutb;
 wire [7:0]  freq_i_mag_ram_doutb;
 wire [7:0]  freq_phase_ram_doutb;
@@ -364,6 +512,8 @@ wire        freq_phase_valid_lcd;
 
 assign font_addr_16x32 = text_blank ? 12'd0 : ({5'd0, font_char_idx} << 5) + {6'd0, text_rel_y[4:0]};
 assign font_addr_10x20 = text_blank ? 11'd0 : (({4'd0, font_char_idx} << 4) + ({6'd0, font_char_idx} << 2) + {5'd0, text_rel_y[4:0]});
+assign text_result_commit_edge_wave = text_result_commit_toggle ^ text_result_commit_toggle_d1_wave;
+assign freq_text_result_commit_edge_wave = freq_text_result_commit_toggle ^ freq_text_result_commit_toggle_d1_wave;
 assign text_packet_wave = {
     u_rms_tens, u_rms_units, u_rms_decile, u_rms_percentiles, u_rms_digits_valid,
     i_rms_tens, i_rms_units, i_rms_decile, i_rms_percentiles, i_rms_digits_valid,
@@ -375,7 +525,16 @@ assign text_packet_wave = {
     reactive_q_neg, reactive_q_tens, reactive_q_units, reactive_q_decile, reactive_q_percentiles,
     apparent_s_tens, apparent_s_units, apparent_s_decile, apparent_s_percentiles,
     power_factor_neg, power_factor_units, power_factor_decile, power_factor_percentiles,
-    power_metrics_valid
+    power_metrics_valid,
+    freq_thd_u_hundreds, freq_thd_u_tens, freq_thd_u_units, freq_thd_u_decile, freq_thd_u_percentiles, freq_thd_u_valid,
+    freq_thd_i_hundreds, freq_thd_i_tens, freq_thd_i_units, freq_thd_i_decile, freq_thd_i_percentiles, freq_thd_i_valid,
+    freq_u1_mag_hundreds, freq_u1_mag_tens, freq_u1_mag_units, freq_u1_mag_decile, freq_u1_mag_percentiles, freq_u1_mag_valid,
+    freq_i1_mag_hundreds, freq_i1_mag_tens, freq_i1_mag_units, freq_i1_mag_decile, freq_i1_mag_percentiles, freq_i1_mag_valid,
+    freq_phase1_neg, freq_phase1_hundreds, freq_phase1_tens, freq_phase1_units, freq_phase1_decile, freq_phase1_percentiles, freq_phase1_valid,
+    freq_dc_u_hundreds, freq_dc_u_tens, freq_dc_u_units, freq_dc_u_decile, freq_dc_u_percentiles, freq_dc_u_valid,
+    freq_dc_i_hundreds, freq_dc_i_tens, freq_dc_i_units, freq_dc_i_decile, freq_dc_i_percentiles, freq_dc_i_valid,
+    freq_dh_order_u_hundreds, freq_dh_order_u_tens, freq_dh_order_u_units, freq_dh_order_u_valid,
+    freq_dh_order_i_hundreds, freq_dh_order_i_tens, freq_dh_order_i_units, freq_dh_order_i_valid
 };
 
 blk_mem_gen_font_16x32 u_font_16x32_rom(
@@ -510,6 +669,21 @@ time_text_display_preprocess #(
     .power_metrics_valid(power_metrics_valid)
 );
 
+// 合并时域和频域文本提交事件，确保同一个双缓冲包同时携带两类最新数字位。
+always @(posedge wave_clk or negedge sys_rst_n) begin
+    if (!sys_rst_n) begin
+        text_result_commit_toggle_d1_wave      <= 1'b0;
+        freq_text_result_commit_toggle_d1_wave <= 1'b0;
+        text_packet_commit_toggle_wave         <= 1'b0;
+    end else begin
+        text_result_commit_toggle_d1_wave      <= text_result_commit_toggle;
+        freq_text_result_commit_toggle_d1_wave <= freq_text_result_commit_toggle;
+
+        if (text_result_commit_edge_wave || freq_text_result_commit_edge_wave)
+            text_packet_commit_toggle_wave <= ~text_packet_commit_toggle_wave;
+    end
+end
+
 // 相位与频率分析：以电压为参考计算频率和电压相对电流的相位差
 // 文字结果采用前后台双缓冲，跨域仅同步提交与切换控制位
 text_packet_double_buffer #(
@@ -519,7 +693,7 @@ text_packet_double_buffer #(
     .lcd_pclk                  (lcd_pclk),
     .rst_n                     (sys_rst_n),
     .packet_in_wave            (text_packet_wave),
-    .packet_commit_toggle_wave (text_result_commit_toggle),
+    .packet_commit_toggle_wave (text_packet_commit_toggle_wave),
     .frame_edge_lcd            (frame_edge_lcd),
     .lcd_swap_ack_toggle       (text_swap_ack_toggle_lcd),
     .packet_pending_lcd        (text_commit_pending_lcd),
@@ -606,8 +780,8 @@ freq_analysis_top u_freq_analysis_top (
     .m_harmonic_u_imag          (),
     .m_harmonic_i_real          (),
     .m_harmonic_i_imag          (),
-    .m_harmonic_u_mag           (),
-    .m_harmonic_i_mag           (),
+    .m_harmonic_u_mag           (freq_harmonic_u_mag_raw),
+    .m_harmonic_i_mag           (freq_harmonic_i_mag_raw),
     .m_harmonic_u_pct_x100      (freq_harmonic_u_pct_x100),
     .m_harmonic_i_pct_x100      (freq_harmonic_i_pct_x100),
     .m_phase_vector_valid       (),
@@ -653,11 +827,15 @@ freq_display_adapter u_freq_display_adapter (
 
 always @(posedge wave_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
-        freeze_active_wave_sync1 <= 1'b0;
-        freeze_active_wave_sync2 <= 1'b0;
+        freeze_active_wave_sync1    <= 1'b0;
+        freeze_active_wave_sync2    <= 1'b0;
+        freq_front_bank_wave_sync1  <= 1'b0;
+        freq_front_bank_wave_sync2  <= 1'b0;
     end else begin
-        freeze_active_wave_sync1 <= freeze_active_lcd;
-        freeze_active_wave_sync2 <= freeze_active_wave_sync1;
+        freeze_active_wave_sync1    <= freeze_active_lcd;
+        freeze_active_wave_sync2    <= freeze_active_wave_sync1;
+        freq_front_bank_wave_sync1  <= freq_front_bank_lcd;
+        freq_front_bank_wave_sync2  <= freq_front_bank_wave_sync1;
     end
 end
 
@@ -732,6 +910,7 @@ lcd_display_text #(
     .power_metrics_valid (power_metrics_valid_lcd),
     .freeze_active       (freeze_active_lcd),
     .frequency_page_active(frequency_page_active_lcd),
+    .harmonic_window_index(harmonic_window_index_lcd),
     .text_en             (text_en),
     .text_font_small     (text_font_small),
     .text_char_idx       (text_char_idx),
@@ -772,7 +951,7 @@ blk_mem_gen_ram0 u_i_wave_frame_ram(
 blk_mem_gen_ram0 u_freq_u_mag_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
-    .wea   ({freq_ram_we}),
+    .wea   ({freq_ram_store_we}),
     .addra (freq_ram_waddr),
     .dina  (freq_u_mag_wdata),
     .douta (),
@@ -787,7 +966,7 @@ blk_mem_gen_ram0 u_freq_u_mag_display_ram(
 blk_mem_gen_ram0 u_freq_i_mag_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
-    .wea   ({freq_ram_we}),
+    .wea   ({freq_ram_store_we}),
     .addra (freq_ram_waddr),
     .dina  (freq_i_mag_wdata),
     .douta (),
@@ -802,7 +981,7 @@ blk_mem_gen_ram0 u_freq_i_mag_display_ram(
 blk_mem_gen_ram0 u_freq_phase_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
-    .wea   ({freq_ram_we}),
+    .wea   ({freq_ram_store_we}),
     .addra (freq_ram_waddr),
     .dina  (freq_phase_wdata),
     .douta (),
@@ -817,7 +996,7 @@ blk_mem_gen_ram0 u_freq_phase_display_ram(
 blk_mem_gen_ram0 u_freq_flag_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
-    .wea   ({freq_ram_we}),
+    .wea   ({freq_ram_store_we}),
     .addra (freq_ram_waddr),
     .dina  (freq_flag_wdata),
     .douta (),
@@ -828,10 +1007,135 @@ blk_mem_gen_ram0 u_freq_flag_display_ram(
     .doutb (freq_flag_ram_doutb)
 );
 
+// 将扩展后的频域图横向像素映射到 0~25 的谐波端点，避免除法并保持柱图等距铺满绘图区。
+function [4:0] freq_bucket_from_col;
+    input [10:0] col_value;
+    begin
+        if (col_value < 11'd17)
+            freq_bucket_from_col = 5'd0;
+        else if (col_value < 11'd34)
+            freq_bucket_from_col = 5'd1;
+        else if (col_value < 11'd51)
+            freq_bucket_from_col = 5'd2;
+        else if (col_value < 11'd68)
+            freq_bucket_from_col = 5'd3;
+        else if (col_value < 11'd85)
+            freq_bucket_from_col = 5'd4;
+        else if (col_value < 11'd102)
+            freq_bucket_from_col = 5'd5;
+        else if (col_value < 11'd119)
+            freq_bucket_from_col = 5'd6;
+        else if (col_value < 11'd136)
+            freq_bucket_from_col = 5'd7;
+        else if (col_value < 11'd153)
+            freq_bucket_from_col = 5'd8;
+        else if (col_value < 11'd170)
+            freq_bucket_from_col = 5'd9;
+        else if (col_value < 11'd187)
+            freq_bucket_from_col = 5'd10;
+        else if (col_value < 11'd204)
+            freq_bucket_from_col = 5'd11;
+        else if (col_value < 11'd221)
+            freq_bucket_from_col = 5'd12;
+        else if (col_value < 11'd238)
+            freq_bucket_from_col = 5'd13;
+        else if (col_value < 11'd255)
+            freq_bucket_from_col = 5'd14;
+        else if (col_value < 11'd272)
+            freq_bucket_from_col = 5'd15;
+        else if (col_value < 11'd289)
+            freq_bucket_from_col = 5'd16;
+        else if (col_value < 11'd306)
+            freq_bucket_from_col = 5'd17;
+        else if (col_value < 11'd323)
+            freq_bucket_from_col = 5'd18;
+        else if (col_value < 11'd340)
+            freq_bucket_from_col = 5'd19;
+        else if (col_value < 11'd357)
+            freq_bucket_from_col = 5'd20;
+        else if (col_value < 11'd374)
+            freq_bucket_from_col = 5'd21;
+        else if (col_value < 11'd391)
+            freq_bucket_from_col = 5'd22;
+        else if (col_value < 11'd408)
+            freq_bucket_from_col = 5'd23;
+        else if (col_value < 11'd425)
+            freq_bucket_from_col = 5'd24;
+        else
+            freq_bucket_from_col = 5'd25;
+    end
+endfunction
+
+// 返回当前 17 像素谐波槽内的相对列，用于 U/I/相位柱的局部宽度判定。
+function [4:0] freq_sub_col_from_col;
+    input [10:0] col_value;
+    begin
+        if (col_value < 11'd17)
+            freq_sub_col_from_col = col_value;
+        else if (col_value < 11'd34)
+            freq_sub_col_from_col = col_value - 11'd17;
+        else if (col_value < 11'd51)
+            freq_sub_col_from_col = col_value - 11'd34;
+        else if (col_value < 11'd68)
+            freq_sub_col_from_col = col_value - 11'd51;
+        else if (col_value < 11'd85)
+            freq_sub_col_from_col = col_value - 11'd68;
+        else if (col_value < 11'd102)
+            freq_sub_col_from_col = col_value - 11'd85;
+        else if (col_value < 11'd119)
+            freq_sub_col_from_col = col_value - 11'd102;
+        else if (col_value < 11'd136)
+            freq_sub_col_from_col = col_value - 11'd119;
+        else if (col_value < 11'd153)
+            freq_sub_col_from_col = col_value - 11'd136;
+        else if (col_value < 11'd170)
+            freq_sub_col_from_col = col_value - 11'd153;
+        else if (col_value < 11'd187)
+            freq_sub_col_from_col = col_value - 11'd170;
+        else if (col_value < 11'd204)
+            freq_sub_col_from_col = col_value - 11'd187;
+        else if (col_value < 11'd221)
+            freq_sub_col_from_col = col_value - 11'd204;
+        else if (col_value < 11'd238)
+            freq_sub_col_from_col = col_value - 11'd221;
+        else if (col_value < 11'd255)
+            freq_sub_col_from_col = col_value - 11'd238;
+        else if (col_value < 11'd272)
+            freq_sub_col_from_col = col_value - 11'd255;
+        else if (col_value < 11'd289)
+            freq_sub_col_from_col = col_value - 11'd272;
+        else if (col_value < 11'd306)
+            freq_sub_col_from_col = col_value - 11'd289;
+        else if (col_value < 11'd323)
+            freq_sub_col_from_col = col_value - 11'd306;
+        else if (col_value < 11'd340)
+            freq_sub_col_from_col = col_value - 11'd323;
+        else if (col_value < 11'd357)
+            freq_sub_col_from_col = col_value - 11'd340;
+        else if (col_value < 11'd374)
+            freq_sub_col_from_col = col_value - 11'd357;
+        else if (col_value < 11'd391)
+            freq_sub_col_from_col = col_value - 11'd374;
+        else if (col_value < 11'd408)
+            freq_sub_col_from_col = col_value - 11'd391;
+        else if (col_value < 11'd425)
+            freq_sub_col_from_col = col_value - 11'd408;
+        else
+            freq_sub_col_from_col = col_value - 11'd425;
+    end
+endfunction
+
 assign text_blank        = (text_char_idx == FONT_BLANK);
 assign font_char_idx     = text_blank ? 7'd0 : text_char_idx;
+// 10x20 字模 ROM 输出为 12 bit，普通字符取中间 10 列，百分号取高 10 列以匹配其原始点阵窗口。
+assign font_10x20_bit_idx = (text_char_idx_d1 == FONT_PERCENT) ?
+                            (4'd11 - text_rel_x_d1[3:0]) :
+                            (4'd10 - text_rel_x_d1[3:0]);
 assign frame_edge_lcd    = lcd_frame_done_toggle ^ lcd_frame_done_toggle_d1;
 assign freq_sample_valid = u_wave_sample_valid && i_wave_sample_valid;
+assign freq_ram_store_we = freq_ram_we &&
+                           (!freeze_active_wave ||
+                            (freq_ram_waddr[9] != freq_front_bank_wave_sync2));
 assign touch_pressed_lcd = touch_pressed_sync2;
 assign touch_pressed_fall_lcd = touch_pressed_sync3 && !touch_pressed_sync2;
 assign mode_button_touch_hit =
@@ -910,9 +1214,9 @@ assign i_wave_ram_raddr = time_graph_en ? {i_wave_front_bank_lcd, graph_col} :
 
 assign freq_mag_col_ext   = pixel_xpos - FREQ_GRAPH_X;
 assign freq_phase_col_ext = pixel_xpos - FREQ_GRAPH_X;
-assign freq_mag_bucket    = freq_mag_col_ext[8:4];
-assign freq_mag_sub_col   = freq_mag_col_ext[3:0];
-assign freq_phase_sub_col = freq_phase_col_ext[3:0];
+assign freq_mag_bucket    = freq_bucket_from_col(freq_mag_col_ext);
+assign freq_mag_sub_col   = freq_sub_col_from_col(freq_mag_col_ext);
+assign freq_phase_sub_col = freq_sub_col_from_col(freq_phase_col_ext);
 assign freq_window_base = {harmonic_window_index_lcd, 4'b0000} +
                           {1'b0, harmonic_window_index_lcd, 3'b000} +
                           {4'b0000, harmonic_window_index_lcd};
@@ -992,7 +1296,7 @@ wave_pixel_detector #(
 assign text_pixel_on =
     text_en_d1 && !text_blank_d1 &&
     (text_font_small_d1 ?
-        ((text_rel_x_d1 < SMALL_CHAR_W) ? font_row_10x20_rom[9 - text_rel_x_d1[3:0]] : 1'b0) :
+        ((text_rel_x_d1 < SMALL_CHAR_W) ? font_row_10x20_rom[font_10x20_bit_idx] : 1'b0) :
         ((text_rel_x_d1 < BIG_CHAR_W)   ? font_row_16x32_rom[15 - text_rel_x_d1[3:0]] : 1'b0));
 
 // U and I waveform pixel signals now come from wave_pixel_detector modules
@@ -1005,6 +1309,7 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         text_color_d1         <= TEXT_WHITE;
         text_en_d1            <= 1'b0;
         text_font_small_d1    <= 1'b0;
+        text_char_idx_d1      <= 7'd0;
         text_rel_x_d1         <= 6'd0;
         text_blank_d1         <= 1'b1;
         u_rms_tens_lcd        <= 8'd0;
@@ -1150,6 +1455,7 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         text_color_d1      <= text_color;
         text_en_d1         <= text_en;
         text_font_small_d1 <= text_font_small;
+        text_char_idx_d1   <= text_char_idx;
         text_rel_x_d1      <= text_rel_x;
         text_blank_d1      <= text_blank;
         // Freeze 时只锁住 LCD 当前显示数值，后台文字测量和 text packet 仍继续刷新。

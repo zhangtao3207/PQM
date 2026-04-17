@@ -57,7 +57,7 @@ module data_fifo #(
     output wire [15:0]                 wr_fft_frame_count,
     input  wire                        rd_clk,
     input  wire                        rd_en,
-    output reg  [DATA_WIDTH-1:0]       dout,
+    output wire [DATA_WIDTH-1:0]       dout,
     output reg                         dout_valid,
     output wire                        empty,
     output wire                        prog_empty,
@@ -77,8 +77,6 @@ localparam [ADDR_WIDTH:0] OVERFLOW_WARN_LEVEL_EXT  = OVERFLOW_WARN_LEVEL;
 localparam [ADDR_WIDTH:0] UNDERFLOW_WARN_LEVEL_EXT = UNDERFLOW_WARN_LEVEL;
 localparam [ADDR_WIDTH:0] FFT_FRAME_SIZE_EXT       = FFT_FRAME_SIZE;
 localparam [ADDR_WIDTH-1:0] FFT_FRAME_LAST_SAMPLE  = FFT_FRAME_SIZE - 1;
-
-(* ram_style = "block" *) reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
 
 reg  [PTR_WIDTH-1:0]  wr_bin;
 reg  [PTR_WIDTH-1:0]  wr_gray;
@@ -115,6 +113,19 @@ wire                  full_next;
 wire                  empty_next;
 wire [ADDR_WIDTH:0]   wr_data_count_next;
 wire [ADDR_WIDTH:0]   rd_data_count_next;
+
+// 直接实例化 FFT 输入 FIFO 专用 RAM IP，A 口写采样对，B 口按 FFT 读节拍输出。
+blk_mem_gen_fft_fifo_ram u_blk_mem_gen_fft_fifo_ram (
+    .clka  (wr_clk),
+    .ena   (1'b1),
+    .wea   ({wr_push}),
+    .addra (wr_bin[ADDR_WIDTH-1:0]),
+    .dina  (din),
+    .clkb  (rd_clk),
+    .enb   (rd_pop),
+    .addrb (rd_bin[ADDR_WIDTH-1:0]),
+    .doutb (dout)
+);
 
 // 将二进制指针转换为 Gray 码，供跨时钟域同步使用。
 function [PTR_WIDTH-1:0] bin2gray;
@@ -193,7 +204,6 @@ always @(posedge wr_clk or negedge rst_n) begin
         overflow_warn_reg <= (wr_data_count_next >= OVERFLOW_WARN_LEVEL_EXT) && wr_en;
 
         if (wr_push) begin
-            mem[wr_bin[ADDR_WIDTH-1:0]] <= din;
             wr_bin  <= wr_bin_next;
             wr_gray <= wr_gray_next;
 
@@ -221,7 +231,6 @@ always @(posedge rd_clk or negedge rst_n) begin
         wr_gray_rd_sync2       <= {PTR_WIDTH{1'b0}};
         wr_gray_rd_sync3       <= {PTR_WIDTH{1'b0}};
         empty_reg              <= 1'b1;
-        dout                   <= {DATA_WIDTH{1'b0}};
         dout_valid             <= 1'b0;
         underflow_reg          <= 1'b0;
         underflow_warn_reg     <= 1'b0;
@@ -237,7 +246,6 @@ always @(posedge rd_clk or negedge rst_n) begin
         underflow_warn_reg <= (rd_data_count_next <= UNDERFLOW_WARN_LEVEL_EXT) && rd_en;
 
         if (rd_pop) begin
-            dout       <= mem[rd_bin[ADDR_WIDTH-1:0]];
             dout_valid <= 1'b1;
             rd_bin     <= rd_bin_next;
             rd_gray    <= rd_gray_next;

@@ -31,7 +31,7 @@
  *   phase_offset_raw: 电流过零相对电压过零的偏移 raw 计数。
  *   phase_period_raw: 电压相邻过零周期 raw 计数。
  *   phase_valid: 相位 raw 结果是否有效。
- *   freq_period_raw: 电压过零周期 raw 计数。
+ *   freq_period_raw: 电压峰值周期 raw 计数。
  *   freq_valid: 频率 raw 结果是否有效。
  *   active_p_raw: 有功功率 32 位补码 raw 结果。
  *   reactive_q_raw: 无功功率 32 位补码 raw 结果。
@@ -197,7 +197,7 @@ phase_diff_calc #(
     .phase_valid     (phase_valid_wire)
 );
 
-// 电压频率 raw 测量实例，输出电压过零周期计数。
+// 电压频率 raw 测量实例，输出相邻电压峰值的周期计数。
 frequency_measure #(
     .WIDTH(SAMPLE_WIDTH),
     .MAX_FRAME_SAMPLES(MAX_FRAME_SAMPLES),

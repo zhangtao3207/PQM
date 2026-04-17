@@ -4,7 +4,7 @@
  * 模块: fft_harmonic_stats
  * 功能:
  *   接收一帧正半谱 FFT 幅值结果，统计 0~500 次谐波的 U/I 幅值及其占总幅值百分比。
- *   本模块同时保留每次谐波的 real/imag，供后续 U-I 相位差计算模块使用。
+ *   本模块同时用块 RAM 缓存每次谐波的 real/imag，供后续 U-I 相位差计算模块使用。
  *
  * 输入:
  *   clk: 频域统计时钟，通常接 fft_clk。
@@ -79,18 +79,36 @@ module fft_harmonic_stats #(
     output reg  [31:0]        i_total_mag
 );
 
-localparam [2:0] ST_IDLE     = 3'd0;
-localparam [2:0] ST_CAPTURE  = 3'd1;
-localparam [2:0] ST_LOAD     = 3'd2;
-localparam [2:0] ST_DIVIDE   = 3'd3;
-localparam [2:0] ST_OUTPUT   = 3'd4;
+localparam [2:0] ST_CLEAR    = 3'd0;
+localparam [2:0] ST_IDLE     = 3'd1;
+localparam [2:0] ST_CAPTURE  = 3'd2;
+localparam [2:0] ST_READ     = 3'd3;
+localparam [2:0] ST_LOAD     = 3'd4;
+localparam [2:0] ST_DIVIDE   = 3'd5;
+localparam [2:0] ST_OUTPUT   = 3'd6;
 localparam [8:0] MAX_ORDER   = 9'd500;
 localparam [10:0] MAX_BIN_FUND1 = 11'd500;
 localparam [10:0] MAX_BIN_FUND2 = 11'd1000;
 localparam signed [15:0] PERCENT_SCALE = 16'sd10000;
+localparam integer HARMONIC_WORD_WIDTH = 130;
+localparam integer HARMONIC_TAG_MSB    = 129;
+localparam integer HARMONIC_TAG_LSB    = 98;
+localparam integer HARMONIC_U_MAG_MSB  = 97;
+localparam integer HARMONIC_U_MAG_LSB  = 81;
+localparam integer HARMONIC_I_MAG_MSB  = 80;
+localparam integer HARMONIC_I_MAG_LSB  = 64;
+localparam integer HARMONIC_U_REAL_MSB = 63;
+localparam integer HARMONIC_U_REAL_LSB = 48;
+localparam integer HARMONIC_U_IMAG_MSB = 47;
+localparam integer HARMONIC_U_IMAG_LSB = 32;
+localparam integer HARMONIC_I_REAL_MSB = 31;
+localparam integer HARMONIC_I_REAL_LSB = 16;
+localparam integer HARMONIC_I_IMAG_MSB = 15;
+localparam integer HARMONIC_I_IMAG_LSB = 0;
 
 reg [2:0]         state;
-reg               frame_tag;
+reg [31:0]        frame_tag;
+reg [8:0]         clear_order;
 reg [8:0]         output_order;
 reg               capture_frame_done_reg;
 reg               harmonic_frame_done_reg;
@@ -111,23 +129,27 @@ reg               i_div_start_reg;
 reg               u_pct_bypass_reg;
 reg               i_pct_bypass_reg;
 
-reg [16:0]        u_mag_mem [0:500];
-reg [16:0]        i_mag_mem [0:500];
-reg signed [15:0] u_real_mem [0:500];
-reg signed [15:0] u_imag_mem [0:500];
-reg signed [15:0] i_real_mem [0:500];
-reg signed [15:0] i_imag_mem [0:500];
-reg               tag_mem [0:500];
-
-integer init_idx;
+(* ram_style = "block" *) reg [HARMONIC_WORD_WIDTH-1:0] harmonic_mem [0:500];
+reg [HARMONIC_WORD_WIDTH-1:0] harmonic_read_data;
 
 wire              input_fire;
 wire              output_fire;
+wire              mem_write_enable;
+wire [8:0]        mem_write_addr;
+wire [HARMONIC_WORD_WIDTH-1:0] mem_write_data;
+wire [HARMONIC_WORD_WIDTH-1:0] harmonic_write_data;
+wire [31:0]       next_frame_tag;
 wire              target_fund1;
 wire              target_fund2;
 wire              target_harmonic;
 wire [8:0]        target_order;
 wire              current_present;
+wire signed [15:0] current_u_real;
+wire signed [15:0] current_u_imag;
+wire signed [15:0] current_i_real;
+wire signed [15:0] current_i_imag;
+wire [16:0]       current_u_mag;
+wire [16:0]       current_i_mag;
 wire signed [16:0] u_mag_mul_value;
 wire signed [16:0] i_mag_mul_value;
 wire signed [32:0] u_pct_product;
@@ -154,14 +176,37 @@ assign target_fund2 =
 assign target_harmonic = target_fund1 || target_fund2;
 assign target_order    = target_fund1 ? s_bin_index[8:0] : s_bin_index[9:1];
 
+// 组合生成谐波缓存 RAM 的写端口控制，复位后先顺序清 RAM，再写入当前帧捕获结果。
+assign mem_write_enable  = (state == ST_CLEAR) || (input_fire && target_harmonic);
+assign mem_write_addr    = (state == ST_CLEAR) ? clear_order : target_order;
+assign mem_write_data    = (state == ST_CLEAR) ? {HARMONIC_WORD_WIDTH{1'b0}} : harmonic_write_data;
+assign harmonic_write_data = {
+    frame_tag,
+    s_u_mag,
+    s_i_mag,
+    s_u_real,
+    s_u_imag,
+    s_i_real,
+    s_i_imag
+};
+
+// 组合生成非零帧标签，避免清零后的 RAM 内容被误判为有效谐波。
+assign next_frame_tag = (frame_tag == 32'hFFFF_FFFF) ? 32'd1 : (frame_tag + 32'd1);
+
 // 组合生成上游和下游握手状态。
 assign s_mag_ready = (state == ST_CAPTURE);
 assign input_fire  = s_mag_valid && s_mag_ready;
 assign output_fire = m_harmonic_valid_reg && m_harmonic_ready;
 assign stats_busy  = (state != ST_IDLE) || m_harmonic_valid_reg;
 
-// 组合读取当前输出次数是否在本帧中被捕获。
-assign current_present = (tag_mem[output_order] == frame_tag);
+// 组合拆包同步读出的谐波缓存字，供输出和百分比计算使用。
+assign current_present = (harmonic_read_data[HARMONIC_TAG_MSB:HARMONIC_TAG_LSB] == frame_tag);
+assign current_u_mag   = harmonic_read_data[HARMONIC_U_MAG_MSB:HARMONIC_U_MAG_LSB];
+assign current_i_mag   = harmonic_read_data[HARMONIC_I_MAG_MSB:HARMONIC_I_MAG_LSB];
+assign current_u_real  = harmonic_read_data[HARMONIC_U_REAL_MSB:HARMONIC_U_REAL_LSB];
+assign current_u_imag  = harmonic_read_data[HARMONIC_U_IMAG_MSB:HARMONIC_U_IMAG_LSB];
+assign current_i_real  = harmonic_read_data[HARMONIC_I_REAL_MSB:HARMONIC_I_REAL_LSB];
+assign current_i_imag  = harmonic_read_data[HARMONIC_I_IMAG_MSB:HARMONIC_I_IMAG_LSB];
 
 // 组合生成百分比计算的乘法器输入，乘法器输出再送入无符号除法器。
 assign u_mag_mul_value = m_u_mag_reg;
@@ -239,11 +284,23 @@ divider_unsigned #(
     .quotient      (i_div_quotient)
 );
 
-// 在频域统计时钟域完成一帧幅值捕获、百分比归一化和逐项输出。
+// 用同步读写模板实现谐波结果缓存，避免 501 组结果被综合成触发器和大规模 mux。
+always @(posedge clk) begin
+    if (mem_write_enable) begin
+        harmonic_mem[mem_write_addr] <= mem_write_data;
+    end
+
+    if (state == ST_READ) begin
+        harmonic_read_data <= harmonic_mem[output_order];
+    end
+end
+
+// 在频域统计时钟域完成 RAM 清零、幅值捕获、百分比归一化和逐项输出。
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        state                   <= ST_IDLE;
-        frame_tag               <= 1'b0;
+        state                   <= ST_CLEAR;
+        frame_tag               <= 32'd0;
+        clear_order             <= 9'd0;
         output_order            <= 9'd0;
         capture_frame_done_reg  <= 1'b0;
         harmonic_frame_done_reg <= 1'b0;
@@ -266,23 +323,26 @@ always @(posedge clk or negedge rst_n) begin
         harmonic_frame_count    <= 16'd0;
         u_total_mag             <= 32'd0;
         i_total_mag             <= 32'd0;
-
-        for (init_idx = 0; init_idx <= 500; init_idx = init_idx + 1) begin
-            u_mag_mem[init_idx]  <= 17'd0;
-            i_mag_mem[init_idx]  <= 17'd0;
-            u_real_mem[init_idx] <= 16'sd0;
-            u_imag_mem[init_idx] <= 16'sd0;
-            i_real_mem[init_idx] <= 16'sd0;
-            i_imag_mem[init_idx] <= 16'sd0;
-            tag_mem[init_idx]    <= 1'b0;
-        end
     end else begin
         capture_frame_done_reg  <= 1'b0;
         harmonic_frame_done_reg <= 1'b0;
         u_div_start_reg         <= 1'b0;
         i_div_start_reg         <= 1'b0;
 
-        if (!enable) begin
+        if (state == ST_CLEAR) begin
+            m_harmonic_valid_reg <= 1'b0;
+            m_harmonic_last_reg  <= 1'b0;
+            output_order         <= 9'd0;
+            u_total_mag          <= 32'd0;
+            i_total_mag          <= 32'd0;
+
+            if (clear_order == MAX_ORDER) begin
+                clear_order <= 9'd0;
+                state       <= ST_IDLE;
+            end else begin
+                clear_order <= clear_order + 9'd1;
+            end
+        end else if (!enable) begin
             state                <= ST_IDLE;
             m_harmonic_valid_reg <= 1'b0;
             m_harmonic_last_reg  <= 1'b0;
@@ -292,7 +352,7 @@ always @(posedge clk or negedge rst_n) begin
         end else begin
             case (state)
                 ST_IDLE: begin
-                    frame_tag            <= !frame_tag;
+                    frame_tag            <= next_frame_tag;
                     output_order         <= 9'd0;
                     u_total_mag          <= 32'd0;
                     i_total_mag          <= 32'd0;
@@ -304,13 +364,6 @@ always @(posedge clk or negedge rst_n) begin
                 ST_CAPTURE: begin
                     if (input_fire) begin
                         if (target_harmonic) begin
-                            u_mag_mem[target_order]  <= s_u_mag;
-                            i_mag_mem[target_order]  <= s_i_mag;
-                            u_real_mem[target_order] <= s_u_real;
-                            u_imag_mem[target_order] <= s_u_imag;
-                            i_real_mem[target_order] <= s_i_real;
-                            i_imag_mem[target_order] <= s_i_imag;
-                            tag_mem[target_order]    <= frame_tag;
                             u_total_mag <= u_total_mag + {15'd0, s_u_mag};
                             i_total_mag <= i_total_mag + {15'd0, s_i_mag};
                         end
@@ -318,9 +371,13 @@ always @(posedge clk or negedge rst_n) begin
                         if (s_mag_last) begin
                             capture_frame_done_reg <= 1'b1;
                             output_order           <= 9'd0;
-                            state                  <= ST_LOAD;
+                            state                  <= ST_READ;
                         end
                     end
+                end
+
+                ST_READ: begin
+                    state <= ST_LOAD;
                 end
 
                 ST_LOAD: begin
@@ -329,12 +386,12 @@ always @(posedge clk or negedge rst_n) begin
                     m_harmonic_present_reg <= current_present;
 
                     if (current_present) begin
-                        m_u_real_reg <= u_real_mem[output_order];
-                        m_u_imag_reg <= u_imag_mem[output_order];
-                        m_i_real_reg <= i_real_mem[output_order];
-                        m_i_imag_reg <= i_imag_mem[output_order];
-                        m_u_mag_reg  <= u_mag_mem[output_order];
-                        m_i_mag_reg  <= i_mag_mem[output_order];
+                        m_u_real_reg <= current_u_real;
+                        m_u_imag_reg <= current_u_imag;
+                        m_i_real_reg <= current_i_real;
+                        m_i_imag_reg <= current_i_imag;
+                        m_u_mag_reg  <= current_u_mag;
+                        m_i_mag_reg  <= current_i_mag;
                     end else begin
                         m_u_real_reg <= 16'sd0;
                         m_u_imag_reg <= 16'sd0;
@@ -379,7 +436,7 @@ always @(posedge clk or negedge rst_n) begin
                             state                   <= ST_IDLE;
                         end else begin
                             output_order <= output_order + 9'd1;
-                            state        <= ST_LOAD;
+                            state        <= ST_READ;
                         end
                     end
                 end

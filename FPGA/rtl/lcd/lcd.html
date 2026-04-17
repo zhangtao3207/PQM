@@ -97,7 +97,7 @@
       graphW: 354,
       graphH: 240,
       graphCY: 264,
-      freqGraphX: 30,
+      freqGraphX: 50,
       freqGraphW: 400,
       freqMagY: 144,
       freqMagH: 182,
@@ -495,7 +495,9 @@
       ctx.strokeStyle = C.graphGrid;
       ctx.lineWidth = 1;
 
-      for (let x = L.freqGraphX + 53; x < L.freqGraphX + L.freqGraphW - 1; x += 53) {
+      for (let harmonicOffset = 5; harmonicOffset < UI.harmonicsPerPage; harmonicOffset += 5) {
+        const x = L.freqGraphX + (harmonicOffset / UI.harmonicsPerPage) * (L.freqGraphW - 1);
+
         ctx.beginPath();
         ctx.moveTo(x + 0.5, L.freqMagY + 1);
         ctx.lineTo(x + 0.5, L.freqMagY + L.freqMagH - 1);
@@ -559,12 +561,11 @@
     function drawSpectrumBars(model) {
       const uFullScale = x100ToFloat(M.uFullScaleX100);
       const iFullScale = x100ToFloat(M.iFullScaleX100);
-      const firstHarmonic = state.harmonicWindowIndex * UI.harmonicsPerPage + 1;
       const bins = buildHarmonicBins(model);
       const baseY = L.freqMagY + L.freqMagH - 2;
       const barW = 4;
-      const firstBarX = L.freqGraphX + 8;
-      const lastBarX = L.freqGraphX + L.freqGraphW - 28;
+      const firstBarX = L.freqGraphX + 2;
+      const lastBarX = L.freqGraphX + L.freqGraphW - 12;
       const binStep = (lastBarX - firstBarX) / (bins.length - 1);
       const scale = L.freqMagH - 16;
 
@@ -577,17 +578,7 @@
 
         rect(x, baseY - uH, barW, uH, C.waveU);
         rect(x + 5, baseY - iH, barW, iH, C.waveI);
-
-        if (
-          bin.harmonic === 0 ||
-          bin.harmonic === firstHarmonic ||
-          bin.harmonic === UI.harmonicMaxOrder ||
-          (state.harmonicWindowIndex === 0 && index > 0 && index % 5 === 0) ||
-          (state.harmonicWindowIndex > 0 && (index + 1) % 5 === 0)
-        )
-          text(bin.harmonic === 0 ? "0" : String(bin.harmonic), x - 4, L.axisTickY + 40, C.textDim, 16);
       });
-
 
       text("U", L.freqGraphX + L.freqGraphW - 58, L.freqMagY + 8, C.waveU, 18);
       text("I", L.freqGraphX + L.freqGraphW - 30, L.freqMagY + 8, C.waveI, 18);
@@ -598,8 +589,8 @@
     function drawPhaseDiffBars(model) {
       const bins = buildHarmonicBins(model);
       const baseY = L.freqPhaseY + L.freqPhaseH - 2;
-      const firstBarX = L.freqGraphX + 8;
-      const lastBarX = L.freqGraphX + L.freqGraphW - 28;
+      const firstBarX = L.freqGraphX + 2;
+      const lastBarX = L.freqGraphX + L.freqGraphW - 12;
       const binStep = (lastBarX - firstBarX) / (bins.length - 1);
       const barW = 7;
       const scale = L.freqPhaseH - 8;
@@ -626,6 +617,37 @@
       text("180", L.freqGraphX - 26, L.freqPhaseY - 7, C.textDim, 14);
       text("90", L.freqGraphX - 20, L.freqPhaseY + Math.round(L.freqPhaseH / 2) - 8, C.textDim, 14);
       text("0", L.freqGraphX - 12, L.freqPhaseY + L.freqPhaseH - 14, C.textDim, 14);
+    }
+
+    function frequencyAxisTicks() {
+      const firstHarmonic = state.harmonicWindowIndex * UI.harmonicsPerPage + 1;
+      const ticks = state.harmonicWindowIndex === 0
+        ? [
+            { label: 0, slot: 0, span: UI.harmonicsPerPage },
+            { label: 1, slot: 1, span: UI.harmonicsPerPage },
+            { label: 5, slot: 5, span: UI.harmonicsPerPage },
+            { label: 10, slot: 10, span: UI.harmonicsPerPage },
+            { label: 15, slot: 15, span: UI.harmonicsPerPage },
+            { label: 20, slot: 20, span: UI.harmonicsPerPage },
+            { label: 25, slot: 25, span: UI.harmonicsPerPage }
+          ]
+        : [0, 5, 10, 15, 20].map((slot) => ({
+            label: firstHarmonic + slot,
+            slot,
+            span: UI.harmonicsPerPage - 1
+          }));
+
+      return ticks.map((tick) => ({
+        label: String(tick.label),
+        x: L.freqGraphX + (tick.slot / tick.span) * (L.freqGraphW - 1)
+      }));
+    }
+
+    function drawFrequencyXAxis() {
+      const y = L.freqPhaseY + L.freqPhaseH + 2;
+      frequencyAxisTicks().forEach((tick) => {
+        text(tick.label, Math.round(tick.x - 4), y, C.textDim, 16);
+      });
     }
 
     function drawHarmonicPageButtons() {
@@ -730,6 +752,7 @@
       drawSpectrumBars(model);
       drawPhaseDiffBars(model);
       drawFrequencyYAxis();
+      drawFrequencyXAxis();
       drawHarmonicPageButtons();
 
       text("MODE: Single - Frequency", L.titleTextX, L.titleTextY, C.textWhite);

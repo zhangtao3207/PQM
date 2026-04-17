@@ -3,8 +3,8 @@
 -- Tool Version: Vivado v.2018.3 (win64) Build 2405991 Thu Dec  6 23:38:27 MST 2018
 -- Date        : Thu Apr 16 22:23:35 2026
 -- Host        : DESKTOP-6DUCG5H running 64-bit major release  (build 9200)
--- Command     : write_vhdl -force -mode funcsim
---               c:/Users/zhangtao/Desktop/PQM/FPGA/prj/PQM.srcs/sources_1/ip/rom_atan_lut_1024/rom_atan_lut_1024_sim_netlist.vhdl
+-- Command     : write_vhdl -force -mode funcsim -rename_top rom_atan_lut_1024 -prefix
+--               rom_atan_lut_1024_ rom_atan_lut_1024_sim_netlist.vhdl
 -- Design      : rom_atan_lut_1024
 -- Purpose     : This VHDL netlist is a functional simulation representation of the design and should not be modified or
 --               synthesized. This netlist cannot be used for SDF annotated simulation.
@@ -21,8 +21,6 @@ entity rom_atan_lut_1024_blk_mem_gen_prim_wrapper_init is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
-  attribute ORIG_REF_NAME : string;
-  attribute ORIG_REF_NAME of rom_atan_lut_1024_blk_mem_gen_prim_wrapper_init : entity is "blk_mem_gen_prim_wrapper_init";
 end rom_atan_lut_1024_blk_mem_gen_prim_wrapper_init;
 
 architecture STRUCTURE of rom_atan_lut_1024_blk_mem_gen_prim_wrapper_init is
@@ -275,8 +273,6 @@ entity rom_atan_lut_1024_blk_mem_gen_prim_width is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
-  attribute ORIG_REF_NAME : string;
-  attribute ORIG_REF_NAME of rom_atan_lut_1024_blk_mem_gen_prim_width : entity is "blk_mem_gen_prim_width";
 end rom_atan_lut_1024_blk_mem_gen_prim_width;
 
 architecture STRUCTURE of rom_atan_lut_1024_blk_mem_gen_prim_width is
@@ -300,8 +296,6 @@ entity rom_atan_lut_1024_blk_mem_gen_generic_cstr is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
-  attribute ORIG_REF_NAME : string;
-  attribute ORIG_REF_NAME of rom_atan_lut_1024_blk_mem_gen_generic_cstr : entity is "blk_mem_gen_generic_cstr";
 end rom_atan_lut_1024_blk_mem_gen_generic_cstr;
 
 architecture STRUCTURE of rom_atan_lut_1024_blk_mem_gen_generic_cstr is
@@ -325,8 +319,6 @@ entity rom_atan_lut_1024_blk_mem_gen_top is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
-  attribute ORIG_REF_NAME : string;
-  attribute ORIG_REF_NAME of rom_atan_lut_1024_blk_mem_gen_top : entity is "blk_mem_gen_top";
 end rom_atan_lut_1024_blk_mem_gen_top;
 
 architecture STRUCTURE of rom_atan_lut_1024_blk_mem_gen_top is
@@ -350,8 +342,6 @@ entity rom_atan_lut_1024_blk_mem_gen_v8_4_2_synth is
     ena : in STD_LOGIC;
     addra : in STD_LOGIC_VECTOR ( 10 downto 0 )
   );
-  attribute ORIG_REF_NAME : string;
-  attribute ORIG_REF_NAME of rom_atan_lut_1024_blk_mem_gen_v8_4_2_synth : entity is "blk_mem_gen_v8_4_2_synth";
 end rom_atan_lut_1024_blk_mem_gen_v8_4_2_synth;
 
 architecture STRUCTURE of rom_atan_lut_1024_blk_mem_gen_v8_4_2_synth is
@@ -584,8 +574,6 @@ entity rom_atan_lut_1024_blk_mem_gen_v8_4_2 is
   attribute C_WRITE_WIDTH_B of rom_atan_lut_1024_blk_mem_gen_v8_4_2 : entity is 14;
   attribute C_XDEVICEFAMILY : string;
   attribute C_XDEVICEFAMILY of rom_atan_lut_1024_blk_mem_gen_v8_4_2 : entity is "zynq";
-  attribute ORIG_REF_NAME : string;
-  attribute ORIG_REF_NAME of rom_atan_lut_1024_blk_mem_gen_v8_4_2 : entity is "blk_mem_gen_v8_4_2";
   attribute downgradeipidentifiedwarnings : string;
   attribute downgradeipidentifiedwarnings of rom_atan_lut_1024_blk_mem_gen_v8_4_2 : entity is "yes";
 end rom_atan_lut_1024_blk_mem_gen_v8_4_2;
