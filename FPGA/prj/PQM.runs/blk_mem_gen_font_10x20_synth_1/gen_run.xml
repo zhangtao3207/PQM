@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GenRun Id="blk_mem_gen_font_10x20_synth_1" LaunchPart="xc7z020clg400-2" LaunchTime="1776355967">
+<GenRun Id="blk_mem_gen_font_10x20_synth_1" LaunchPart="xc7z020clg400-2" LaunchTime="1776678071">
   <File Type="PA-TCL" Name="blk_mem_gen_font_10x20.tcl"/>
   <File Type="REPORTS-TCL" Name="blk_mem_gen_font_10x20_reports.tcl"/>
   <File Type="RDS-RDS" Name="blk_mem_gen_font_10x20.vds"/>

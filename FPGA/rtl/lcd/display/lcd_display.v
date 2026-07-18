@@ -1,16 +1,38 @@
+`timescale 1ns / 1ps
 /*
  * 模块: lcd_display
  * 功能:
- *   LCD 页面顶层合成器。该模块将仅显示逻辑保留在 LCD 树中，同时重用 DataProcessor 中的通用波形捕获模块
- *   用于电压/电流波形帧和 RMS 值。
+ *   LCD 显示顶层混合渲染模块。负责把时域波形、频域柱图、测量文本、触摸状态和串口测量帧组织到同一显示链路。
  *
- * 详细说明:
- *   这是当前 LCD 页面的总合成模块。它调用 DataProcessor 中的通用波形处理模块获取 U/I 两路波形帧、RMS、峰峰值、
- *   频率和相位差，然后在 `lcd_pclk` 时钟域中将背景层、文字层、字符 ROM 和波形 RAM 合成成最终像素颜色。
- *
- * 模块边界:
- *   - 波形分析与数值计算在 DataProcessor 完成
- *   - 本模块只负责显示数据锁存、RAM 读取和像素优先级合成
+ * 输入:
+ *   lcd_pclk              - LCD 像素时钟域，用于背景、文字和显示 RAM 读出。
+ *   sys_rst_n             - 全局低有效复位。
+ *   data                  - 预留的 32 位显示输入，当前未参与主要绘制。
+ *   touch_x               - 当前触摸 X 坐标。
+ *   touch_y               - 当前触摸 Y 坐标。
+ *   touch_state_bits      - 触摸状态位，其中 TOUCH_PRESSED_BIT 表示按下状态。
+ *   touch_start_x         - 本次触摸起始 X 坐标。
+ *   touch_start_y         - 本次触摸起始 Y 坐标。
+ *   touch_press_time_ms   - 本次按压持续时间，单位 ms。
+ *   rx_line_ascii         - 外部输入的 ASCII 文本行。
+ *   lcd_frame_done_toggle - LCD 帧结束翻转信号，用于双缓冲交换。
+ *   wave_clk              - 波形采集与测量处理时钟域。
+ *   uart_tx_busy          - UART 发送忙信号，用于串口测量流节流。
+ *   u_wave_sample_valid   - 电压波形样本有效。
+ *   u_wave_sample_code    - 电压原始采样码。
+ *   u_wave_zero_code      - 电压零点参考码。
+ *   u_wave_zero_valid     - 电压零点参考有效。
+ *   i_wave_sample_valid   - 电流波形样本有效。
+ *   i_wave_sample_code    - 电流原始采样码。
+ *   i_wave_zero_code      - 电流零点参考码。
+ *   i_wave_zero_valid     - 电流零点参考有效。
+ *   pixel_xpos            - 当前像素 X 坐标。
+ *   pixel_ypos            - 当前像素 Y 坐标。
+ * 输出:
+ *   pixel_data            - 当前像素 RGB 数据。
+ *   alarm_active          - 尖峰告警输出。
+ *   uart_stream_tx_en     - UART 测量串流发送使能。
+ *   uart_stream_tx_data   - UART 测量串流发送字节。
  */
 module lcd_display(
     input              lcd_pclk,
@@ -25,6 +47,8 @@ module lcd_display(
     input      [127:0] rx_line_ascii,
     input              lcd_frame_done_toggle,
     input              wave_clk,
+    input              uart_tx_busy,
+    input              full_scale_low_range_active,
     input              u_wave_sample_valid,
     input      [15:0]  u_wave_sample_code,
     input      [15:0]  u_wave_zero_code,
@@ -35,24 +59,28 @@ module lcd_display(
     input              i_wave_zero_valid,
     input      [10:0]  pixel_xpos,
     input      [10:0]  pixel_ypos,
-    output reg [23:0]  pixel_data
+    output reg [23:0]  pixel_data,
+    output             alarm_active,
+    output             uart_stream_tx_en,
+    output     [7:0]   uart_stream_tx_data
 );
 
-// 页面渲染使用到的基本常量
+// 界面字符尺寸、主题色、布局坐标和显示量程参数。
 localparam [5:0]  BIG_CHAR_W    = 6'd16;
 localparam [5:0]  SMALL_CHAR_W  = 6'd10;
 localparam [6:0]  FONT_BLANK    = 7'd127;
-localparam [6:0]  FONT_PERCENT  = 7'd90;
 localparam [23:0] BG_COLOR      = 24'h0B1524;
 localparam [23:0] TEXT_WHITE    = 24'hF2F6FA;
 localparam [23:0] WAVE_U_COLOR  = 24'h39E46F;
 localparam [23:0] WAVE_I_COLOR  = 24'hFFD84E;
 localparam [23:0] ACCENT_COLOR  = 24'h58B6FF;
 localparam [23:0] PHASE_NEG_COLOR = 24'hFF5A5F;
-localparam integer TEXT_REFRESH_CYCLES = 1_000_000;  // 20ms @ 50MHz wave_clk
-localparam integer U_FULL_SCALE_X100 = 1000;          // 电压正满量程: 10.00V
-localparam integer I_FULL_SCALE_X100 = 300;           // 电流正满量程: 3.00A
-localparam integer WAVE_FULL_SCALE_CODE = 21845;      // 波形满量程输入对应的峰值 raw 码幅度
+localparam integer TEXT_REFRESH_CYCLES = 1_000_000;  // 50MHz wave_clk 下约 20ms 刷新一次文本结果
+localparam integer U_FULL_SCALE_HIGH_X100 = 35000;    // 高量程电压，单位 0.01V，对应 350.00V
+localparam integer I_FULL_SCALE_HIGH_X100 = 3000;     // 高量程电流，单位 0.01A，对应 30.00A
+localparam integer U_FULL_SCALE_LOW_X100  = 1000;     // 低量程电压，单位 0.01V，对应 10.00V
+localparam integer I_FULL_SCALE_LOW_X100  = 300;      // 低量程电流，单位 0.01A，对应 3.00A
+localparam integer WAVE_FULL_SCALE_CODE = 32767;         // 16 位双极性 ADC 的单边满量程差值，对应约 ±10V 输入
 localparam [10:0] GRAPH_X       = 11'd66;
 localparam [10:0] GRAPH_Y       = 11'd144;
 localparam [10:0] GRAPH_W       = 11'd354;
@@ -81,9 +109,9 @@ localparam integer TOUCH_PRESSED_BIT   = 4;
 localparam [15:0] FREEZE_MIN_PRESS_MS  = 16'd30;
 localparam [15:0] FREEZE_MAX_PRESS_MS  = 16'd500;
 localparam [15:0] HARMONIC_LONG_PRESS_MS = 16'd700;
-localparam integer TEXT_PACKET_WIDTH   = 677;
+localparam integer TEXT_PACKET_WIDTH   = 1086;
 
-// LCD 像素时钟域中的一级流水线寄存器，用于对齐背景、文字和波形像素
+// LCD 像素域、跨时钟缓存和绘图过程使用的中间寄存器。
 reg  [23:0] base_color_d1;
 reg  [23:0] text_color_d1;
 reg         text_en_d1;
@@ -91,11 +119,13 @@ reg         text_font_small_d1;
 reg  [6:0]  text_char_idx_d1;
 reg  [5:0]  text_rel_x_d1;
 reg         text_blank_d1;
+reg  [7:0]  u_rms_hundreds_lcd;
 reg  [7:0]  u_rms_tens_lcd;
 reg  [7:0]  u_rms_units_lcd;
 reg  [7:0]  u_rms_decile_lcd;
 reg  [7:0]  u_rms_percentiles_lcd;
 reg         u_rms_digits_valid_lcd;
+reg  [7:0]  i_rms_hundreds_lcd;
 reg  [7:0]  i_rms_tens_lcd;
 reg  [7:0]  i_rms_units_lcd;
 reg  [7:0]  i_rms_decile_lcd;
@@ -114,26 +144,31 @@ reg  [7:0]  freq_units_lcd;
 reg  [7:0]  freq_decile_lcd;
 reg  [7:0]  freq_percentiles_lcd;
 reg         freq_valid_lcd;
+reg  [7:0]  u_pp_hundreds_lcd;
 reg  [7:0]  u_pp_tens_lcd;
 reg  [7:0]  u_pp_units_lcd;
 reg  [7:0]  u_pp_decile_lcd;
 reg  [7:0]  u_pp_percentiles_lcd;
 reg         u_pp_digits_valid_lcd;
+reg  [7:0]  i_pp_hundreds_lcd;
 reg  [7:0]  i_pp_tens_lcd;
 reg  [7:0]  i_pp_units_lcd;
 reg  [7:0]  i_pp_decile_lcd;
 reg  [7:0]  i_pp_percentiles_lcd;
 reg         i_pp_digits_valid_lcd;
 reg         active_p_neg_lcd;
+reg  [7:0]  active_p_hundreds_lcd;
 reg  [7:0]  active_p_tens_lcd;
 reg  [7:0]  active_p_units_lcd;
 reg  [7:0]  active_p_decile_lcd;
 reg  [7:0]  active_p_percentiles_lcd;
 reg         reactive_q_neg_lcd;
+reg  [7:0]  reactive_q_hundreds_lcd;
 reg  [7:0]  reactive_q_tens_lcd;
 reg  [7:0]  reactive_q_units_lcd;
 reg  [7:0]  reactive_q_decile_lcd;
 reg  [7:0]  reactive_q_percentiles_lcd;
+reg  [7:0]  apparent_s_hundreds_lcd;
 reg  [7:0]  apparent_s_tens_lcd;
 reg  [7:0]  apparent_s_units_lcd;
 reg  [7:0]  apparent_s_decile_lcd;
@@ -143,6 +178,7 @@ reg  [7:0]  power_factor_units_lcd;
 reg  [7:0]  power_factor_decile_lcd;
 reg  [7:0]  power_factor_percentiles_lcd;
 reg         power_metrics_valid_lcd;
+reg  [2:0]  sharp_alarm_code_lcd;
 reg  [7:0]  freq_thd_u_hundreds_lcd;
 reg  [7:0]  freq_thd_u_tens_lcd;
 reg  [7:0]  freq_thd_u_units_lcd;
@@ -186,14 +222,8 @@ reg  [7:0]  freq_dc_i_units_lcd;
 reg  [7:0]  freq_dc_i_decile_lcd;
 reg  [7:0]  freq_dc_i_percentiles_lcd;
 reg         freq_dc_i_valid_lcd;
-reg  [7:0]  freq_dh_order_u_hundreds_lcd;
-reg  [7:0]  freq_dh_order_u_tens_lcd;
-reg  [7:0]  freq_dh_order_u_units_lcd;
-reg         freq_dh_order_u_valid_lcd;
-reg  [7:0]  freq_dh_order_i_hundreds_lcd;
-reg  [7:0]  freq_dh_order_i_tens_lcd;
-reg  [7:0]  freq_dh_order_i_units_lcd;
-reg         freq_dh_order_i_valid_lcd;
+reg  [199:0] freq_dh_order_u_text_lcd;
+reg  [199:0] freq_dh_order_i_text_lcd;
 reg         graph_en_d1;
 reg  [8:0]  graph_col_d1;
 reg  [10:0] graph_row_d1;
@@ -235,11 +265,12 @@ reg  [4:0]  harmonic_window_index_lcd;
 reg         touch_pressed_sync1;
 reg         touch_pressed_sync2;
 reg         touch_pressed_sync3;
+reg         full_scale_low_range_sync1_lcd;
+reg         full_scale_low_range_active_lcd;
 reg         lcd_frame_done_toggle_d1;
 reg         freeze_active_wave_sync1;
 reg         freeze_active_wave_sync2;
 
-// 子模块输出与波形双口 RAM 接口信号
 wire [23:0] base_color;
 wire [23:0] text_color;
 wire        text_en;
@@ -250,11 +281,13 @@ wire [5:0]  text_rel_y;
 wire        text_blank;
 wire        text_pixel_on;
 
+wire [7:0]  u_rms_hundreds;
 wire [7:0]  u_rms_tens;
 wire [7:0]  u_rms_units;
 wire [7:0]  u_rms_decile;
 wire [7:0]  u_rms_percentiles;
 wire        u_rms_digits_valid;
+wire [7:0]  u_pp_hundreds;
 wire [7:0]  u_pp_tens;
 wire [7:0]  u_pp_units;
 wire [7:0]  u_pp_decile;
@@ -276,11 +309,13 @@ wire [10:0] u_wave_seg_hi_abs;
 wire        u_wave_pixel_on;
 wire        u_wave_pixel_on_internal;  // From wave_pixel_detector module
 
+wire [7:0]  i_rms_hundreds;
 wire [7:0]  i_rms_tens;
 wire [7:0]  i_rms_units;
 wire [7:0]  i_rms_decile;
 wire [7:0]  i_rms_percentiles;
 wire        i_rms_digits_valid;
+wire [7:0]  i_pp_hundreds;
 wire [7:0]  i_pp_tens;
 wire [7:0]  i_pp_units;
 wire [7:0]  i_pp_decile;
@@ -317,15 +352,18 @@ wire [7:0]  freq_decile;
 wire [7:0]  freq_percentiles;
 wire        freq_valid;
 wire        active_p_neg;
+wire [7:0]  active_p_hundreds;
 wire [7:0]  active_p_tens;
 wire [7:0]  active_p_units;
 wire [7:0]  active_p_decile;
 wire [7:0]  active_p_percentiles;
 wire        reactive_q_neg;
+wire [7:0]  reactive_q_hundreds;
 wire [7:0]  reactive_q_tens;
 wire [7:0]  reactive_q_units;
 wire [7:0]  reactive_q_decile;
 wire [7:0]  reactive_q_percentiles;
+wire [7:0]  apparent_s_hundreds;
 wire [7:0]  apparent_s_tens;
 wire [7:0]  apparent_s_units;
 wire [7:0]  apparent_s_decile;
@@ -335,6 +373,8 @@ wire [7:0]  power_factor_units;
 wire [7:0]  power_factor_decile;
 wire [7:0]  power_factor_percentiles;
 wire        power_metrics_valid;
+wire        sharp_alarm_active;
+wire [2:0]  sharp_alarm_code;
 wire [7:0]  freq_thd_u_hundreds;
 wire [7:0]  freq_thd_u_tens;
 wire [7:0]  freq_thd_u_units;
@@ -378,14 +418,8 @@ wire [7:0]  freq_dc_i_units;
 wire [7:0]  freq_dc_i_decile;
 wire [7:0]  freq_dc_i_percentiles;
 wire        freq_dc_i_valid;
-wire [7:0]  freq_dh_order_u_hundreds;
-wire [7:0]  freq_dh_order_u_tens;
-wire [7:0]  freq_dh_order_u_units;
-wire        freq_dh_order_u_valid;
-wire [7:0]  freq_dh_order_i_hundreds;
-wire [7:0]  freq_dh_order_i_tens;
-wire [7:0]  freq_dh_order_i_units;
-wire        freq_dh_order_i_valid;
+wire [199:0] freq_dh_order_u_text;
+wire [199:0] freq_dh_order_i_text;
 wire        u_trigger_pulse;
 wire [8:0]  u_trigger_snapshot_ptr;
 
@@ -452,24 +486,13 @@ wire        freq_harmonic_valid;
 wire        freq_harmonic_last;
 wire [8:0]  freq_harmonic_order_stream;
 wire        freq_harmonic_present_stream;
-wire [16:0] freq_harmonic_u_mag_raw;
-wire [16:0] freq_harmonic_i_mag_raw;
+wire [16:0] freq_harmonic_u_mag;
+wire [16:0] freq_harmonic_i_mag;
 wire [15:0] freq_harmonic_u_pct_x100;
 wire [15:0] freq_harmonic_i_pct_x100;
 wire        freq_phase_diff_valid_stream;
 wire signed [15:0] freq_phase_diff_deg_x100;
-wire        freq_filtered_ready;
-wire        freq_filtered_valid;
-wire        freq_filtered_last;
-wire [8:0]  freq_filtered_order;
-wire        freq_filtered_present;
-wire [16:0] freq_filtered_u_mag;
-wire [16:0] freq_filtered_i_mag;
-wire [15:0] freq_filtered_u_pct_x100;
-wire [15:0] freq_filtered_i_pct_x100;
-wire        freq_filtered_phase_valid;
-wire signed [15:0] freq_filtered_phase_x100;
-wire        freq_filtered_fire;
+wire        freq_harmonic_fire;
 wire [31:0] freq_thd_u_raw_x100;
 wire [31:0] freq_thd_i_raw_x100;
 wire        freq_thd_u_raw_valid;
@@ -480,12 +503,16 @@ wire        freq_u1_mag_raw_valid;
 wire        freq_i1_mag_raw_valid;
 wire signed [31:0] freq_phase1_raw_x100;
 wire        freq_phase1_raw_valid;
+wire signed [31:0] fft_fund_freq_period_raw;
+wire        fft_fund_freq_valid;
 wire [31:0] freq_dc_u_raw_x100;
 wire [31:0] freq_dc_i_raw_x100;
 wire        freq_dc_u_raw_valid;
 wire        freq_dc_i_raw_valid;
-wire [8:0]  freq_dh_order_u_raw;
-wire [8:0]  freq_dh_order_i_raw;
+wire [44:0] freq_dh_order_u_list_raw;
+wire [44:0] freq_dh_order_i_list_raw;
+wire [2:0]  freq_dh_order_u_count_raw;
+wire [2:0]  freq_dh_order_i_count_raw;
 wire        freq_dh_order_u_raw_valid;
 wire        freq_dh_order_i_raw_valid;
 wire        freq_metrics_raw_valid;
@@ -509,23 +536,35 @@ wire [8:0]  freq_window_base;
 wire [8:0]  freq_display_harmonic_order;
 wire        freq_harmonic_present_lcd;
 wire        freq_phase_valid_lcd;
+wire        uart_stream_tx_en_wire;
+wire [7:0]  uart_stream_tx_data_wire;
+wire [31:0] u_full_scale_x100_wave;
+wire [31:0] i_full_scale_x100_wave;
 
+// 组合生成字体 ROM 地址、文本提交沿和顶层告警/UART 输出映射。
 assign font_addr_16x32 = text_blank ? 12'd0 : ({5'd0, font_char_idx} << 5) + {6'd0, text_rel_y[4:0]};
 assign font_addr_10x20 = text_blank ? 11'd0 : (({4'd0, font_char_idx} << 4) + ({6'd0, font_char_idx} << 2) + {5'd0, text_rel_y[4:0]});
 assign text_result_commit_edge_wave = text_result_commit_toggle ^ text_result_commit_toggle_d1_wave;
 assign freq_text_result_commit_edge_wave = freq_text_result_commit_toggle ^ freq_text_result_commit_toggle_d1_wave;
+assign alarm_active = sharp_alarm_active;
+assign uart_stream_tx_en   = uart_stream_tx_en_wire;
+assign uart_stream_tx_data = uart_stream_tx_data_wire;
+assign u_full_scale_x100_wave = full_scale_low_range_active ? U_FULL_SCALE_LOW_X100 : U_FULL_SCALE_HIGH_X100;
+assign i_full_scale_x100_wave = full_scale_low_range_active ? I_FULL_SCALE_LOW_X100 : I_FULL_SCALE_HIGH_X100;
+// 将时域与频域测量字段打包成统一文本包，供 LCD 和 UART 复用。
 assign text_packet_wave = {
-    u_rms_tens, u_rms_units, u_rms_decile, u_rms_percentiles, u_rms_digits_valid,
-    i_rms_tens, i_rms_units, i_rms_decile, i_rms_percentiles, i_rms_digits_valid,
+    u_rms_hundreds, u_rms_tens, u_rms_units, u_rms_decile, u_rms_percentiles, u_rms_digits_valid,
+    i_rms_hundreds, i_rms_tens, i_rms_units, i_rms_decile, i_rms_percentiles, i_rms_digits_valid,
     phase_neg, phase_hundreds, phase_tens, phase_units, phase_decile, phase_percentiles, phase_valid,
     freq_hundreds, freq_tens, freq_units, freq_decile, freq_percentiles, freq_valid,
-    u_pp_tens, u_pp_units, u_pp_decile, u_pp_percentiles, u_pp_digits_valid,
-    i_pp_tens, i_pp_units, i_pp_decile, i_pp_percentiles, i_pp_digits_valid,
-    active_p_neg, active_p_tens, active_p_units, active_p_decile, active_p_percentiles,
-    reactive_q_neg, reactive_q_tens, reactive_q_units, reactive_q_decile, reactive_q_percentiles,
-    apparent_s_tens, apparent_s_units, apparent_s_decile, apparent_s_percentiles,
+    u_pp_hundreds, u_pp_tens, u_pp_units, u_pp_decile, u_pp_percentiles, u_pp_digits_valid,
+    i_pp_hundreds, i_pp_tens, i_pp_units, i_pp_decile, i_pp_percentiles, i_pp_digits_valid,
+    active_p_neg, active_p_hundreds, active_p_tens, active_p_units, active_p_decile, active_p_percentiles,
+    reactive_q_neg, reactive_q_hundreds, reactive_q_tens, reactive_q_units, reactive_q_decile, reactive_q_percentiles,
+    apparent_s_hundreds, apparent_s_tens, apparent_s_units, apparent_s_decile, apparent_s_percentiles,
     power_factor_neg, power_factor_units, power_factor_decile, power_factor_percentiles,
     power_metrics_valid,
+    sharp_alarm_code,
     freq_thd_u_hundreds, freq_thd_u_tens, freq_thd_u_units, freq_thd_u_decile, freq_thd_u_percentiles, freq_thd_u_valid,
     freq_thd_i_hundreds, freq_thd_i_tens, freq_thd_i_units, freq_thd_i_decile, freq_thd_i_percentiles, freq_thd_i_valid,
     freq_u1_mag_hundreds, freq_u1_mag_tens, freq_u1_mag_units, freq_u1_mag_decile, freq_u1_mag_percentiles, freq_u1_mag_valid,
@@ -533,23 +572,25 @@ assign text_packet_wave = {
     freq_phase1_neg, freq_phase1_hundreds, freq_phase1_tens, freq_phase1_units, freq_phase1_decile, freq_phase1_percentiles, freq_phase1_valid,
     freq_dc_u_hundreds, freq_dc_u_tens, freq_dc_u_units, freq_dc_u_decile, freq_dc_u_percentiles, freq_dc_u_valid,
     freq_dc_i_hundreds, freq_dc_i_tens, freq_dc_i_units, freq_dc_i_decile, freq_dc_i_percentiles, freq_dc_i_valid,
-    freq_dh_order_u_hundreds, freq_dh_order_u_tens, freq_dh_order_u_units, freq_dh_order_u_valid,
-    freq_dh_order_i_hundreds, freq_dh_order_i_tens, freq_dh_order_i_units, freq_dh_order_i_valid
+    freq_dh_order_u_text,
+    freq_dh_order_i_text
 };
 
+// 大字号字模 ROM，供主要数值和标题字符渲染。
 blk_mem_gen_font_16x32 u_font_16x32_rom(
     .clka  (lcd_pclk),
     .addra (font_addr_16x32),
     .douta (font_row_16x32_rom)
 );
 
+// 小字号字模 ROM，供单位和辅助文本渲染。
 blk_mem_gen_font_10x20 u_font_10x20_rom(
     .clka  (lcd_pclk),
     .ena   (1'b1),
     .addra (font_addr_10x20),
     .douta (font_row_10x20_rom)
 );
-// 电压通道：生成电压波形帧、U_rms 和 Upp
+// 电压时域波形捕获模块，生成电压显示 RAM 帧。
 time_wave_display_capture #(
     .FULL_SCALE_CODE(WAVE_FULL_SCALE_CODE)
 ) u_u_time_wave_display_capture (
@@ -572,7 +613,7 @@ time_wave_display_capture #(
     .trigger_snapshot_ptr(u_trigger_snapshot_ptr)
 );
 
-// 电流通道：共享电压触发时刻，生成 I_rms 和 Ipp
+// 电流时域波形捕获模块，跟随电压触发对齐刷新。
 time_wave_display_capture #(
     .FULL_SCALE_CODE(WAVE_FULL_SCALE_CODE)
 ) u_i_time_wave_display_capture (
@@ -595,10 +636,9 @@ time_wave_display_capture #(
     .trigger_snapshot_ptr()
 );
 
+// 时域测量预处理模块，生成 RMS、频率、功率等文本字段。
 time_text_display_preprocess #(
     .SAMPLE_WIDTH      (16),
-    .U_FULL_SCALE_X100 (U_FULL_SCALE_X100),
-    .I_FULL_SCALE_X100 (I_FULL_SCALE_X100),
     .START_DELAY_CYCLES(TEXT_REFRESH_CYCLES)
 ) u_time_text_display_preprocess (
     .clk               (wave_clk),
@@ -613,12 +653,20 @@ time_text_display_preprocess #(
     .i_sample_code     (i_wave_sample_code),
     .i_zero_code       (i_wave_zero_code),
     .i_zero_valid      (i_wave_zero_valid),
+    .u_full_scale_x100 (u_full_scale_x100_wave),
+    .i_full_scale_x100 (i_full_scale_x100_wave),
+    .fft_freq_period_raw(fft_fund_freq_period_raw),
+    .fft_freq_valid    (fft_fund_freq_valid),
+    .fft_phase1_raw_x100(freq_phase1_raw_x100),
+    .fft_phase1_valid  (freq_phase1_raw_valid),
     .text_result_commit_toggle(text_result_commit_toggle),
+    .u_rms_hundreds    (u_rms_hundreds),
     .u_rms_tens        (u_rms_tens),
     .u_rms_units       (u_rms_units),
     .u_rms_decile      (u_rms_decile),
     .u_rms_percentiles (u_rms_percentiles),
     .u_rms_digits_valid(u_rms_digits_valid),
+    .i_rms_hundreds    (i_rms_hundreds),
     .i_rms_tens        (i_rms_tens),
     .i_rms_units       (i_rms_units),
     .i_rms_decile      (i_rms_decile),
@@ -638,26 +686,31 @@ time_text_display_preprocess #(
     .freq_decile       (freq_decile),
     .freq_percentiles  (freq_percentiles),
     .freq_valid        (freq_valid),
+    .u_pp_hundreds     (u_pp_hundreds),
     .u_pp_tens         (u_pp_tens),
     .u_pp_units        (u_pp_units),
     .u_pp_decile       (u_pp_decile),
     .u_pp_percentiles  (u_pp_percentiles),
     .u_pp_digits_valid (u_pp_digits_valid),
+    .i_pp_hundreds     (i_pp_hundreds),
     .i_pp_tens         (i_pp_tens),
     .i_pp_units        (i_pp_units),
     .i_pp_decile       (i_pp_decile),
     .i_pp_percentiles  (i_pp_percentiles),
     .i_pp_digits_valid (i_pp_digits_valid),
     .active_p_neg      (active_p_neg),
+    .active_p_hundreds (active_p_hundreds),
     .active_p_tens     (active_p_tens),
     .active_p_units    (active_p_units),
     .active_p_decile   (active_p_decile),
     .active_p_percentiles(active_p_percentiles),
     .reactive_q_neg    (reactive_q_neg),
+    .reactive_q_hundreds(reactive_q_hundreds),
     .reactive_q_tens   (reactive_q_tens),
     .reactive_q_units  (reactive_q_units),
     .reactive_q_decile (reactive_q_decile),
     .reactive_q_percentiles(reactive_q_percentiles),
+    .apparent_s_hundreds(apparent_s_hundreds),
     .apparent_s_tens   (apparent_s_tens),
     .apparent_s_units  (apparent_s_units),
     .apparent_s_decile (apparent_s_decile),
@@ -666,10 +719,12 @@ time_text_display_preprocess #(
     .power_factor_units(power_factor_units),
     .power_factor_decile(power_factor_decile),
     .power_factor_percentiles(power_factor_percentiles),
-    .power_metrics_valid(power_metrics_valid)
+    .power_metrics_valid(power_metrics_valid),
+    .sharp_alarm_active(sharp_alarm_active),
+    .sharp_alarm_code (sharp_alarm_code)
 );
 
-// 合并时域和频域文本提交事件，确保同一个双缓冲包同时携带两类最新数字位。
+// 在 wave_clk 域合并时域和频域文本提交沿，驱动文本包交换。
 always @(posedge wave_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
         text_result_commit_toggle_d1_wave      <= 1'b0;
@@ -684,8 +739,30 @@ always @(posedge wave_clk or negedge sys_rst_n) begin
     end
 end
 
-// 相位与频率分析：以电压为参考计算频率和电压相对电流的相位差
-// 文字结果采用前后台双缓冲，跨域仅同步提交与切换控制位
+// UART 测量串流模块，将文本包和谐波信息序列化输出。
+uart_measurement_streamer #(
+    .PACKET_WIDTH    (TEXT_PACKET_WIDTH),
+    .CLK_FREQ        (50_000_000),
+    .SEND_GAP_CYCLES (5_000_000)
+) u_uart_measurement_streamer (
+    .clk                     (wave_clk),
+    .rst_n                   (sys_rst_n),
+    .text_packet             (text_packet_wave),
+    .text_packet_commit_toggle(text_packet_commit_toggle_wave),
+    .harmonic_fire           (freq_harmonic_fire),
+    .harmonic_last           (freq_harmonic_last),
+    .harmonic_order          (freq_harmonic_order_stream),
+    .harmonic_present        (freq_harmonic_present_stream),
+    .harmonic_u_pct_x100     (freq_harmonic_u_pct_x100),
+    .harmonic_i_pct_x100     (freq_harmonic_i_pct_x100),
+    .harmonic_phase_diff_valid(freq_phase_diff_valid_stream),
+    .harmonic_phase_diff_deg_x100(freq_phase_diff_deg_x100),
+    .uart_tx_busy            (uart_tx_busy),
+    .uart_tx_en              (uart_stream_tx_en_wire),
+    .uart_tx_data            (uart_stream_tx_data_wire)
+);
+
+// 文本包双缓冲模块，在 wave_clk 与 lcd_pclk 之间安全交换整包数据。
 text_packet_double_buffer #(
     .PACKET_WIDTH (TEXT_PACKET_WIDTH)
 ) u_text_packet_double_buffer (
@@ -700,7 +777,7 @@ text_packet_double_buffer #(
     .packet_front_lcd          (text_packet_front_lcd)
 );
 
-// 频域分析链路始终保持运行，不受 LCD 页面切换影响。
+// 频域分析顶层，输出基波频率、谐波幅值和相位差流。
 freq_analysis_top u_freq_analysis_top (
     .sample_clk                 (wave_clk),
     .fft_clk                    (wave_clk),
@@ -772,6 +849,8 @@ freq_analysis_top u_freq_analysis_top (
     .mag_calc_busy              (),
     .mag_frame_done             (),
     .mag_frame_count            (),
+    .fund_freq_period_raw       (fft_fund_freq_period_raw),
+    .fund_freq_valid            (fft_fund_freq_valid),
     .m_harmonic_valid           (freq_harmonic_valid),
     .m_harmonic_last            (freq_harmonic_last),
     .m_harmonic_order           (freq_harmonic_order_stream),
@@ -780,8 +859,8 @@ freq_analysis_top u_freq_analysis_top (
     .m_harmonic_u_imag          (),
     .m_harmonic_i_real          (),
     .m_harmonic_i_imag          (),
-    .m_harmonic_u_mag           (freq_harmonic_u_mag_raw),
-    .m_harmonic_i_mag           (freq_harmonic_i_mag_raw),
+    .m_harmonic_u_mag           (freq_harmonic_u_mag),
+    .m_harmonic_i_mag           (freq_harmonic_i_mag),
     .m_harmonic_u_pct_x100      (freq_harmonic_u_pct_x100),
     .m_harmonic_i_pct_x100      (freq_harmonic_i_pct_x100),
     .m_phase_vector_valid       (),
@@ -800,7 +879,124 @@ freq_analysis_top u_freq_analysis_top (
     .phase_deg_frame_count      ()
 );
 
-// 频域显示适配层将谐波流转换为 LCD 可直接读取的幅值和相位高度数据。
+// 当谐波结果有效且下游准备就绪时，发出一次谐波拍。
+assign freq_harmonic_fire = freq_harmonic_valid && freq_harmonic_ready;
+
+// 将谐波流聚合为 THD、基波幅值、直流分量等原始指标。
+freq_metrics_raw_calc u_freq_metrics_raw_calc (
+    .clk                    (wave_clk),
+    .rst_n                  (sys_rst_n),
+    .enable                 (1'b1),
+    .s_harmonic_fire        (freq_harmonic_fire),
+    .s_harmonic_last        (freq_harmonic_last),
+    .s_harmonic_order       (freq_harmonic_order_stream),
+    .s_harmonic_present     (freq_harmonic_present_stream),
+    .s_u_mag                (freq_harmonic_u_mag),
+    .s_i_mag                (freq_harmonic_i_mag),
+    .s_u_pct_x100           (freq_harmonic_u_pct_x100),
+    .s_i_pct_x100           (freq_harmonic_i_pct_x100),
+    .s_phase_diff_valid     (freq_phase_diff_valid_stream),
+    .s_phase_diff_deg_x100  (freq_phase_diff_deg_x100),
+    .raw_result_commit_toggle(freq_metrics_raw_commit_toggle),
+    .thd_u_raw_x100         (freq_thd_u_raw_x100),
+    .thd_i_raw_x100         (freq_thd_i_raw_x100),
+    .thd_u_valid            (freq_thd_u_raw_valid),
+    .thd_i_valid            (freq_thd_i_raw_valid),
+    .u1_mag_raw_x100        (freq_u1_mag_raw_x100),
+    .i1_mag_raw_x100        (freq_i1_mag_raw_x100),
+    .u1_mag_valid           (freq_u1_mag_raw_valid),
+    .i1_mag_valid           (freq_i1_mag_raw_valid),
+    .phase1_raw_x100        (freq_phase1_raw_x100),
+    .phase1_valid           (freq_phase1_raw_valid),
+    .dc_u_raw_x100          (freq_dc_u_raw_x100),
+    .dc_i_raw_x100          (freq_dc_i_raw_x100),
+    .dc_u_valid             (freq_dc_u_raw_valid),
+    .dc_i_valid             (freq_dc_i_raw_valid),
+    .dh_order_u_list_raw    (freq_dh_order_u_list_raw),
+    .dh_order_i_list_raw    (freq_dh_order_i_list_raw),
+    .dh_order_u_count_raw   (freq_dh_order_u_count_raw),
+    .dh_order_i_count_raw   (freq_dh_order_i_count_raw),
+    .dh_order_u_valid       (freq_dh_order_u_raw_valid),
+    .dh_order_i_valid       (freq_dh_order_i_raw_valid),
+    .metrics_valid          (freq_metrics_raw_valid)
+);
+
+// 频域文本预处理模块，把原始指标转换成 LCD 文本字段。
+freq_text_display_preprocess u_freq_text_display_preprocess (
+    .clk                    (wave_clk),
+    .rst_n                  (sys_rst_n),
+    .lcd_frame_done_toggle  (lcd_frame_done_toggle),
+    .lcd_swap_ack_toggle    (text_swap_ack_toggle_lcd),
+    .raw_result_commit_toggle(freq_metrics_raw_commit_toggle),
+    .thd_u_raw_x100         (freq_thd_u_raw_x100),
+    .thd_i_raw_x100         (freq_thd_i_raw_x100),
+    .thd_u_valid_in         (freq_thd_u_raw_valid),
+    .thd_i_valid_in         (freq_thd_i_raw_valid),
+    .u1_mag_raw_x100        (freq_u1_mag_raw_x100),
+    .i1_mag_raw_x100        (freq_i1_mag_raw_x100),
+    .u1_mag_valid_in        (freq_u1_mag_raw_valid),
+    .i1_mag_valid_in        (freq_i1_mag_raw_valid),
+    .phase1_raw_x100        (freq_phase1_raw_x100),
+    .phase1_valid_in        (freq_phase1_raw_valid),
+    .dc_u_raw_x100          (freq_dc_u_raw_x100),
+    .dc_i_raw_x100          (freq_dc_i_raw_x100),
+    .dc_u_valid_in          (freq_dc_u_raw_valid),
+    .dc_i_valid_in          (freq_dc_i_raw_valid),
+    .dh_order_u_list_raw    (freq_dh_order_u_list_raw),
+    .dh_order_i_list_raw    (freq_dh_order_i_list_raw),
+    .dh_order_u_count_raw   (freq_dh_order_u_count_raw),
+    .dh_order_i_count_raw   (freq_dh_order_i_count_raw),
+    .dh_order_u_valid_in    (freq_dh_order_u_raw_valid),
+    .dh_order_i_valid_in    (freq_dh_order_i_raw_valid),
+    .freq_text_result_commit_toggle(freq_text_result_commit_toggle),
+    .thd_u_hundreds         (freq_thd_u_hundreds),
+    .thd_u_tens             (freq_thd_u_tens),
+    .thd_u_units            (freq_thd_u_units),
+    .thd_u_decile           (freq_thd_u_decile),
+    .thd_u_percentiles      (freq_thd_u_percentiles),
+    .thd_u_valid            (freq_thd_u_valid),
+    .thd_i_hundreds         (freq_thd_i_hundreds),
+    .thd_i_tens             (freq_thd_i_tens),
+    .thd_i_units            (freq_thd_i_units),
+    .thd_i_decile           (freq_thd_i_decile),
+    .thd_i_percentiles      (freq_thd_i_percentiles),
+    .thd_i_valid            (freq_thd_i_valid),
+    .u1_mag_hundreds        (freq_u1_mag_hundreds),
+    .u1_mag_tens            (freq_u1_mag_tens),
+    .u1_mag_units           (freq_u1_mag_units),
+    .u1_mag_decile          (freq_u1_mag_decile),
+    .u1_mag_percentiles     (freq_u1_mag_percentiles),
+    .u1_mag_valid           (freq_u1_mag_valid),
+    .i1_mag_hundreds        (freq_i1_mag_hundreds),
+    .i1_mag_tens            (freq_i1_mag_tens),
+    .i1_mag_units           (freq_i1_mag_units),
+    .i1_mag_decile          (freq_i1_mag_decile),
+    .i1_mag_percentiles     (freq_i1_mag_percentiles),
+    .i1_mag_valid           (freq_i1_mag_valid),
+    .phase1_neg             (freq_phase1_neg),
+    .phase1_hundreds        (freq_phase1_hundreds),
+    .phase1_tens            (freq_phase1_tens),
+    .phase1_units           (freq_phase1_units),
+    .phase1_decile          (freq_phase1_decile),
+    .phase1_percentiles     (freq_phase1_percentiles),
+    .phase1_valid           (freq_phase1_valid),
+    .dc_u_hundreds          (freq_dc_u_hundreds),
+    .dc_u_tens              (freq_dc_u_tens),
+    .dc_u_units             (freq_dc_u_units),
+    .dc_u_decile            (freq_dc_u_decile),
+    .dc_u_percentiles       (freq_dc_u_percentiles),
+    .dc_u_valid             (freq_dc_u_valid),
+    .dc_i_hundreds          (freq_dc_i_hundreds),
+    .dc_i_tens              (freq_dc_i_tens),
+    .dc_i_units             (freq_dc_i_units),
+    .dc_i_decile            (freq_dc_i_decile),
+    .dc_i_percentiles       (freq_dc_i_percentiles),
+    .dc_i_valid             (freq_dc_i_valid),
+    .dh_order_u_text        (freq_dh_order_u_text),
+    .dh_order_i_text        (freq_dh_order_i_text)
+);
+
+// 频域显示适配模块，把谐波流压缩为柱图和相位图 RAM 数据。
 freq_display_adapter u_freq_display_adapter (
     .clk                    (wave_clk),
     .rst_n                  (sys_rst_n),
@@ -825,6 +1021,7 @@ freq_display_adapter u_freq_display_adapter (
     .frame_sequence         ()
 );
 
+// 在 wave_clk 域同步冻结状态和频域前台 bank。
 always @(posedge wave_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
         freeze_active_wave_sync1    <= 1'b0;
@@ -839,6 +1036,7 @@ always @(posedge wave_clk or negedge sys_rst_n) begin
     end
 end
 
+// 背景层模块，生成页面底色、边框和按钮底图。
 lcd_display_bg u_lcd_display_bg(
     .pixel_xpos            (pixel_xpos),
     .pixel_ypos            (pixel_ypos),
@@ -850,17 +1048,17 @@ lcd_display_bg u_lcd_display_bg(
     .base_color            (base_color)
 );
 
-lcd_display_text #(
-    .U_FULL_SCALE_X100 (U_FULL_SCALE_X100),
-    .I_FULL_SCALE_X100 (I_FULL_SCALE_X100)
-) u_lcd_display_text(
+// 文本布局模块，根据页面状态输出字符索引、位置和颜色。
+lcd_display_text u_lcd_display_text(
     .pixel_xpos          (pixel_xpos),
     .pixel_ypos          (pixel_ypos),
+    .u_rms_hundreds      (u_rms_hundreds_lcd),
     .u_rms_tens          (u_rms_tens_lcd),
     .u_rms_units         (u_rms_units_lcd),
     .u_rms_decile        (u_rms_decile_lcd),
     .u_rms_percentiles   (u_rms_percentiles_lcd),
     .u_rms_digits_valid  (u_rms_digits_valid_lcd),
+    .i_rms_hundreds      (i_rms_hundreds_lcd),
     .i_rms_tens          (i_rms_tens_lcd),
     .i_rms_units         (i_rms_units_lcd),
     .i_rms_decile        (i_rms_decile_lcd),
@@ -879,26 +1077,31 @@ lcd_display_text #(
     .freq_decile         (freq_decile_lcd),
     .freq_percentiles    (freq_percentiles_lcd),
     .freq_valid          (freq_valid_lcd),
+    .u_pp_hundreds       (u_pp_hundreds_lcd),
     .u_pp_tens           (u_pp_tens_lcd),
     .u_pp_units          (u_pp_units_lcd),
     .u_pp_decile         (u_pp_decile_lcd),
     .u_pp_percentiles    (u_pp_percentiles_lcd),
     .u_pp_digits_valid   (u_pp_digits_valid_lcd),
+    .i_pp_hundreds       (i_pp_hundreds_lcd),
     .i_pp_tens           (i_pp_tens_lcd),
     .i_pp_units          (i_pp_units_lcd),
     .i_pp_decile         (i_pp_decile_lcd),
     .i_pp_percentiles    (i_pp_percentiles_lcd),
     .i_pp_digits_valid   (i_pp_digits_valid_lcd),
     .active_p_neg        (active_p_neg_lcd),
+    .active_p_hundreds   (active_p_hundreds_lcd),
     .active_p_tens       (active_p_tens_lcd),
     .active_p_units      (active_p_units_lcd),
     .active_p_decile     (active_p_decile_lcd),
     .active_p_percentiles(active_p_percentiles_lcd),
     .reactive_q_neg      (reactive_q_neg_lcd),
+    .reactive_q_hundreds (reactive_q_hundreds_lcd),
     .reactive_q_tens     (reactive_q_tens_lcd),
     .reactive_q_units    (reactive_q_units_lcd),
     .reactive_q_decile   (reactive_q_decile_lcd),
     .reactive_q_percentiles(reactive_q_percentiles_lcd),
+    .apparent_s_hundreds (apparent_s_hundreds_lcd),
     .apparent_s_tens     (apparent_s_tens_lcd),
     .apparent_s_units    (apparent_s_units_lcd),
     .apparent_s_decile   (apparent_s_decile_lcd),
@@ -908,6 +1111,53 @@ lcd_display_text #(
     .power_factor_decile (power_factor_decile_lcd),
     .power_factor_percentiles(power_factor_percentiles_lcd),
     .power_metrics_valid (power_metrics_valid_lcd),
+    .sharp_alarm_code    (sharp_alarm_code_lcd),
+    .freq_thd_u_hundreds (freq_thd_u_hundreds_lcd),
+    .freq_thd_u_tens     (freq_thd_u_tens_lcd),
+    .freq_thd_u_units    (freq_thd_u_units_lcd),
+    .freq_thd_u_decile   (freq_thd_u_decile_lcd),
+    .freq_thd_u_percentiles(freq_thd_u_percentiles_lcd),
+    .freq_thd_u_valid    (freq_thd_u_valid_lcd),
+    .freq_thd_i_hundreds (freq_thd_i_hundreds_lcd),
+    .freq_thd_i_tens     (freq_thd_i_tens_lcd),
+    .freq_thd_i_units    (freq_thd_i_units_lcd),
+    .freq_thd_i_decile   (freq_thd_i_decile_lcd),
+    .freq_thd_i_percentiles(freq_thd_i_percentiles_lcd),
+    .freq_thd_i_valid    (freq_thd_i_valid_lcd),
+    .freq_u1_mag_hundreds(freq_u1_mag_hundreds_lcd),
+    .freq_u1_mag_tens    (freq_u1_mag_tens_lcd),
+    .freq_u1_mag_units   (freq_u1_mag_units_lcd),
+    .freq_u1_mag_decile  (freq_u1_mag_decile_lcd),
+    .freq_u1_mag_percentiles(freq_u1_mag_percentiles_lcd),
+    .freq_u1_mag_valid   (freq_u1_mag_valid_lcd),
+    .freq_i1_mag_hundreds(freq_i1_mag_hundreds_lcd),
+    .freq_i1_mag_tens    (freq_i1_mag_tens_lcd),
+    .freq_i1_mag_units   (freq_i1_mag_units_lcd),
+    .freq_i1_mag_decile  (freq_i1_mag_decile_lcd),
+    .freq_i1_mag_percentiles(freq_i1_mag_percentiles_lcd),
+    .freq_i1_mag_valid   (freq_i1_mag_valid_lcd),
+    .freq_phase1_neg     (freq_phase1_neg_lcd),
+    .freq_phase1_hundreds(freq_phase1_hundreds_lcd),
+    .freq_phase1_tens    (freq_phase1_tens_lcd),
+    .freq_phase1_units   (freq_phase1_units_lcd),
+    .freq_phase1_decile  (freq_phase1_decile_lcd),
+    .freq_phase1_percentiles(freq_phase1_percentiles_lcd),
+    .freq_phase1_valid   (freq_phase1_valid_lcd),
+    .freq_dc_u_hundreds  (freq_dc_u_hundreds_lcd),
+    .freq_dc_u_tens      (freq_dc_u_tens_lcd),
+    .freq_dc_u_units     (freq_dc_u_units_lcd),
+    .freq_dc_u_decile    (freq_dc_u_decile_lcd),
+    .freq_dc_u_percentiles(freq_dc_u_percentiles_lcd),
+    .freq_dc_u_valid     (freq_dc_u_valid_lcd),
+    .freq_dc_i_hundreds  (freq_dc_i_hundreds_lcd),
+    .freq_dc_i_tens      (freq_dc_i_tens_lcd),
+    .freq_dc_i_units     (freq_dc_i_units_lcd),
+    .freq_dc_i_decile    (freq_dc_i_decile_lcd),
+    .freq_dc_i_percentiles(freq_dc_i_percentiles_lcd),
+    .freq_dc_i_valid     (freq_dc_i_valid_lcd),
+    .freq_dh_order_u_text(freq_dh_order_u_text_lcd),
+    .freq_dh_order_i_text(freq_dh_order_i_text_lcd),
+    .full_scale_low_range_active(full_scale_low_range_active_lcd),
     .freeze_active       (freeze_active_lcd),
     .frequency_page_active(frequency_page_active_lcd),
     .harmonic_window_index(harmonic_window_index_lcd),
@@ -919,6 +1169,7 @@ lcd_display_text #(
     .text_color          (text_color)
 );
 
+// 电压波形双口显示 RAM：wave_clk 写入，lcd_pclk 读出。
 blk_mem_gen_ram0 u_u_wave_frame_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
@@ -933,6 +1184,7 @@ blk_mem_gen_ram0 u_u_wave_frame_ram(
     .doutb (u_wave_ram_doutb)
 );
 
+// 电流波形双口显示 RAM：wave_clk 写入，lcd_pclk 读出。
 blk_mem_gen_ram0 u_i_wave_frame_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
@@ -947,7 +1199,7 @@ blk_mem_gen_ram0 u_i_wave_frame_ram(
     .doutb (i_wave_ram_doutb)
 );
 
-// 频域电压幅值显示 RAM，写端来自频域适配层，读端随 LCD 扫描读取。
+// 频域电压幅值显示 RAM。
 blk_mem_gen_ram0 u_freq_u_mag_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
@@ -962,7 +1214,7 @@ blk_mem_gen_ram0 u_freq_u_mag_display_ram(
     .doutb (freq_u_mag_ram_doutb)
 );
 
-// 频域电流幅值显示 RAM，保持与电压幅值 RAM 相同的 bank 和谐波地址。
+// 频域电流幅值显示 RAM。
 blk_mem_gen_ram0 u_freq_i_mag_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
@@ -977,7 +1229,7 @@ blk_mem_gen_ram0 u_freq_i_mag_display_ram(
     .doutb (freq_i_mag_ram_doutb)
 );
 
-// 频域相位高度显示 RAM，存储 U-I 相位角折算后的柱图高度。
+// 频域相位柱高显示 RAM。
 blk_mem_gen_ram0 u_freq_phase_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
@@ -992,7 +1244,7 @@ blk_mem_gen_ram0 u_freq_phase_display_ram(
     .doutb (freq_phase_ram_doutb)
 );
 
-// 频域显示标志 RAM，保存谐波有效、相位有效和相位符号。
+// 频域标志显示 RAM，保存谐波存在位和相位符号位。
 blk_mem_gen_ram0 u_freq_flag_display_ram(
     .clka  (wave_clk),
     .ena   (1'b1),
@@ -1007,7 +1259,7 @@ blk_mem_gen_ram0 u_freq_flag_display_ram(
     .doutb (freq_flag_ram_doutb)
 );
 
-// 将扩展后的频域图横向像素映射到 0~25 的谐波端点，避免除法并保持柱图等距铺满绘图区。
+// 将频谱图区列坐标映射为 0~25 的谐波桶索引。
 function [4:0] freq_bucket_from_col;
     input [10:0] col_value;
     begin
@@ -1066,7 +1318,7 @@ function [4:0] freq_bucket_from_col;
     end
 endfunction
 
-// 返回当前 17 像素谐波槽内的相对列，用于 U/I/相位柱的局部宽度判定。
+// 计算当前谐波桶内部的子列偏移。
 function [4:0] freq_sub_col_from_col;
     input [10:0] col_value;
     begin
@@ -1125,17 +1377,18 @@ function [4:0] freq_sub_col_from_col;
     end
 endfunction
 
+// 生成空白字符保护和字体索引。
 assign text_blank        = (text_char_idx == FONT_BLANK);
 assign font_char_idx     = text_blank ? 7'd0 : text_char_idx;
-// 10x20 字模 ROM 输出为 12 bit，普通字符取中间 10 列，百分号取高 10 列以匹配其原始点阵窗口。
-assign font_10x20_bit_idx = (text_char_idx_d1 == FONT_PERCENT) ?
-                            (4'd11 - text_rel_x_d1[3:0]) :
-                            (4'd10 - text_rel_x_d1[3:0]);
+// 10x20 字模每行有效位使用 bit[10:1]，因此位索引从 10 递减。
+assign font_10x20_bit_idx = 4'd10 - text_rel_x_d1[3:0];
+// 生成 LCD 帧边沿、频域采样有效和频域 RAM 写使能。
 assign frame_edge_lcd    = lcd_frame_done_toggle ^ lcd_frame_done_toggle_d1;
 assign freq_sample_valid = u_wave_sample_valid && i_wave_sample_valid;
 assign freq_ram_store_we = freq_ram_we &&
                            (!freeze_active_wave ||
                             (freq_ram_waddr[9] != freq_front_bank_wave_sync2));
+// 触摸同步、按钮命中和点击资格判定。
 assign touch_pressed_lcd = touch_pressed_sync2;
 assign touch_pressed_fall_lcd = touch_pressed_sync3 && !touch_pressed_sync2;
 assign mode_button_touch_hit =
@@ -1197,21 +1450,24 @@ assign harmonic_next_click_qualified =
     harmonic_next_start_hit &&
     (touch_press_time_ms >= FREEZE_MIN_PRESS_MS) &&
     (touch_press_time_ms <= FREEZE_MAX_PRESS_MS);
+// 计算冻结状态以及屏幕是否允许接收新数据。
 assign freeze_active_next_lcd = freeze_button_click_qualified ? ~freeze_active_lcd : freeze_active_lcd;
 assign screen_update_enable_lcd = !freeze_active_next_lcd;
 assign freeze_active_wave = freeze_active_wave_sync2;
 
+// 计算图形区使能以及时域页的列地址。
 assign graph_en      = (pixel_xpos >= GRAPH_X) && (pixel_xpos < (GRAPH_X + GRAPH_W)) &&
                        (pixel_ypos > GRAPH_Y) && (pixel_ypos < (GRAPH_Y + GRAPH_H - 1));
 assign time_graph_en = !frequency_page_active_lcd && graph_en;
 assign graph_col_ext = pixel_xpos - GRAPH_X;
 assign graph_col     = graph_col_ext[8:0];
-// LCD 域只使用帧边界切换后的 front bank，避免扫描波形区域时跨 bank 撕裂。
+// 根据当前列地址读取前台波形 RAM。
 assign u_wave_ram_raddr = time_graph_en ? {u_wave_front_bank_lcd, graph_col} :
                                      {u_wave_front_bank_lcd, 9'd0};
 assign i_wave_ram_raddr = time_graph_en ? {i_wave_front_bank_lcd, graph_col} :
                                      {i_wave_front_bank_lcd, 9'd0};
 
+// 将像素列映射为频谱桶、子列和前台频域 RAM 地址。
 assign freq_mag_col_ext   = pixel_xpos - FREQ_GRAPH_X;
 assign freq_phase_col_ext = pixel_xpos - FREQ_GRAPH_X;
 assign freq_mag_bucket    = freq_bucket_from_col(freq_mag_col_ext);
@@ -1250,8 +1506,7 @@ assign freq_phase_pixel_on =
     (pixel_ypos < FREQ_PHASE_BASE_Y) &&
     (freq_phase_sub_col <= 4'd6);
 
-// ========== 波形像素检测（参数化）==========
-// 电压通道 (U)
+// 电压波形像素检测模块，根据当前列和相邻点生成连线像素。
 wave_pixel_detector #(
     .GRAPH_Y(GRAPH_Y)
 ) u_wave_pixel_detector_u (
@@ -1272,7 +1527,7 @@ wave_pixel_detector #(
     .wave_pixel_on        (u_wave_pixel_on_internal)
 );
 
-// 电流通道 (I)
+// 电流波形像素检测模块，根据当前列和相邻点生成连线像素。
 wave_pixel_detector #(
     .GRAPH_Y(GRAPH_Y)
 ) u_wave_pixel_detector_i (
@@ -1293,16 +1548,18 @@ wave_pixel_detector #(
     .wave_pixel_on        (i_wave_pixel_on_internal)
 );
 
+// 根据字体 ROM 输出生成最终文字像素。
 assign text_pixel_on =
     text_en_d1 && !text_blank_d1 &&
     (text_font_small_d1 ?
         ((text_rel_x_d1 < SMALL_CHAR_W) ? font_row_10x20_rom[font_10x20_bit_idx] : 1'b0) :
         ((text_rel_x_d1 < BIG_CHAR_W)   ? font_row_16x32_rom[15 - text_rel_x_d1[3:0]] : 1'b0));
 
-// U and I waveform pixel signals now come from wave_pixel_detector modules
+// 时域波形像素由 wave_pixel_detector 模块输出。
 assign u_wave_pixel_on = u_wave_pixel_on_internal;
 assign i_wave_pixel_on = i_wave_pixel_on_internal;
 
+// LCD 像素域主时序：锁存前台显示数据、切换 front bank 并输出像素颜色。
 always @(posedge lcd_pclk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
         base_color_d1         <= BG_COLOR;
@@ -1312,11 +1569,13 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         text_char_idx_d1      <= 7'd0;
         text_rel_x_d1         <= 6'd0;
         text_blank_d1         <= 1'b1;
+        u_rms_hundreds_lcd    <= 8'd0;
         u_rms_tens_lcd        <= 8'd0;
         u_rms_units_lcd       <= 8'd0;
         u_rms_decile_lcd      <= 8'd0;
         u_rms_percentiles_lcd <= 8'd0;
         u_rms_digits_valid_lcd <= 1'b0;
+        i_rms_hundreds_lcd    <= 8'd0;
         i_rms_tens_lcd        <= 8'd0;
         i_rms_units_lcd       <= 8'd0;
         i_rms_decile_lcd      <= 8'd0;
@@ -1335,26 +1594,31 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         freq_decile_lcd       <= 8'd0;
         freq_percentiles_lcd  <= 8'd0;
         freq_valid_lcd        <= 1'b0;
+        u_pp_hundreds_lcd     <= 8'd0;
         u_pp_tens_lcd         <= 8'd0;
         u_pp_units_lcd        <= 8'd0;
         u_pp_decile_lcd       <= 8'd0;
         u_pp_percentiles_lcd  <= 8'd0;
         u_pp_digits_valid_lcd <= 1'b0;
+        i_pp_hundreds_lcd     <= 8'd0;
         i_pp_tens_lcd         <= 8'd0;
         i_pp_units_lcd        <= 8'd0;
         i_pp_decile_lcd       <= 8'd0;
         i_pp_percentiles_lcd  <= 8'd0;
         i_pp_digits_valid_lcd <= 1'b0;
         active_p_neg_lcd      <= 1'b0;
+        active_p_hundreds_lcd <= 8'd0;
         active_p_tens_lcd     <= 8'd0;
         active_p_units_lcd    <= 8'd0;
         active_p_decile_lcd   <= 8'd0;
         active_p_percentiles_lcd <= 8'd0;
         reactive_q_neg_lcd    <= 1'b0;
+        reactive_q_hundreds_lcd <= 8'd0;
         reactive_q_tens_lcd   <= 8'd0;
         reactive_q_units_lcd  <= 8'd0;
         reactive_q_decile_lcd <= 8'd0;
         reactive_q_percentiles_lcd <= 8'd0;
+        apparent_s_hundreds_lcd <= 8'd0;
         apparent_s_tens_lcd   <= 8'd0;
         apparent_s_units_lcd  <= 8'd0;
         apparent_s_decile_lcd <= 8'd0;
@@ -1364,6 +1628,52 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         power_factor_decile_lcd <= 8'd0;
         power_factor_percentiles_lcd <= 8'd0;
         power_metrics_valid_lcd <= 1'b0;
+        sharp_alarm_code_lcd   <= 3'd0;
+        freq_thd_u_hundreds_lcd <= 8'd0;
+        freq_thd_u_tens_lcd     <= 8'd0;
+        freq_thd_u_units_lcd    <= 8'd0;
+        freq_thd_u_decile_lcd   <= 8'd0;
+        freq_thd_u_percentiles_lcd <= 8'd0;
+        freq_thd_u_valid_lcd    <= 1'b0;
+        freq_thd_i_hundreds_lcd <= 8'd0;
+        freq_thd_i_tens_lcd     <= 8'd0;
+        freq_thd_i_units_lcd    <= 8'd0;
+        freq_thd_i_decile_lcd   <= 8'd0;
+        freq_thd_i_percentiles_lcd <= 8'd0;
+        freq_thd_i_valid_lcd    <= 1'b0;
+        freq_u1_mag_hundreds_lcd <= 8'd0;
+        freq_u1_mag_tens_lcd    <= 8'd0;
+        freq_u1_mag_units_lcd   <= 8'd0;
+        freq_u1_mag_decile_lcd  <= 8'd0;
+        freq_u1_mag_percentiles_lcd <= 8'd0;
+        freq_u1_mag_valid_lcd   <= 1'b0;
+        freq_i1_mag_hundreds_lcd <= 8'd0;
+        freq_i1_mag_tens_lcd    <= 8'd0;
+        freq_i1_mag_units_lcd   <= 8'd0;
+        freq_i1_mag_decile_lcd  <= 8'd0;
+        freq_i1_mag_percentiles_lcd <= 8'd0;
+        freq_i1_mag_valid_lcd   <= 1'b0;
+        freq_phase1_neg_lcd     <= 1'b0;
+        freq_phase1_hundreds_lcd <= 8'd0;
+        freq_phase1_tens_lcd    <= 8'd0;
+        freq_phase1_units_lcd   <= 8'd0;
+        freq_phase1_decile_lcd  <= 8'd0;
+        freq_phase1_percentiles_lcd <= 8'd0;
+        freq_phase1_valid_lcd   <= 1'b0;
+        freq_dc_u_hundreds_lcd  <= 8'd0;
+        freq_dc_u_tens_lcd      <= 8'd0;
+        freq_dc_u_units_lcd     <= 8'd0;
+        freq_dc_u_decile_lcd    <= 8'd0;
+        freq_dc_u_percentiles_lcd <= 8'd0;
+        freq_dc_u_valid_lcd     <= 1'b0;
+        freq_dc_i_hundreds_lcd  <= 8'd0;
+        freq_dc_i_tens_lcd      <= 8'd0;
+        freq_dc_i_units_lcd     <= 8'd0;
+        freq_dc_i_decile_lcd    <= 8'd0;
+        freq_dc_i_percentiles_lcd <= 8'd0;
+        freq_dc_i_valid_lcd     <= 1'b0;
+        freq_dh_order_u_text_lcd <= {25{8'h20}};
+        freq_dh_order_i_text_lcd <= {25{8'h20}};
         graph_en_d1           <= 1'b0;
         graph_col_d1          <= 9'd0;
         graph_row_d1          <= 11'd0;
@@ -1403,12 +1713,16 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         touch_pressed_sync1       <= 1'b0;
         touch_pressed_sync2       <= 1'b0;
         touch_pressed_sync3       <= 1'b0;
+        full_scale_low_range_sync1_lcd <= 1'b0;
+        full_scale_low_range_active_lcd <= 1'b0;
         lcd_frame_done_toggle_d1  <= 1'b0;
         pixel_data            <= BG_COLOR;
     end else begin
         touch_pressed_sync1       <= touch_state_bits[TOUCH_PRESSED_BIT];
         touch_pressed_sync2       <= touch_pressed_sync1;
         touch_pressed_sync3       <= touch_pressed_sync2;
+        full_scale_low_range_sync1_lcd <= full_scale_low_range_active;
+        full_scale_low_range_active_lcd <= full_scale_low_range_sync1_lcd;
         if (freeze_button_click_qualified)
             freeze_active_lcd <= freeze_active_next_lcd;
         if (mode_button_click_qualified)
@@ -1434,7 +1748,7 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         freq_frame_valid_sync2    <= freq_frame_valid_sync1;
         lcd_frame_done_toggle_d1   <= lcd_frame_done_toggle;
 
-        // 非冻结状态下才在 LCD 帧边界提交最新波形 front bank；首帧允许立即装载。
+        // 在帧边界且允许刷新时切换到最新时域前台 bank；首次无有效帧时直接接管。
         if ((screen_update_enable_lcd && frame_edge_lcd) || !u_wave_front_valid_lcd) begin
             u_wave_front_bank_lcd  <= u_wave_display_bank_sync2;
             u_wave_front_valid_lcd <= u_wave_frame_valid_sync2;
@@ -1445,7 +1759,7 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
             i_wave_front_valid_lcd <= i_wave_frame_valid_sync2;
         end
 
-        // 频域显示 bank 与页面模式解耦，只在 LCD 帧边界更新前台 bank，避免切页影响 FFT 链路。
+        // 频域页面使用独立 front bank，同样只在允许刷新时接收新帧。
         if ((screen_update_enable_lcd && frame_edge_lcd) || !freq_front_valid_lcd) begin
             freq_front_bank_lcd  <= freq_display_bank_sync2;
             freq_front_valid_lcd <= freq_frame_valid_sync2;
@@ -1458,20 +1772,30 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
         text_char_idx_d1   <= text_char_idx;
         text_rel_x_d1      <= text_rel_x;
         text_blank_d1      <= text_blank;
-        // Freeze 时只锁住 LCD 当前显示数值，后台文字测量和 text packet 仍继续刷新。
+        // 未冻结时锁存最新文本包；冻结后保持屏幕文字稳定。
         if (screen_update_enable_lcd) begin
             {
-                u_rms_tens_lcd, u_rms_units_lcd, u_rms_decile_lcd, u_rms_percentiles_lcd, u_rms_digits_valid_lcd,
-                i_rms_tens_lcd, i_rms_units_lcd, i_rms_decile_lcd, i_rms_percentiles_lcd, i_rms_digits_valid_lcd,
+                u_rms_hundreds_lcd, u_rms_tens_lcd, u_rms_units_lcd, u_rms_decile_lcd, u_rms_percentiles_lcd, u_rms_digits_valid_lcd,
+                i_rms_hundreds_lcd, i_rms_tens_lcd, i_rms_units_lcd, i_rms_decile_lcd, i_rms_percentiles_lcd, i_rms_digits_valid_lcd,
                 phase_neg_lcd, phase_hundreds_lcd, phase_tens_lcd, phase_units_lcd, phase_decile_lcd, phase_percentiles_lcd, phase_valid_lcd,
                 freq_hundreds_lcd, freq_tens_lcd, freq_units_lcd, freq_decile_lcd, freq_percentiles_lcd, freq_valid_lcd,
-                u_pp_tens_lcd, u_pp_units_lcd, u_pp_decile_lcd, u_pp_percentiles_lcd, u_pp_digits_valid_lcd,
-                i_pp_tens_lcd, i_pp_units_lcd, i_pp_decile_lcd, i_pp_percentiles_lcd, i_pp_digits_valid_lcd,
-                active_p_neg_lcd, active_p_tens_lcd, active_p_units_lcd, active_p_decile_lcd, active_p_percentiles_lcd,
-                reactive_q_neg_lcd, reactive_q_tens_lcd, reactive_q_units_lcd, reactive_q_decile_lcd, reactive_q_percentiles_lcd,
-                apparent_s_tens_lcd, apparent_s_units_lcd, apparent_s_decile_lcd, apparent_s_percentiles_lcd,
+                u_pp_hundreds_lcd, u_pp_tens_lcd, u_pp_units_lcd, u_pp_decile_lcd, u_pp_percentiles_lcd, u_pp_digits_valid_lcd,
+                i_pp_hundreds_lcd, i_pp_tens_lcd, i_pp_units_lcd, i_pp_decile_lcd, i_pp_percentiles_lcd, i_pp_digits_valid_lcd,
+                active_p_neg_lcd, active_p_hundreds_lcd, active_p_tens_lcd, active_p_units_lcd, active_p_decile_lcd, active_p_percentiles_lcd,
+                reactive_q_neg_lcd, reactive_q_hundreds_lcd, reactive_q_tens_lcd, reactive_q_units_lcd, reactive_q_decile_lcd, reactive_q_percentiles_lcd,
+                apparent_s_hundreds_lcd, apparent_s_tens_lcd, apparent_s_units_lcd, apparent_s_decile_lcd, apparent_s_percentiles_lcd,
                 power_factor_neg_lcd, power_factor_units_lcd, power_factor_decile_lcd, power_factor_percentiles_lcd,
-                power_metrics_valid_lcd
+                power_metrics_valid_lcd,
+                sharp_alarm_code_lcd,
+                freq_thd_u_hundreds_lcd, freq_thd_u_tens_lcd, freq_thd_u_units_lcd, freq_thd_u_decile_lcd, freq_thd_u_percentiles_lcd, freq_thd_u_valid_lcd,
+                freq_thd_i_hundreds_lcd, freq_thd_i_tens_lcd, freq_thd_i_units_lcd, freq_thd_i_decile_lcd, freq_thd_i_percentiles_lcd, freq_thd_i_valid_lcd,
+                freq_u1_mag_hundreds_lcd, freq_u1_mag_tens_lcd, freq_u1_mag_units_lcd, freq_u1_mag_decile_lcd, freq_u1_mag_percentiles_lcd, freq_u1_mag_valid_lcd,
+                freq_i1_mag_hundreds_lcd, freq_i1_mag_tens_lcd, freq_i1_mag_units_lcd, freq_i1_mag_decile_lcd, freq_i1_mag_percentiles_lcd, freq_i1_mag_valid_lcd,
+                freq_phase1_neg_lcd, freq_phase1_hundreds_lcd, freq_phase1_tens_lcd, freq_phase1_units_lcd, freq_phase1_decile_lcd, freq_phase1_percentiles_lcd, freq_phase1_valid_lcd,
+                freq_dc_u_hundreds_lcd, freq_dc_u_tens_lcd, freq_dc_u_units_lcd, freq_dc_u_decile_lcd, freq_dc_u_percentiles_lcd, freq_dc_u_valid_lcd,
+                freq_dc_i_hundreds_lcd, freq_dc_i_tens_lcd, freq_dc_i_units_lcd, freq_dc_i_decile_lcd, freq_dc_i_percentiles_lcd, freq_dc_i_valid_lcd,
+                freq_dh_order_u_text_lcd,
+                freq_dh_order_i_text_lcd
             } <= text_packet_front_lcd;
         end
 
@@ -1501,6 +1825,7 @@ always @(posedge lcd_pclk or negedge sys_rst_n) begin
             i_wave_prev_valid_d1 <= 1'b0;
         end
 
+        // 按文字、频域相位、频域柱图、时域波形、背景的优先级输出像素颜色。
         if (text_pixel_on)
             pixel_data <= text_color_d1;
         else if (freq_phase_pixel_on_d1)

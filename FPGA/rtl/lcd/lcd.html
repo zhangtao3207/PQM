@@ -558,6 +558,48 @@
       return bins;
     }
 
+    function buildFrequencyMetrics(model) {
+      const uFullScale = x100ToFloat(M.uFullScaleX100);
+      const iFullScale = x100ToFloat(M.iFullScaleX100);
+      const uFundamental = model.voltageRms * Math.SQRT2;
+      const iFundamental = model.currentRms * Math.SQRT2;
+      const dcU = uFullScale * 0.18;
+      const dcI = iFullScale * 0.05;
+      let uHarmonicSquare = 0;
+      let iHarmonicSquare = 0;
+      const dominantUOrders = [];
+      const dominantIOrders = [];
+
+      for (let harmonic = 2; harmonic <= UI.harmonicMaxOrder; harmonic += 1) {
+        const harmonicDecay = 0.18 / Math.sqrt(harmonic);
+        const thirdBoost = harmonic === 3 ? 0.08 : 0;
+        const fifthBoost = harmonic === 5 ? 0.05 : 0;
+        const uMag = uFundamental * (harmonicDecay + thirdBoost + fifthBoost);
+        const iMag = iFundamental * (harmonicDecay * 0.75 + thirdBoost * 0.8);
+
+        uHarmonicSquare += uMag * uMag;
+        iHarmonicSquare += iMag * iMag;
+
+        dominantUOrders.push({ harmonic, magnitude: uMag });
+        dominantIOrders.push({ harmonic, magnitude: iMag });
+      }
+
+      dominantUOrders.sort((a, b) => b.magnitude - a.magnitude);
+      dominantIOrders.sort((a, b) => b.magnitude - a.magnitude);
+
+      return {
+        thdU: uFundamental > 1e-9 ? Math.sqrt(uHarmonicSquare) / uFundamental * 100 : 0,
+        thdI: iFundamental > 1e-9 ? Math.sqrt(iHarmonicSquare) / iFundamental * 100 : 0,
+        u1Mag: Math.min(100, uFundamental / uFullScale * 100),
+        i1Mag: Math.min(100, iFundamental / iFullScale * 100),
+        phase1: model.phaseDiffDeg,
+        dcU: Math.min(100, dcU / uFullScale * 100),
+        dcI: Math.min(100, dcI / iFullScale * 100),
+        dominantUOrders: dominantUOrders.slice(0, 5).map(({ harmonic }) => harmonic),
+        dominantIOrders: dominantIOrders.slice(0, 5).map(({ harmonic }) => harmonic)
+      };
+    }
+
     function drawSpectrumBars(model) {
       const uFullScale = x100ToFloat(M.uFullScaleX100);
       const iFullScale = x100ToFloat(M.iFullScaleX100);
@@ -676,7 +718,7 @@
         { text: `Frequency: ${fmt(model.frequencyHz)} (Hz)`, color: C.textSoft },
         { text: `U_rms: ${fmt(model.voltageRms)} (V)`, color: C.waveU },
         { text: `I_rms: ${fmt(model.currentRms)} (A)`, color: C.waveI },
-        { text: `Phase Diff: ${fmtSigned(model.phaseDiffDeg)} (deg)`, color: C.textWhite },
+        { text: `Power Ang: ${fmtSigned(model.phaseDiffDeg)} (deg)`, color: C.textWhite },
         { text: `Active P: ${fmt(model.activePower)} (W)`, color: C.accent },
         { text: `Reactive Q: ${fmtSigned(model.reactivePower)} (var)`, color: C.textSoft },
         { text: `Apparent S: ${fmt(model.apparentPower)} (VA)`, color: C.textWhite },
@@ -762,13 +804,18 @@
       text("Harmonic Order", L.axisTimeX - 70, L.axisTimeY + 40, C.textDim, 20);
 
       text("Parameters", L.rightTitleX, L.rightTitleY, C.accent, 24);
+      const metrics = buildFrequencyMetrics(model);
       const lines = [
         { text: `Fundamental: ${fmt(model.frequencyHz)} (Hz)`, color: C.textSoft },
-        { text: `U1 Mag: ${fmt(model.voltageRms * Math.SQRT2)} (V)`, color: C.waveU },
-        { text: `I1 Mag: ${fmt(model.currentRms * Math.SQRT2)} (A)`, color: C.waveI },
-        { text: `THD-U: 7.84 (%)`, color: C.waveU },
-        { text: `THD-I: 6.12 (%)`, color: C.waveI },
-        { text: `Dominant H: 3rd`, color: C.textWhite }
+        { text: `THD-U: ${fmt(metrics.thdU)} (%)`, color: C.waveU },
+        { text: `THD-I: ${fmt(metrics.thdI)} (%)`, color: C.waveI },
+        { text: `U1 Mag: ${fmt(metrics.u1Mag)} (%)`, color: C.waveU },
+        { text: `I1 Mag: ${fmt(metrics.i1Mag)} (%)`, color: C.waveI },
+        { text: `Phase1: ${fmtSigned(metrics.phase1)} (deg)`, color: C.textWhite },
+        { text: `DC-U: ${fmt(metrics.dcU)} (%)`, color: C.waveU },
+        { text: `DC-I: ${fmt(metrics.dcI)} (%)`, color: C.waveI },
+        { text: `DH-U: ${metrics.dominantUOrders.map((value) => value.toString().padStart(3, " ")).join(",")}`, color: C.waveU },
+        { text: `DH-I: ${metrics.dominantIOrders.map((value) => value.toString().padStart(3, " ")).join(",")}`, color: C.waveI }
       ];
 
       lines.forEach((line, index) => {

@@ -4,7 +4,7 @@
  * 模块: freq_display_adapter
  * 功能:
  *   频域分析结果到 LCD 显示点的适配层。
- *   接收 freq_analysis_top 输出的 0~500 次谐波结果流，将 U/I 幅值占比和 U-I 相位角
+ *   接收 freq_analysis_top 输出的已滤波 0~500 次谐波结果流，将 U/I 幅值占比和 U-I 相位角
  *   换算成频域页面直接使用的柱图高度，并写入后台显示 bank。
  *   一帧谐波结果全部写完后才提交 display_bank，界面切换不反向影响 FFT 采集和分析链路。
  *

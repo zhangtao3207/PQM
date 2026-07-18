@@ -125,12 +125,15 @@ module fft_stream_adapter #(
 localparam [11:0] FFT_FRAME_LAST_INDEX = 12'd2047;
 localparam [21:0] FFT_SCALE_SCHEDULE   = 22'h155555;
 localparam [47:0] FFT_CONFIG_TDATA     = {2'b00, FFT_SCALE_SCHEDULE, FFT_SCALE_SCHEDULE, 2'b11};
+localparam [15:0] CENTER_DEFAULT       = 16'h8000;
 
 wire signed [16:0] u_centered_ext;
 wire signed [16:0] i_centered_ext;
 wire [15:0]        u_centered_sample;
 wire [15:0]        i_centered_sample;
 wire               fifo_wr_en;
+wire [15:0]        u_zero_ref_code;
+wire [15:0]        i_zero_ref_code;
 wire [31:0]        fifo_din;
 wire               fifo_rd_en;
 wire [31:0]        fifo_dout;
@@ -156,17 +159,19 @@ wire               read_window_active;
 wire [11:0]        issue_read_index;
 wire               issue_read_last;
 
-// 对 U/I 原始偏置码做零点扣除，形成送入 FFT 的有符号交流采样值。
-assign u_centered_ext    = $signed({1'b0, u_sample_code}) - $signed({1'b0, u_zero_code});
-assign i_centered_ext    = $signed({1'b0, i_sample_code}) - $signed({1'b0, i_zero_code});
+// FFT 输入链路按动态零点去直流，只保留交流分量进入频谱分析。
+assign u_zero_ref_code   = u_zero_valid ? u_zero_code : CENTER_DEFAULT;
+assign i_zero_ref_code   = i_zero_valid ? i_zero_code : CENTER_DEFAULT;
+assign u_centered_ext    = $signed({1'b0, u_sample_code}) - $signed({1'b0, u_zero_ref_code});
+assign i_centered_ext    = $signed({1'b0, i_sample_code}) - $signed({1'b0, i_zero_ref_code});
 assign u_centered_sample = u_centered_ext[15:0];
 assign i_centered_sample = i_centered_ext[15:0];
 
-// 只有采样和两路零点都有效时才写 FIFO，避免把直流未收敛阶段送入 FFT。
-assign fifo_wr_en      = sample_valid && u_zero_valid && i_zero_valid && !fifo_full;
+// FFT 写 FIFO 只依赖联合采样有效，保证去直流后的交流采样连续入帧。
+assign fifo_wr_en      = sample_valid && !fifo_full;
 assign fifo_din        = {u_centered_sample, i_centered_sample};
 assign sample_accepted = fifo_wr_en;
-assign sample_dropped  = sample_valid && u_zero_valid && i_zero_valid && fifo_full;
+assign sample_dropped  = sample_valid && fifo_full;
 
 // FFT 输入读控制：一帧启动后连续从 FIFO 取 2048 个采样对。
 assign stream_idle        = !frame_active && !fft_axis_valid_reg && !fifo_read_pending;

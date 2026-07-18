@@ -79,23 +79,23 @@
  *   mag_calc_busy: 幅值计算模块正在计算或等待下游接收。
  *   mag_frame_done: 一帧正半谱幅值结果已被下游取完的单周期脉冲。
  *   mag_frame_count: 已完整输出的正半谱幅值帧计数。
- *   m_harmonic_valid: 谐波统计结果有效标志。
- *   m_harmonic_last: 0~500 次谐波统计结果的最后一项标志。
- *   m_harmonic_order: 当前输出的谐波次数。
- *   m_harmonic_present: 当前谐波在本帧中是否被捕获。
- *   m_harmonic_u_real: 当前谐波电压通道实部。
- *   m_harmonic_u_imag: 当前谐波电压通道虚部。
- *   m_harmonic_i_real: 当前谐波电流通道实部。
- *   m_harmonic_i_imag: 当前谐波电流通道虚部。
- *   m_harmonic_u_mag: 当前谐波电压通道幅值。
- *   m_harmonic_i_mag: 当前谐波电流通道幅值。
- *   m_harmonic_u_pct_x100: 当前谐波电压幅值占本帧电压总幅值的百分比。
- *   m_harmonic_i_pct_x100: 当前谐波电流幅值占本帧电流总幅值的百分比。
- *   m_phase_vector_valid: 当前谐波的 phase_dot/phase_cross 是否可用于 atan2。
- *   m_phase_dot: U-I 相位差 atan2 的同相投影输入。
- *   m_phase_cross: U-I 相位差 atan2 的正交投影输入。
- *   m_phase_diff_valid: 当前谐波的 U-I 相位差角度是否有效。
- *   m_phase_diff_deg_x100: 当前谐波的 U-I 相位差角度，单位为 deg_x100。
+ *   m_harmonic_valid: 滤波后谐波结果有效标志。
+ *   m_harmonic_last: 滤波后 0~500 次谐波结果的最后一项标志。
+ *   m_harmonic_order: 滤波后当前输出的谐波次数。
+ *   m_harmonic_present: 滤波后当前谐波是否有效。
+ *   m_harmonic_u_real: 滤波后当前谐波电压通道实部。
+ *   m_harmonic_u_imag: 滤波后当前谐波电压通道虚部。
+ *   m_harmonic_i_real: 滤波后当前谐波电流通道实部。
+ *   m_harmonic_i_imag: 滤波后当前谐波电流通道虚部。
+ *   m_harmonic_u_mag: 滤波后当前谐波电压通道幅值。
+ *   m_harmonic_i_mag: 滤波后当前谐波电流通道幅值。
+ *   m_harmonic_u_pct_x100: 滤波后当前谐波电压幅值占本帧电压总幅值的百分比。
+ *   m_harmonic_i_pct_x100: 滤波后当前谐波电流幅值占本帧电流总幅值的百分比。
+ *   m_phase_vector_valid: 滤波后当前谐波的 phase_dot/phase_cross 是否有效。
+ *   m_phase_dot: 滤波后的 U-I 相位差 atan2 同相投影。
+ *   m_phase_cross: 滤波后的 U-I 相位差 atan2 正交投影。
+ *   m_phase_diff_valid: 滤波后当前谐波的 U-I 相位差角度是否有效。
+ *   m_phase_diff_deg_x100: 滤波后当前谐波的 U-I 相位差角度，单位为 deg_x100。
  *   harmonic_stats_busy: 谐波统计模块正在接收、归一化或输出一帧结果。
  *   harmonic_capture_frame_done: 谐波统计模块已捕获一帧幅值结果的单周期脉冲。
  *   harmonic_frame_done: 0~500 次谐波统计结果已输出完毕的单周期脉冲。
@@ -182,6 +182,8 @@ module freq_analysis_top #(
     output wire               mag_calc_busy,
     output wire               mag_frame_done,
     output wire [15:0]        mag_frame_count,
+    output wire signed [31:0] fund_freq_period_raw,
+    output wire               fund_freq_valid,
     output wire               m_harmonic_valid,
     output wire               m_harmonic_last,
     output wire [8:0]         m_harmonic_order,
@@ -256,6 +258,24 @@ wire [15:0]        phase_vec_harmonic_i_pct_x100;
 wire               phase_vec_vector_valid;
 wire signed [32:0] phase_vec_dot;
 wire signed [32:0] phase_vec_cross;
+wire               phase_filter_ready;
+wire               phase_deg_harmonic_valid;
+wire               phase_deg_harmonic_last;
+wire [8:0]         phase_deg_harmonic_order;
+wire               phase_deg_harmonic_present;
+wire signed [15:0] phase_deg_u_real;
+wire signed [15:0] phase_deg_u_imag;
+wire signed [15:0] phase_deg_i_real;
+wire signed [15:0] phase_deg_i_imag;
+wire [16:0]        phase_deg_u_mag;
+wire [16:0]        phase_deg_i_mag;
+wire [15:0]        phase_deg_u_pct_x100;
+wire [15:0]        phase_deg_i_pct_x100;
+wire               phase_deg_vector_valid;
+wire signed [32:0] phase_deg_dot;
+wire signed [32:0] phase_deg_cross;
+wire               phase_deg_diff_valid;
+wire signed [15:0] phase_deg_diff_x100;
 
 // 组合合并外部幅值调试旁路和内部谐波统计模块的反压。
 assign mag_output_ready = m_mag_ready && harmonic_mag_ready;
@@ -384,6 +404,21 @@ fft_magnitude_calc u_fft_magnitude_calc (
 );
 
 // 实例化谐波统计模块，按基波所在 bin 统计 0~500 次谐波 U/I 幅值占比。
+// 基于相邻 FFT 帧基波 bin 的相位增量估计频率，给时域文字区提供抗谐波的周期 raw。
+fft_fundamental_freq_tracker u_fft_fundamental_freq_tracker (
+    .clk            (fft_clk),
+    .rst_n          (rst_n),
+    .enable         (analysis_enable),
+    .s_mag_valid    (m_mag_valid),
+    .s_mag_ready    (mag_output_ready),
+    .s_bin_index    (m_bin_index),
+    .s_u_real       (m_u_real),
+    .s_u_imag       (m_u_imag),
+    .s_u_mag        (m_u_mag),
+    .freq_period_raw(fund_freq_period_raw),
+    .freq_valid     (fund_freq_valid)
+);
+
 fft_harmonic_stats #(
     .FUND_BIN(HARMONIC_FUND_BIN)
 ) u_fft_harmonic_stats (
@@ -478,27 +513,71 @@ phase_deg_lut_calc u_phase_deg_lut_calc (
     .s_phase_vector_valid(phase_vec_vector_valid),
     .s_phase_dot         (phase_vec_dot),
     .s_phase_cross       (phase_vec_cross),
-    .m_harmonic_ready    (m_harmonic_ready),
-    .m_harmonic_valid    (m_harmonic_valid),
-    .m_harmonic_last     (m_harmonic_last),
-    .m_harmonic_order    (m_harmonic_order),
-    .m_harmonic_present  (m_harmonic_present),
-    .m_u_real            (m_harmonic_u_real),
-    .m_u_imag            (m_harmonic_u_imag),
-    .m_i_real            (m_harmonic_i_real),
-    .m_i_imag            (m_harmonic_i_imag),
-    .m_u_mag             (m_harmonic_u_mag),
-    .m_i_mag             (m_harmonic_i_mag),
-    .m_u_pct_x100        (m_harmonic_u_pct_x100),
-    .m_i_pct_x100        (m_harmonic_i_pct_x100),
-    .m_phase_vector_valid(m_phase_vector_valid),
-    .m_phase_dot         (m_phase_dot),
-    .m_phase_cross       (m_phase_cross),
-    .m_phase_diff_valid  (m_phase_diff_valid),
-    .m_phase_diff_deg_x100(m_phase_diff_deg_x100),
+    .m_harmonic_ready    (phase_filter_ready),
+    .m_harmonic_valid    (phase_deg_harmonic_valid),
+    .m_harmonic_last     (phase_deg_harmonic_last),
+    .m_harmonic_order    (phase_deg_harmonic_order),
+    .m_harmonic_present  (phase_deg_harmonic_present),
+    .m_u_real            (phase_deg_u_real),
+    .m_u_imag            (phase_deg_u_imag),
+    .m_i_real            (phase_deg_i_real),
+    .m_i_imag            (phase_deg_i_imag),
+    .m_u_mag             (phase_deg_u_mag),
+    .m_i_mag             (phase_deg_i_mag),
+    .m_u_pct_x100        (phase_deg_u_pct_x100),
+    .m_i_pct_x100        (phase_deg_i_pct_x100),
+    .m_phase_vector_valid(phase_deg_vector_valid),
+    .m_phase_dot         (phase_deg_dot),
+    .m_phase_cross       (phase_deg_cross),
+    .m_phase_diff_valid  (phase_deg_diff_valid),
+    .m_phase_diff_deg_x100(phase_deg_diff_x100),
     .phase_deg_busy      (phase_deg_busy),
     .phase_deg_frame_done(phase_deg_frame_done),
     .phase_deg_frame_count(phase_deg_frame_count)
+);
+
+// 对相位角查表后的完整谐波流做统一 IIR 滤波，保证 freq_analysis_top 的公开谐波接口均为滤波后数据。
+freq_harmonic_iir_filter u_freq_harmonic_iir_filter (
+    .clk                    (fft_clk),
+    .rst_n                  (rst_n),
+    .enable                 (analysis_enable),
+    .s_harmonic_valid       (phase_deg_harmonic_valid),
+    .s_harmonic_ready       (phase_filter_ready),
+    .s_harmonic_last        (phase_deg_harmonic_last),
+    .s_harmonic_order       (phase_deg_harmonic_order),
+    .s_harmonic_present     (phase_deg_harmonic_present),
+    .s_u_real               (phase_deg_u_real),
+    .s_u_imag               (phase_deg_u_imag),
+    .s_i_real               (phase_deg_i_real),
+    .s_i_imag               (phase_deg_i_imag),
+    .s_u_mag                (phase_deg_u_mag),
+    .s_i_mag                (phase_deg_i_mag),
+    .s_u_pct_x100           (phase_deg_u_pct_x100),
+    .s_i_pct_x100           (phase_deg_i_pct_x100),
+    .s_phase_vector_valid   (phase_deg_vector_valid),
+    .s_phase_dot            (phase_deg_dot),
+    .s_phase_cross          (phase_deg_cross),
+    .s_phase_diff_valid     (phase_deg_diff_valid),
+    .s_phase_diff_deg_x100  (phase_deg_diff_x100),
+    .m_harmonic_ready       (m_harmonic_ready),
+    .m_harmonic_valid       (m_harmonic_valid),
+    .m_harmonic_last        (m_harmonic_last),
+    .m_harmonic_order       (m_harmonic_order),
+    .m_harmonic_present     (m_harmonic_present),
+    .m_u_real               (m_harmonic_u_real),
+    .m_u_imag               (m_harmonic_u_imag),
+    .m_i_real               (m_harmonic_i_real),
+    .m_i_imag               (m_harmonic_i_imag),
+    .m_u_mag                (m_harmonic_u_mag),
+    .m_i_mag                (m_harmonic_i_mag),
+    .m_u_pct_x100           (m_harmonic_u_pct_x100),
+    .m_i_pct_x100           (m_harmonic_i_pct_x100),
+    .m_phase_vector_valid   (m_phase_vector_valid),
+    .m_phase_dot            (m_phase_dot),
+    .m_phase_cross          (m_phase_cross),
+    .m_phase_diff_valid     (m_phase_diff_valid),
+    .m_phase_diff_deg_x100  (m_phase_diff_deg_x100),
+    .filtered_frame_count   ()
 );
 
 endmodule

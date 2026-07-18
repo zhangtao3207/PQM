@@ -1,61 +1,64 @@
 /*
- * 模块: main
- * 功能:
- *   项目顶层模块，连接 ADC、LCD、触摸、数据处理与显示链路。
+ * 妯″潡: main
+ * 鍔熻兘:
+ *   椤圭洰椤跺眰妯″潡锛岃繛鎺?ADC銆丩CD銆佽Е鎽搞€佹暟鎹鐞嗕笌鏄剧ず閾捐矾銆?
  *
- * 输入:
- *   sys_clk: 系统时钟。
- *   sys_rst_n: 低有效系统复位信号。
- *   uart_rxd: 信号。
- *   Busy: 信号。
- *   Frstdata: 信号。
- *   DB0: 信号。
- *   DB1: 信号。
- *   DB2: 信号。
- *   DB3: 信号。
- *   DB4: 信号。
- *   DB5: 信号。
- *   DB6: 信号。
- *   DB7: 信号。
- *   DB8: 信号。
- *   DB9: 信号。
- *   DB10: 信号。
- *   DB11: 信号。
- *   DB12: 信号。
- *   DB13: 信号。
- *   DB14: 信号。
- *   DB15: 信号。
+ * 杈撳叆:
+ *   sys_clk: 绯荤粺鏃堕挓銆?
+ *   sys_rst_n: 浣庢湁鏁堢郴缁熷浣嶄俊鍙枫€?
+ *   uart_rxd: 淇″彿銆?
+ *   Busy: 淇″彿銆?
+ *   Frstdata: 淇″彿銆?
+ *   DB0: 淇″彿銆?
+ *   DB1: 淇″彿銆?
+ *   DB2: 淇″彿銆?
+ *   DB3: 淇″彿銆?
+ *   DB4: 淇″彿銆?
+ *   DB5: 淇″彿銆?
+ *   DB6: 淇″彿銆?
+ *   DB7: 淇″彿銆?
+ *   DB8: 淇″彿銆?
+ *   DB9: 淇″彿銆?
+ *   DB10: 淇″彿銆?
+ *   DB11: 淇″彿銆?
+ *   DB12: 淇″彿銆?
+ *   DB13: 淇″彿銆?
+ *   DB14: 淇″彿銆?
+ *   DB15: 淇″彿銆?
  *
- * 输出:
- *   uart_txd: 信号。
- *   touch_scl: 触摸 I2C SCL 输出。
- *   touch_rst_n: 触摸芯片低有效复位输出。
- *   lcd_de: LCD 数据有效信号。
- *   lcd_hs: LCD 行同步输出。
- *   lcd_vs: LCD 场同步输出。
- *   lcd_bl: LCD 背光使能输出。
- *   lcd_clk: LCD 时钟输出。
- *   lcd_rst_n: 低有效复位信号。
- *   OS1: 信号。
- *   OS0: 信号。
- *   OS2: 信号。
- *   Convst: 信号。
- *   RD: 信号。
- *   RESET: 信号。
- *   cs: 信号。
- *   Range: 信号。
+ * 杈撳嚭:
+ *   uart_txd: 淇″彿銆?
+ *   touch_scl: 瑙︽懜 I2C SCL 杈撳嚭銆?
+ *   touch_rst_n: 瑙︽懜鑺墖浣庢湁鏁堝浣嶈緭鍑恒€?
+ *   lcd_de: LCD 鏁版嵁鏈夋晥淇″彿銆?
+ *   lcd_hs: LCD 琛屽悓姝ヨ緭鍑恒€?
+ *   lcd_vs: LCD 鍦哄悓姝ヨ緭鍑恒€?
+ *   lcd_bl: LCD 鑳屽厜浣胯兘杈撳嚭銆?
+ *   lcd_clk: LCD 鏃堕挓杈撳嚭銆?
+ *   lcd_rst_n: 浣庢湁鏁堝浣嶄俊鍙枫€?
+ *   OS1: 淇″彿銆?
+ *   OS0: 淇″彿銆?
+ *   OS2: 淇″彿銆?
+ *   Convst: 淇″彿銆?
+ *   RD: 淇″彿銆?
+ *   RESET: 淇″彿銆?
+ *   cs: 淇″彿銆?
+ *   Range: 淇″彿銆?
  *
- * 双向:
- *   touch_sda: 触摸 I2C SDA 双向信号。
- *   touch_int: 触摸中断/握手双向引脚。
- *   lcd_rgb: LCD RGB 数据总线。
+ * 鍙屽悜:
+ *   touch_sda: 瑙︽懜 I2C SDA 鍙屽悜淇″彿銆?
+ *   touch_int: 瑙︽懜涓柇/鎻℃墜鍙屽悜寮曡剼銆?
+ *   lcd_rgb: LCD RGB 鏁版嵁鎬荤嚎銆?
  */
 module main(
     input            sys_clk,
     input            sys_rst_n,
+    input            key0,
 
     input            uart_rxd,
     output           uart_txd,
+    output           led,
+    output           buzzer,
     inout            touch_sda,
     output           touch_scl,
     inout            touch_int,
@@ -103,6 +106,9 @@ module main(
 
 
 localparam integer ADC_STARTUP_WAIT_CYCLES = 50000;
+localparam integer ALARM_BLINK_TOGGLE_CYCLES = 5000000;
+localparam integer KEY0_DEBOUNCE_CYCLES = 1000000;
+localparam         KEY0_ACTIVE_LEVEL = 1'b0;
 
 //==========================================================================
 // Internal signals
@@ -161,11 +167,22 @@ wire [15:0]  adc_u_zero_code;
 wire [15:0]  adc_i_zero_code;
 wire         adc_u_zero_valid;
 wire         adc_i_zero_valid;
+wire         display_alarm_active;
+wire         key0_pressed_level;
+wire         key0_pressed_pulse;
 reg          adc_start;
 reg          adc_idle_seen;
+reg          key0_sync1;
+reg          key0_sync2;
+reg          key0_stable;
+reg          key0_pressed_level_d1;
+reg          full_scale_low_range_active;
 reg  [15:0]  adc_startup_wait_cnt;
 reg  [15:0]  adc_u_wave_sample_code;
 reg  [15:0]  adc_i_wave_sample_code;
+reg  [19:0]  key0_debounce_cnt;
+reg  [22:0]  alarm_blink_cnt;
+reg          led_blink_state;
 
 assign rst_n                  = sys_rst_n & locked;
 assign adc_startup_wait_done  = (adc_startup_wait_cnt >= ADC_STARTUP_WAIT_CYCLES - 1);
@@ -173,8 +190,6 @@ assign adc_data_bus           = {DB15, DB14, DB13, DB12, DB11, DB10, DB9, DB8,
                                  DB7, DB6, DB5, DB4, DB3, DB2, DB1, DB0};
 assign adc_u_wave_sample_valid = adc_frame_valid;
 assign adc_i_wave_sample_valid = adc_frame_valid;
-assign uart_tx_data           = 8'h00;
-assign uart_tx_en             = 1'b0;
 
 assign OS0      = 1'b0;
 assign OS1      = 1'b0;
@@ -184,6 +199,10 @@ assign Convst   = ad_convst_int;
 assign Range    = 1'b1;
 assign cs       = ad_cs_n_int;
 assign RD       = ad_rd_n_int;
+assign led      = display_alarm_active ? led_blink_state : 1'b0;
+assign buzzer   = display_alarm_active;
+assign key0_pressed_level = (key0_stable == KEY0_ACTIVE_LEVEL);
+assign key0_pressed_pulse = key0_pressed_level && !key0_pressed_level_d1;
 
 //==========================================================================
 // Function: sanitize_char
@@ -247,6 +266,34 @@ assign touch_state_bits = {
     touch_long_state,
     touch_drag_state
 };
+
+// key0 采用同步+去抖后的稳定按下沿切换满量程档位。
+always @(posedge sys_clk or negedge sys_rst_n) begin
+    if (!sys_rst_n) begin
+        key0_sync1                <= ~KEY0_ACTIVE_LEVEL;
+        key0_sync2                <= ~KEY0_ACTIVE_LEVEL;
+        key0_stable               <= ~KEY0_ACTIVE_LEVEL;
+        key0_pressed_level_d1     <= 1'b0;
+        full_scale_low_range_active <= 1'b0;
+        key0_debounce_cnt         <= 20'd0;
+    end else begin
+        key0_sync1            <= key0;
+        key0_sync2            <= key0_sync1;
+        key0_pressed_level_d1 <= key0_pressed_level;
+
+        if (key0_sync2 == key0_stable) begin
+            key0_debounce_cnt <= 20'd0;
+        end else if (key0_debounce_cnt == (KEY0_DEBOUNCE_CYCLES - 1)) begin
+            key0_debounce_cnt <= 20'd0;
+            key0_stable       <= key0_sync2;
+        end else begin
+            key0_debounce_cnt <= key0_debounce_cnt + 20'd1;
+        end
+
+        if (key0_pressed_pulse)
+            full_scale_low_range_active <= ~full_scale_low_range_active;
+    end
+end
 
 //==========================================================================
 // UART receive line buffer
@@ -315,6 +362,21 @@ always @(posedge sys_clk or negedge rst_n) begin
     end
 end
 
+always @(posedge sys_clk or negedge rst_n) begin
+    if (!rst_n) begin
+        alarm_blink_cnt <= 23'd0;
+        led_blink_state <= 1'b1;
+    end else if (!display_alarm_active) begin
+        alarm_blink_cnt <= 23'd0;
+        led_blink_state <= 1'b1;
+    end else if (alarm_blink_cnt == (ALARM_BLINK_TOGGLE_CYCLES - 1)) begin
+        alarm_blink_cnt <= 23'd0;
+        led_blink_state <= ~led_blink_state;
+    end else begin
+        alarm_blink_cnt <= alarm_blink_cnt + 23'd1;
+    end
+end
+
 //==========================================================================
 // ADC instance: AD7606 parallel mode
 //==========================================================================
@@ -351,8 +413,9 @@ AD7606_Parallel_DRIVER  u_AD7606_Parallel_DRIVER (
 //==========================================================================
 time_zero_code_tracker #(
     .WIDTH          (16),
-    .EST_SHIFT      (8),
-    .WARMUP_SAMPLES (512)
+    .EST_SHIFT      (14),
+    .WARMUP_SHIFT   (10),
+    .WARMUP_SAMPLES (4096)
 ) u_adc_u_time_zero_code_tracker (
     .clk           (sys_clk),
     .rst_n         (rst_n),
@@ -364,8 +427,9 @@ time_zero_code_tracker #(
 
 time_zero_code_tracker #(
     .WIDTH          (16),
-    .EST_SHIFT      (8),
-    .WARMUP_SAMPLES (512)
+    .EST_SHIFT      (14),
+    .WARMUP_SHIFT   (10),
+    .WARMUP_SAMPLES (4096)
 ) u_adc_i_time_zero_code_tracker (
     .clk           (sys_clk),
     .rst_n         (rst_n),
@@ -388,6 +452,8 @@ lcd_rgb_char u_lcd_rgb_char (
     .touch_press_time_ms(touch_press_time_ms),
     .rx_line_ascii      (rx_line_ascii),
     .wave_clk           (sys_clk),
+    .uart_tx_busy       (uart_tx_busy),
+    .full_scale_low_range_active(full_scale_low_range_active),
     .u_wave_sample_valid(adc_u_wave_sample_valid),
     .u_wave_sample_code (adc_u_wave_sample_code),
     .u_wave_zero_code   (adc_u_zero_code),
@@ -397,6 +463,9 @@ lcd_rgb_char u_lcd_rgb_char (
     .i_wave_zero_code   (adc_i_zero_code),
     .i_wave_zero_valid  (adc_i_zero_valid),
     .lcd_id             (lcd_id),
+    .alarm_active       (display_alarm_active),
+    .uart_stream_tx_en  (uart_tx_en),
+    .uart_stream_tx_data(uart_tx_data),
     .lcd_hs             (lcd_hs),
     .lcd_vs             (lcd_vs),
     .lcd_de             (lcd_de),

@@ -57,6 +57,7 @@ wire                    wave_frame_copy_active;
 wire                    wave_frame_commit_valid;
 wire                    wave_frame_commit_bank;
 wire [SAMPLE_WIDTH-1:0] wave_point_sample_code;
+wire [SAMPLE_WIDTH-1:0] wave_display_center_code;
 wire [7:0]              wave_point_y;
 wire [8:0]              wave_wr_ptr;
 wire                    wave_hist_full;
@@ -122,7 +123,8 @@ time_wave_trigger_core #(
     .point_commit_valid  (wave_point_commit),
     .point_commit_code   (wave_point_sample_code),
     .clear_armed         (wave_trigger_clear),
-    .center_code         (),
+    // 显示中心使用触发链路内部的慢速中心跟踪，避免测量零点预热切换导致整条波形跳变。
+    .center_code         (wave_display_center_code),
     .trigger_fire        (wave_internal_trigger_fire)
 );
 
@@ -139,8 +141,9 @@ time_wave_display_resampler #(
     .clk                (wave_clk),
     .rst_n              (sys_rst_n),
     .sample_code        (wave_sample_code),
-    .zero_code          (wave_zero_code),
-    .zero_valid         (wave_zero_valid),
+    // 波形显示 Y 轴使用显示链路内部中心值，不直接跟随测量 zero_valid 的切换时刻。
+    .zero_code          (wave_display_center_code),
+    .zero_valid         (1'b1),
     .trigger_sample_valid(wave_resample_start),
     .point_valid        (wave_point_commit),
     .point_sample_code  (wave_point_sample_code),

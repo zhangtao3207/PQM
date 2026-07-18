@@ -1,86 +1,139 @@
 /*
  * 模块: lcd_display_text
  * 功能:
- *   根据测量结果和界面布局生成 LCD 文本层字符信息。
+ *   根据时域/频域测量结果、当前页面状态和像素坐标，生成 LCD 文本层的字符索引、字形相对坐标与颜色。
  *
  * 输入:
  *   pixel_xpos: 当前扫描像素的 X 坐标。
  *   pixel_ypos: 当前扫描像素的 Y 坐标。
- *   u_rms_tens: 信号。
- *   u_rms_units: 信号。
- *   u_rms_decile: 信号。
- *   u_rms_percentiles: 信号。
- *   u_rms_digits_valid: 有效标志。
- *   i_rms_tens: 信号。
- *   i_rms_units: 信号。
- *   i_rms_decile: 信号。
- *   i_rms_percentiles: 信号。
- *   i_rms_digits_valid: 有效标志。
- *   phase_neg: 信号。
- *   phase_hundreds: 信号。
- *   phase_tens: 信号。
- *   phase_units: 信号。
- *   phase_decile: 信号。
- *   phase_percentiles: 信号。
- *   phase_valid: 有效标志。
- *   freq_hundreds: 信号。
- *   freq_tens: 信号。
- *   freq_units: 信号。
- *   freq_decile: 信号。
- *   freq_percentiles: 信号。
- *   freq_valid: 有效标志。
- *   u_pp_tens: 信号。
- *   u_pp_units: 信号。
- *   u_pp_decile: 信号。
- *   u_pp_percentiles: 信号。
- *   u_pp_digits_valid: 有效标志。
- *   i_pp_tens: 信号。
- *   i_pp_units: 信号。
- *   i_pp_decile: 信号。
- *   i_pp_percentiles: 信号。
- *   i_pp_digits_valid: 有效标志。
- *   active_p_neg: 信号。
- *   active_p_tens: 信号。
- *   active_p_units: 信号。
- *   active_p_decile: 信号。
- *   active_p_percentiles: 信号。
- *   reactive_q_neg: 信号。
- *   reactive_q_tens: 信号。
- *   reactive_q_units: 信号。
- *   reactive_q_decile: 信号。
- *   reactive_q_percentiles: 信号。
- *   apparent_s_tens: 信号。
- *   apparent_s_units: 信号。
- *   apparent_s_decile: 信号。
- *   apparent_s_percentiles: 信号。
- *   power_factor_neg: 信号。
- *   power_factor_units: 信号。
- *   power_factor_decile: 信号。
- *   power_factor_percentiles: 信号。
- *   power_metrics_valid: 有效标志。
+ *   u_rms_hundreds: 电压 RMS 的百位数字。
+ *   u_rms_tens: 电压 RMS 的十位数字。
+ *   u_rms_units: 电压 RMS 的个位数字。
+ *   u_rms_decile: 电压 RMS 的十分位数字。
+ *   u_rms_percentiles: 电压 RMS 的百分位数字。
+ *   u_rms_digits_valid: 电压 RMS 数字是否有效。
+ *   i_rms_hundreds: 电流 RMS 的百位数字。
+ *   i_rms_tens: 电流 RMS 的十位数字。
+ *   i_rms_units: 电流 RMS 的个位数字。
+ *   i_rms_decile: 电流 RMS 的十分位数字。
+ *   i_rms_percentiles: 电流 RMS 的百分位数字。
+ *   i_rms_digits_valid: 电流 RMS 数字是否有效。
+ *   phase_neg: 功率角符号位，1 表示负值。
+ *   phase_hundreds: 功率角的百位数字。
+ *   phase_tens: 功率角的十位数字。
+ *   phase_units: 功率角的个位数字。
+ *   phase_decile: 功率角的十分位数字。
+ *   phase_percentiles: 功率角的百分位数字。
+ *   phase_valid: 功率角数字是否有效。
+ *   freq_hundreds: 频率的百位数字。
+ *   freq_tens: 频率的十位数字。
+ *   freq_units: 频率的个位数字。
+ *   freq_decile: 频率的十分位数字。
+ *   freq_percentiles: 频率的百分位数字。
+ *   freq_valid: 频率数字是否有效。
+ *   u_pp_hundreds: 电压峰峰值的百位数字。
+ *   u_pp_tens: 电压峰峰值的十位数字。
+ *   u_pp_units: 电压峰峰值的个位数字。
+ *   u_pp_decile: 电压峰峰值的十分位数字。
+ *   u_pp_percentiles: 电压峰峰值的百分位数字。
+ *   u_pp_digits_valid: 电压峰峰值数字是否有效。
+ *   i_pp_hundreds: 电流峰峰值的百位数字。
+ *   i_pp_tens: 电流峰峰值的十位数字。
+ *   i_pp_units: 电流峰峰值的个位数字。
+ *   i_pp_decile: 电流峰峰值的十分位数字。
+ *   i_pp_percentiles: 电流峰峰值的百分位数字。
+ *   i_pp_digits_valid: 电流峰峰值数字是否有效。
+ *   active_p_neg: 有功功率符号位，1 表示负值。
+ *   active_p_hundreds: 有功功率的百位数字。
+ *   active_p_tens: 有功功率的十位数字。
+ *   active_p_units: 有功功率的个位数字。
+ *   active_p_decile: 有功功率的十分位数字。
+ *   active_p_percentiles: 有功功率的百分位数字。
+ *   reactive_q_neg: 无功功率符号位，1 表示负值。
+ *   reactive_q_hundreds: 无功功率的百位数字。
+ *   reactive_q_tens: 无功功率的十位数字。
+ *   reactive_q_units: 无功功率的个位数字。
+ *   reactive_q_decile: 无功功率的十分位数字。
+ *   reactive_q_percentiles: 无功功率的百分位数字。
+ *   apparent_s_hundreds: 视在功率的百位数字。
+ *   apparent_s_tens: 视在功率的十位数字。
+ *   apparent_s_units: 视在功率的个位数字。
+ *   apparent_s_decile: 视在功率的十分位数字。
+ *   apparent_s_percentiles: 视在功率的百分位数字。
+ *   power_factor_neg: 功率因数符号位，1 表示负值。
+ *   power_factor_units: 功率因数的个位数字。
+ *   power_factor_decile: 功率因数的十分位数字。
+ *   power_factor_percentiles: 功率因数的百分位数字。
+ *   power_metrics_valid: 功率相关数字是否有效。
+ *   sharp_alarm_code: 时域骤升/骤降告警编码。
+ *   freq_thd_u_hundreds: 电压 THD 的百位数字。
+ *   freq_thd_u_tens: 电压 THD 的十位数字。
+ *   freq_thd_u_units: 电压 THD 的个位数字。
+ *   freq_thd_u_decile: 电压 THD 的十分位数字。
+ *   freq_thd_u_percentiles: 电压 THD 的百分位数字。
+ *   freq_thd_u_valid: 电压 THD 数字是否有效。
+ *   freq_thd_i_hundreds: 电流 THD 的百位数字。
+ *   freq_thd_i_tens: 电流 THD 的十位数字。
+ *   freq_thd_i_units: 电流 THD 的个位数字。
+ *   freq_thd_i_decile: 电流 THD 的十分位数字。
+ *   freq_thd_i_percentiles: 电流 THD 的百分位数字。
+ *   freq_thd_i_valid: 电流 THD 数字是否有效。
+ *   freq_u1_mag_hundreds: 基波电压幅值占比的百位数字。
+ *   freq_u1_mag_tens: 基波电压幅值占比的十位数字。
+ *   freq_u1_mag_units: 基波电压幅值占比的个位数字。
+ *   freq_u1_mag_decile: 基波电压幅值占比的十分位数字。
+ *   freq_u1_mag_percentiles: 基波电压幅值占比的百分位数字。
+ *   freq_u1_mag_valid: 基波电压幅值占比数字是否有效。
+ *   freq_i1_mag_hundreds: 基波电流幅值占比的百位数字。
+ *   freq_i1_mag_tens: 基波电流幅值占比的十位数字。
+ *   freq_i1_mag_units: 基波电流幅值占比的个位数字。
+ *   freq_i1_mag_decile: 基波电流幅值占比的十分位数字。
+ *   freq_i1_mag_percentiles: 基波电流幅值占比的百分位数字。
+ *   freq_i1_mag_valid: 基波电流幅值占比数字是否有效。
+ *   freq_phase1_neg: 基波相位差符号位，1 表示负值。
+ *   freq_phase1_hundreds: 基波相位差的百位数字。
+ *   freq_phase1_tens: 基波相位差的十位数字。
+ *   freq_phase1_units: 基波相位差的个位数字。
+ *   freq_phase1_decile: 基波相位差的十分位数字。
+ *   freq_phase1_percentiles: 基波相位差的百分位数字。
+ *   freq_phase1_valid: 基波相位差数字是否有效。
+ *   freq_dc_u_hundreds: 电压直流分量的百位数字。
+ *   freq_dc_u_tens: 电压直流分量的十位数字。
+ *   freq_dc_u_units: 电压直流分量的个位数字。
+ *   freq_dc_u_decile: 电压直流分量的十分位数字。
+ *   freq_dc_u_percentiles: 电压直流分量的百分位数字。
+ *   freq_dc_u_valid: 电压直流分量数字是否有效。
+ *   freq_dc_i_hundreds: 电流直流分量的百位数字。
+ *   freq_dc_i_tens: 电流直流分量的十位数字。
+ *   freq_dc_i_units: 电流直流分量的个位数字。
+ *   freq_dc_i_decile: 电流直流分量的十分位数字。
+ *   freq_dc_i_percentiles: 电流直流分量的百分位数字。
+ *   freq_dc_i_valid: 电流直流分量数字是否有效。
+ *   freq_dh_order_u_text: 电压主导谐波次序文本打包总线。
+ *   freq_dh_order_i_text: 电流主导谐波次序文本打包总线。
+ *   full_scale_low_range_active: 时域量程切换标志，1 表示 10V/3A 档。
  *   freeze_active: Freeze/Auto 按钮当前显示状态。
- *   frequency_page_active: 当前是否显示频域页面。
- *   harmonic_window_index: 频域页当前谐波窗口序号。
+ *   frequency_page_active: 页面选择标志，1 表示频域页。
+ *   harmonic_window_index: 频域谐波窗口序号。
  *
  * 输出:
- *   text_en: 使能信号。
- *   text_font_small: 信号。
- *   text_char_idx: 信号。
- *   text_rel_x: 信号。
- *   text_rel_y: 信号。
- *   text_color: 信号。
+ *   text_en: 当前像素是否命中文本区域。
+ *   text_font_small: 当前像素使用小字体还是大字体。
+ *   text_char_idx: 当前像素对应的字体索引。
+ *   text_rel_x: 当前像素在字符字模内的 X 偏移。
+ *   text_rel_y: 当前像素在字符字模内的 Y 偏移。
+ *   text_color: 当前像素文本颜色。
  */
-module lcd_display_text #(
-    parameter integer U_FULL_SCALE_X100 = 1000,
-    parameter integer I_FULL_SCALE_X100 = 300
-)(
+module lcd_display_text(
     input      [10:0] pixel_xpos,
     input      [10:0] pixel_ypos,
+    input      [7:0]  u_rms_hundreds,
     input      [7:0]  u_rms_tens,
     input      [7:0]  u_rms_units,
     input      [7:0]  u_rms_decile,
     input      [7:0]  u_rms_percentiles,
     input             u_rms_digits_valid,
+    input      [7:0]  i_rms_hundreds,
     input      [7:0]  i_rms_tens,
     input      [7:0]  i_rms_units,
     input      [7:0]  i_rms_decile,
@@ -99,26 +152,31 @@ module lcd_display_text #(
     input      [7:0]  freq_decile,
     input      [7:0]  freq_percentiles,
     input             freq_valid,
+    input      [7:0]  u_pp_hundreds,
     input      [7:0]  u_pp_tens,
     input      [7:0]  u_pp_units,
     input      [7:0]  u_pp_decile,
     input      [7:0]  u_pp_percentiles,
     input             u_pp_digits_valid,
+    input      [7:0]  i_pp_hundreds,
     input      [7:0]  i_pp_tens,
     input      [7:0]  i_pp_units,
     input      [7:0]  i_pp_decile,
     input      [7:0]  i_pp_percentiles,
     input             i_pp_digits_valid,
     input             active_p_neg,
+    input      [7:0]  active_p_hundreds,
     input      [7:0]  active_p_tens,
     input      [7:0]  active_p_units,
     input      [7:0]  active_p_decile,
     input      [7:0]  active_p_percentiles,
     input             reactive_q_neg,
+    input      [7:0]  reactive_q_hundreds,
     input      [7:0]  reactive_q_tens,
     input      [7:0]  reactive_q_units,
     input      [7:0]  reactive_q_decile,
     input      [7:0]  reactive_q_percentiles,
+    input      [7:0]  apparent_s_hundreds,
     input      [7:0]  apparent_s_tens,
     input      [7:0]  apparent_s_units,
     input      [7:0]  apparent_s_decile,
@@ -128,6 +186,53 @@ module lcd_display_text #(
     input      [7:0]  power_factor_decile,
     input      [7:0]  power_factor_percentiles,
     input             power_metrics_valid,
+    input      [2:0]  sharp_alarm_code,
+    input      [7:0]  freq_thd_u_hundreds,
+    input      [7:0]  freq_thd_u_tens,
+    input      [7:0]  freq_thd_u_units,
+    input      [7:0]  freq_thd_u_decile,
+    input      [7:0]  freq_thd_u_percentiles,
+    input             freq_thd_u_valid,
+    input      [7:0]  freq_thd_i_hundreds,
+    input      [7:0]  freq_thd_i_tens,
+    input      [7:0]  freq_thd_i_units,
+    input      [7:0]  freq_thd_i_decile,
+    input      [7:0]  freq_thd_i_percentiles,
+    input             freq_thd_i_valid,
+    input      [7:0]  freq_u1_mag_hundreds,
+    input      [7:0]  freq_u1_mag_tens,
+    input      [7:0]  freq_u1_mag_units,
+    input      [7:0]  freq_u1_mag_decile,
+    input      [7:0]  freq_u1_mag_percentiles,
+    input             freq_u1_mag_valid,
+    input      [7:0]  freq_i1_mag_hundreds,
+    input      [7:0]  freq_i1_mag_tens,
+    input      [7:0]  freq_i1_mag_units,
+    input      [7:0]  freq_i1_mag_decile,
+    input      [7:0]  freq_i1_mag_percentiles,
+    input             freq_i1_mag_valid,
+    input             freq_phase1_neg,
+    input      [7:0]  freq_phase1_hundreds,
+    input      [7:0]  freq_phase1_tens,
+    input      [7:0]  freq_phase1_units,
+    input      [7:0]  freq_phase1_decile,
+    input      [7:0]  freq_phase1_percentiles,
+    input             freq_phase1_valid,
+    input      [7:0]  freq_dc_u_hundreds,
+    input      [7:0]  freq_dc_u_tens,
+    input      [7:0]  freq_dc_u_units,
+    input      [7:0]  freq_dc_u_decile,
+    input      [7:0]  freq_dc_u_percentiles,
+    input             freq_dc_u_valid,
+    input      [7:0]  freq_dc_i_hundreds,
+    input      [7:0]  freq_dc_i_tens,
+    input      [7:0]  freq_dc_i_units,
+    input      [7:0]  freq_dc_i_decile,
+    input      [7:0]  freq_dc_i_percentiles,
+    input             freq_dc_i_valid,
+    input      [199:0] freq_dh_order_u_text,
+    input      [199:0] freq_dh_order_i_text,
+    input             full_scale_low_range_active,
     input             freeze_active,
     input             frequency_page_active,
     input      [4:0]  harmonic_window_index,
@@ -139,13 +244,13 @@ module lcd_display_text #(
     output reg [23:0] text_color
 );
 
-// 盲赂陇氓楼聴氓颅聴氓聫路莽職聞氓聼潞莽隆聙氓掳潞氓炉赂茫聙聜
+// 字体尺寸参数，分别给 16x32 大字和 10x20 小字使用。
 localparam [5:0] BIG_CHAR_W   = 6'd16;
 localparam [5:0] BIG_CHAR_H   = 6'd32;
 localparam [5:0] SMALL_CHAR_W = 6'd10;
 localparam [5:0] SMALL_CHAR_H = 6'd20;
 
-// 氓颅聴氓潞聯莽麓垄氓录聲氓庐職盲鹿聣茂录聦茅聹聙盲赂聨氓颅聴盲陆聯 ROM 忙聳聡盲禄露盲驴聺忙聦聛盲赂聙猫聡麓茫聙聜
+// 字体 ROM 中各类字符的索引常量。
 localparam [6:0] FONT_BLANK      = 7'd127;
 localparam [6:0] FONT_DIGIT_BASE = 7'd0;
 localparam [6:0] FONT_UPPER_BASE = 7'd10;
@@ -161,15 +266,16 @@ localparam [6:0] FONT_PERCENT    = 7'd90;
 localparam [6:0] FONT_LESS       = 7'd91;
 localparam [6:0] FONT_GREATER    = 7'd92;
 
-// 忙聳聡氓颅聴茅垄聹猫聣虏氓庐職盲鹿聣茫聙聜
+// 文本渲染使用的颜色常量。
 localparam [23:0] TEXT_WHITE   = 24'hF2F6FA;
 localparam [23:0] TEXT_SOFT    = 24'hC6D3E2;
 localparam [23:0] TEXT_DIM     = 24'h95A9BE;
 localparam [23:0] WAVE_U_COLOR = 24'h39E46F;
 localparam [23:0] WAVE_I_COLOR = 24'hFFD84E;
 localparam [23:0] ACCENT_COLOR = 24'h58B6FF;
+localparam [23:0] ALARM_COLOR  = 24'hFF5A5F;
 
-// 氓聬聞忙聳聡忙聹卢氓聺聴氓聹篓氓卤聫氓鹿聲盲赂聤莽職聞猫碌路氓搂聥盲陆聧莽陆庐茫聙聜
+// 时域页和频域页各文本区域的起始坐标。
 localparam [10:0] TITLE_TXT_X  = 11'd32;
 localparam [10:0] TITLE_TXT_Y  = 11'd6;
 localparam [10:0] BTN_TXT_X    = 11'd583;
@@ -202,6 +308,8 @@ localparam [10:0] RP_TITLE_Y   = 11'd76;
 localparam [10:0] LINE_X       = 11'd516;
 localparam [10:0] LINE_Y0      = 11'd114;
 localparam [10:0] LINE_STEP    = 11'd28;
+localparam [10:0] ALARM_LINE_Y = LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP +
+                                  LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP;
 localparam [10:0] U_PP_X       = 11'd68;
 localparam [10:0] U_PP_Y       = 11'd425;
 localparam [10:0] I_PP_X       = 11'd68;
@@ -233,18 +341,20 @@ localparam integer PLOT_LEN     = 20;
 localparam integer AXIS_V_LEN   = 11;
 localparam integer AXIS_I_LEN   = 11;
 localparam integer AXIS_T_LEN   = 8;
-localparam integer V_TICK_LEN   = 5;
-localparam integer I_TICK_LEN   = 5;
+localparam integer V_TICK_LEN   = 4;
+localparam integer I_TICK_LEN   = 4;
 localparam integer T_TICK_LEN   = 3;
 localparam integer RP_HEAD_LEN  = 10;
 localparam integer FREQ_LEN     = 22;
-localparam integer RMS_LEN      = 16;
+localparam integer RMS_LEN      = 17;
 localparam integer PHASE_LEN    = 25;
-localparam integer ACTIVE_LEN   = 20;
-localparam integer REACTIVE_LEN = 24;
-localparam integer APPARENT_LEN = 23;
+localparam integer ACTIVE_LEN   = 21;
+localparam integer REACTIVE_LEN = 25;
+localparam integer APPARENT_LEN = 24;
 localparam integer PF_LEN       = 20;
-localparam integer PP_LEN       = 14;
+localparam integer ALARM_LEN    = 17;
+localparam integer PP_LEN       = 15;
+localparam [10:0] ALARM_LINE_W  = 11'd170;
 localparam integer FREQ_TITLE_LEN = 24;
 localparam integer FREQ_PLOT_LEN = 20;
 localparam integer FREQ_MAG_LABEL_LEN = 13;
@@ -252,10 +362,12 @@ localparam integer FREQ_PHASE_LABEL_LEN = 16;
 localparam integer FREQ_HARM_LABEL_LEN = 14;
 localparam integer FREQ_AXIS_TICK_LEN = 3;
 localparam integer FREQ_FUND_LEN = 24;
-localparam integer FREQ_U1_LEN = 17;
-localparam integer FREQ_I1_LEN = 17;
-localparam integer FREQ_THD_LEN = 16;
-localparam integer FREQ_DOM_LEN = 14;
+localparam integer FREQ_U1_LEN = 18;
+localparam integer FREQ_I1_LEN = 18;
+localparam integer FREQ_THD_LEN = 17;
+localparam integer FREQ_PHASE1_LEN = 21;
+localparam integer FREQ_DC_LEN = 16;
+localparam integer FREQ_DH_LEN = 25;
 
 localparam [8*TITLE_LEN-1:0]   TITLE_STR   = "MODE: Single - Time";
 localparam [8*BTN_LEN-1:0]     BTN_STR     = "MODE";
@@ -267,105 +379,124 @@ localparam [8*AXIS_I_LEN-1:0]  AXIS_I_STR  = "Current (A)";
 localparam [8*AXIS_T_LEN-1:0]  AXIS_T_STR  = "Time(ms)";
 localparam [8*RP_HEAD_LEN-1:0] RP_HEAD_STR = "Parameters";
 
-// 将 x100 满量程按 7 档刻度需要的 1/3 比例做常量化舍入，避免在显示逻辑中新增除法。
-function integer div3_round_const;
-    input integer value;
-    integer work;
-    begin
-        work = value + 1;
-        div3_round_const = 0;
-        while (work >= 3) begin
-            work = work - 3;
-            div3_round_const = div3_round_const + 1;
-        end
-    end
-endfunction
+localparam integer U_TICK_FULL_HIGH_X100       = 35000;
+localparam integer U_TICK_TWO_THIRDS_HIGH_X100 = 23333;
+localparam integer U_TICK_ONE_THIRD_HIGH_X100  = 11667;
+localparam integer I_TICK_FULL_HIGH_X100       = 3000;
+localparam integer I_TICK_TWO_THIRDS_HIGH_X100 = 2000;
+localparam integer I_TICK_ONE_THIRD_HIGH_X100  = 1000;
+localparam integer U_TICK_FULL_LOW_X100        = 1000;
+localparam integer U_TICK_TWO_THIRDS_LOW_X100  = 667;
+localparam integer U_TICK_ONE_THIRD_LOW_X100   = 333;
+localparam integer I_TICK_FULL_LOW_X100        = 300;
+localparam integer I_TICK_TWO_THIRDS_LOW_X100  = 200;
+localparam integer I_TICK_ONE_THIRD_LOW_X100   = 100;
 
-localparam integer U_TICK_FULL_X100       = U_FULL_SCALE_X100;
-localparam integer U_TICK_TWO_THIRDS_X100 = div3_round_const(U_FULL_SCALE_X100 + U_FULL_SCALE_X100);
-localparam integer U_TICK_ONE_THIRD_X100  = div3_round_const(U_FULL_SCALE_X100);
-localparam integer I_TICK_FULL_X100       = I_FULL_SCALE_X100;
-localparam integer I_TICK_TWO_THIRDS_X100 = div3_round_const(I_FULL_SCALE_X100 + I_FULL_SCALE_X100);
-localparam integer I_TICK_ONE_THIRD_X100  = div3_round_const(I_FULL_SCALE_X100);
-
+wire [7:0] u_tick_full_hundreds;
 wire [7:0] u_tick_full_tens;
 wire [7:0] u_tick_full_units;
-wire [7:0] u_tick_full_decile;
+wire [7:0] u_tick_two_thirds_hundreds;
 wire [7:0] u_tick_two_thirds_tens;
 wire [7:0] u_tick_two_thirds_units;
-wire [7:0] u_tick_two_thirds_decile;
+wire [7:0] u_tick_one_third_hundreds;
 wire [7:0] u_tick_one_third_tens;
 wire [7:0] u_tick_one_third_units;
-wire [7:0] u_tick_one_third_decile;
+wire [7:0] i_tick_full_hundreds;
 wire [7:0] i_tick_full_tens;
 wire [7:0] i_tick_full_units;
-wire [7:0] i_tick_full_decile;
+wire [7:0] i_tick_two_thirds_hundreds;
 wire [7:0] i_tick_two_thirds_tens;
 wire [7:0] i_tick_two_thirds_units;
-wire [7:0] i_tick_two_thirds_decile;
+wire [7:0] i_tick_one_third_hundreds;
 wire [7:0] i_tick_one_third_tens;
 wire [7:0] i_tick_one_third_units;
-wire [7:0] i_tick_one_third_decile;
+wire [31:0] u_tick_full_x100;
+wire [31:0] u_tick_two_thirds_x100;
+wire [31:0] u_tick_one_third_x100;
+wire [31:0] i_tick_full_x100;
+wire [31:0] i_tick_two_thirds_x100;
+wire [31:0] i_tick_one_third_x100;
+wire       sharp_alarm_active;
+wire       sharp_alarm_is_current;
+wire       sharp_alarm_is_drop;
 
 integer line_slot;
 integer tick_slot;
 
-// 将满量程及 1/3、2/3 刻度值拆成显示用十进制位，刻度文本不再单独硬编码物理量。
+// 根据当前量程选择电压/电流纵轴刻度的满量程、2/3FS 和 1/3FS 数值。
+assign u_tick_full_x100 =
+    full_scale_low_range_active ? U_TICK_FULL_LOW_X100 : U_TICK_FULL_HIGH_X100;
+assign u_tick_two_thirds_x100 =
+    full_scale_low_range_active ? U_TICK_TWO_THIRDS_LOW_X100 : U_TICK_TWO_THIRDS_HIGH_X100;
+assign u_tick_one_third_x100 =
+    full_scale_low_range_active ? U_TICK_ONE_THIRD_LOW_X100 : U_TICK_ONE_THIRD_HIGH_X100;
+assign i_tick_full_x100 =
+    full_scale_low_range_active ? I_TICK_FULL_LOW_X100 : I_TICK_FULL_HIGH_X100;
+assign i_tick_two_thirds_x100 =
+    full_scale_low_range_active ? I_TICK_TWO_THIRDS_LOW_X100 : I_TICK_TWO_THIRDS_HIGH_X100;
+assign i_tick_one_third_x100 =
+    full_scale_low_range_active ? I_TICK_ONE_THIRD_LOW_X100 : I_TICK_ONE_THIRD_HIGH_X100;
+
+// 将当前档位下的刻度值转换成三位整数数字，供纵轴刻度文本直接复用。
 value_x100_to_digits u_u_tick_full_digits (
-    .value_x100 (U_TICK_FULL_X100 + 5),
-    .hundreds   (),
+    .value_x100 (u_tick_full_x100 + 50),
+    .hundreds   (u_tick_full_hundreds),
     .tens       (u_tick_full_tens),
     .units      (u_tick_full_units),
-    .decile     (u_tick_full_decile),
+    .decile     (),
     .percentiles()
 );
 
 value_x100_to_digits u_u_tick_two_thirds_digits (
-    .value_x100 (U_TICK_TWO_THIRDS_X100 + 5),
-    .hundreds   (),
+    .value_x100 (u_tick_two_thirds_x100 + 50),
+    .hundreds   (u_tick_two_thirds_hundreds),
     .tens       (u_tick_two_thirds_tens),
     .units      (u_tick_two_thirds_units),
-    .decile     (u_tick_two_thirds_decile),
+    .decile     (),
     .percentiles()
 );
 
 value_x100_to_digits u_u_tick_one_third_digits (
-    .value_x100 (U_TICK_ONE_THIRD_X100 + 5),
-    .hundreds   (),
+    .value_x100 (u_tick_one_third_x100 + 50),
+    .hundreds   (u_tick_one_third_hundreds),
     .tens       (u_tick_one_third_tens),
     .units      (u_tick_one_third_units),
-    .decile     (u_tick_one_third_decile),
+    .decile     (),
     .percentiles()
 );
 
 value_x100_to_digits u_i_tick_full_digits (
-    .value_x100 (I_TICK_FULL_X100 + 5),
-    .hundreds   (),
+    .value_x100 (i_tick_full_x100 + 50),
+    .hundreds   (i_tick_full_hundreds),
     .tens       (i_tick_full_tens),
     .units      (i_tick_full_units),
-    .decile     (i_tick_full_decile),
+    .decile     (),
     .percentiles()
 );
 
 value_x100_to_digits u_i_tick_two_thirds_digits (
-    .value_x100 (I_TICK_TWO_THIRDS_X100 + 5),
-    .hundreds   (),
+    .value_x100 (i_tick_two_thirds_x100 + 50),
+    .hundreds   (i_tick_two_thirds_hundreds),
     .tens       (i_tick_two_thirds_tens),
     .units      (i_tick_two_thirds_units),
-    .decile     (i_tick_two_thirds_decile),
+    .decile     (),
     .percentiles()
 );
 
 value_x100_to_digits u_i_tick_one_third_digits (
-    .value_x100 (I_TICK_ONE_THIRD_X100 + 5),
-    .hundreds   (),
+    .value_x100 (i_tick_one_third_x100 + 50),
+    .hundreds   (i_tick_one_third_hundreds),
     .tens       (i_tick_one_third_tens),
     .units      (i_tick_one_third_units),
-    .decile     (i_tick_one_third_decile),
+    .decile     (),
     .percentiles()
 );
+// 从 sharp_alarm_code 中译码是否告警、告警通道以及 rise/drop 类型。
+assign sharp_alarm_active     = (sharp_alarm_code != 3'd0);
+assign sharp_alarm_is_current = (sharp_alarm_code == 3'd3) || (sharp_alarm_code == 3'd4);
+assign sharp_alarm_is_drop    = (sharp_alarm_code == 3'd2) || (sharp_alarm_code == 3'd4);
 
-// ASCII 氓聢掳氓颅聴盲陆聯莽麓垄氓录聲莽職聞莽禄聼盲赂聙忙聵聽氓掳聞茫聙聜
+// 将 ASCII 字符映射到字体 ROM 索引。
 function [6:0] ascii_to_idx;
     input [7:0] ch;
     begin
@@ -394,6 +525,28 @@ function [6:0] ascii_to_idx;
     end
 endfunction
 
+// 根据有效位和百位数值决定是否显示百位字符。
+function [7:0] hundreds_ascii_or_blank;
+    input       digits_valid;
+    input [7:0] hundreds_digit;
+    begin
+        hundreds_ascii_or_blank =
+            digits_valid ? ((hundreds_digit == 8'd0) ? " " : ("0" + hundreds_digit[7:0])) : " ";
+    end
+endfunction
+
+// 根据有效位和更高位数值决定十位字符是否留空。
+function [7:0] tens_ascii_or_blank;
+    input       digits_valid;
+    input [7:0] hundreds_digit;
+    input [7:0] tens_digit;
+    begin
+        tens_ascii_or_blank =
+            digits_valid ? (((hundreds_digit == 8'd0) && (tens_digit == 8'd0)) ? " " : ("0" + tens_digit[7:0])) : " ";
+    end
+endfunction
+
+// 生成 Active P 文本行中指定字符位置的 ASCII 字符。
 function [7:0] active_p_line_ascii;
     input integer char_slot;
     begin
@@ -409,20 +562,22 @@ function [7:0] active_p_line_ascii;
             8:  active_p_line_ascii = ":";
             9:  active_p_line_ascii = " ";
             10: active_p_line_ascii = power_metrics_valid ? (active_p_neg ? "-" : " ") : " ";
-            11: active_p_line_ascii = power_metrics_valid ? ((active_p_tens == 8'd0) ? " " : digit_to_ascii(active_p_tens)) : " ";
-            12: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_units) : " ";
-            13: active_p_line_ascii = ".";
-            14: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_decile) : " ";
-            15: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_percentiles) : " ";
-            16: active_p_line_ascii = " ";
-            17: active_p_line_ascii = "(";
-            18: active_p_line_ascii = "W";
-            19: active_p_line_ascii = ")";
+            11: active_p_line_ascii = hundreds_ascii_or_blank(power_metrics_valid, active_p_hundreds);
+            12: active_p_line_ascii = tens_ascii_or_blank(power_metrics_valid, active_p_hundreds, active_p_tens);
+            13: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_units) : " ";
+            14: active_p_line_ascii = ".";
+            15: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_decile) : " ";
+            16: active_p_line_ascii = power_metrics_valid ? digit_to_ascii(active_p_percentiles) : " ";
+            17: active_p_line_ascii = " ";
+            18: active_p_line_ascii = "(";
+            19: active_p_line_ascii = "W";
+            20: active_p_line_ascii = ")";
             default: active_p_line_ascii = " ";
         endcase
     end
 endfunction
 
+// 生成 Reactive Q 文本行中指定字符位置的 ASCII 字符。
 function [7:0] reactive_q_line_ascii;
     input integer char_slot;
     begin
@@ -440,22 +595,24 @@ function [7:0] reactive_q_line_ascii;
             10: reactive_q_line_ascii = ":";
             11: reactive_q_line_ascii = " ";
             12: reactive_q_line_ascii = power_metrics_valid ? (reactive_q_neg ? "-" : "+") : " ";
-            13: reactive_q_line_ascii = power_metrics_valid ? ((reactive_q_tens == 8'd0) ? " " : digit_to_ascii(reactive_q_tens)) : " ";
-            14: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_units) : " ";
-            15: reactive_q_line_ascii = ".";
-            16: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_decile) : " ";
-            17: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_percentiles) : " ";
-            18: reactive_q_line_ascii = " ";
-            19: reactive_q_line_ascii = "(";
-            20: reactive_q_line_ascii = "v";
-            21: reactive_q_line_ascii = "a";
-            22: reactive_q_line_ascii = "r";
-            23: reactive_q_line_ascii = ")";
+            13: reactive_q_line_ascii = hundreds_ascii_or_blank(power_metrics_valid, reactive_q_hundreds);
+            14: reactive_q_line_ascii = tens_ascii_or_blank(power_metrics_valid, reactive_q_hundreds, reactive_q_tens);
+            15: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_units) : " ";
+            16: reactive_q_line_ascii = ".";
+            17: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_decile) : " ";
+            18: reactive_q_line_ascii = power_metrics_valid ? digit_to_ascii(reactive_q_percentiles) : " ";
+            19: reactive_q_line_ascii = " ";
+            20: reactive_q_line_ascii = "(";
+            21: reactive_q_line_ascii = "v";
+            22: reactive_q_line_ascii = "a";
+            23: reactive_q_line_ascii = "r";
+            24: reactive_q_line_ascii = ")";
             default: reactive_q_line_ascii = " ";
         endcase
     end
 endfunction
 
+// 生成 Apparent S 文本行中指定字符位置的 ASCII 字符。
 function [7:0] apparent_s_line_ascii;
     input integer char_slot;
     begin
@@ -473,21 +630,23 @@ function [7:0] apparent_s_line_ascii;
             10: apparent_s_line_ascii = ":";
             11: apparent_s_line_ascii = " ";
             12: apparent_s_line_ascii = " ";
-            13: apparent_s_line_ascii = power_metrics_valid ? ((apparent_s_tens == 8'd0) ? " " : digit_to_ascii(apparent_s_tens)) : " ";
-            14: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_units) : " ";
-            15: apparent_s_line_ascii = ".";
-            16: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_decile) : " ";
-            17: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_percentiles) : " ";
-            18: apparent_s_line_ascii = " ";
-            19: apparent_s_line_ascii = "(";
-            20: apparent_s_line_ascii = "V";
-            21: apparent_s_line_ascii = "A";
-            22: apparent_s_line_ascii = ")";
+            13: apparent_s_line_ascii = hundreds_ascii_or_blank(power_metrics_valid, apparent_s_hundreds);
+            14: apparent_s_line_ascii = tens_ascii_or_blank(power_metrics_valid, apparent_s_hundreds, apparent_s_tens);
+            15: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_units) : " ";
+            16: apparent_s_line_ascii = ".";
+            17: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_decile) : " ";
+            18: apparent_s_line_ascii = power_metrics_valid ? digit_to_ascii(apparent_s_percentiles) : " ";
+            19: apparent_s_line_ascii = " ";
+            20: apparent_s_line_ascii = "(";
+            21: apparent_s_line_ascii = "V";
+            22: apparent_s_line_ascii = "A";
+            23: apparent_s_line_ascii = ")";
             default: apparent_s_line_ascii = " ";
         endcase
     end
 endfunction
 
+// 生成功率因数文本行中指定字符位置的 ASCII 字符。
 function [7:0] power_factor_line_ascii;
     input integer char_slot;
     begin
@@ -516,7 +675,34 @@ function [7:0] power_factor_line_ascii;
     end
 endfunction
 
-// 氓聧聛猫驴聸氓聢露忙聲掳氓颅聴猫陆卢 ASCII茂录聸氓录聜氓赂赂猫戮聯氓聟楼氓聸聻茅聙聙盲赂潞 '-'.
+// 生成时域 sharp alarm 文本行中指定字符位置的 ASCII 字符。
+function [7:0] sharp_alarm_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  sharp_alarm_line_ascii = "E";
+            1:  sharp_alarm_line_ascii = "R";
+            2:  sharp_alarm_line_ascii = "R";
+            3:  sharp_alarm_line_ascii = ":";
+            4:  sharp_alarm_line_ascii = " ";
+            5:  sharp_alarm_line_ascii = sharp_alarm_is_current ? "I" : "U";
+            6:  sharp_alarm_line_ascii = " ";
+            7:  sharp_alarm_line_ascii = "S";
+            8:  sharp_alarm_line_ascii = "H";
+            9:  sharp_alarm_line_ascii = "A";
+            10: sharp_alarm_line_ascii = "R";
+            11: sharp_alarm_line_ascii = "P";
+            12: sharp_alarm_line_ascii = " ";
+            13: sharp_alarm_line_ascii = sharp_alarm_is_drop ? "D" : "R";
+            14: sharp_alarm_line_ascii = sharp_alarm_is_drop ? "R" : "I";
+            15: sharp_alarm_line_ascii = sharp_alarm_is_drop ? "O" : "S";
+            16: sharp_alarm_line_ascii = sharp_alarm_is_drop ? "P" : "E";
+            default: sharp_alarm_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// 将 0~9 数字转换成对应的 ASCII 字符。
 function [7:0] digit_to_ascii;
     input [7:0] digit;
     begin
@@ -527,7 +713,7 @@ function [7:0] digit_to_ascii;
     end
 endfunction
 
-// 计算频域横坐标刻度值。每个窗口覆盖 25 个谐波间隔，第 0 页额外标出 1 次谐波。
+// 计算频域横轴当前窗口下各刻度点对应的谐波次序值。
 function [8:0] freq_axis_tick_value;
     input [4:0] page_index;
     input [2:0] tick_index;
@@ -543,13 +729,14 @@ function [8:0] freq_axis_tick_value;
             3'd2: freq_axis_tick_value = (page_index == 5'd0) ? 9'd5 : (page_base + 9'd10);
             3'd3: freq_axis_tick_value = (page_index == 5'd0) ? 9'd10 : (page_base + 9'd15);
             3'd4: freq_axis_tick_value = (page_index == 5'd0) ? 9'd15 : (page_base + 9'd20);
-            3'd5: freq_axis_tick_value = page_base + 9'd25;
+            3'd5: freq_axis_tick_value = (page_index == 5'd0) ? 9'd20 : (page_base + 9'd25);
+            3'd6: freq_axis_tick_value = page_base + 9'd25;
             default: freq_axis_tick_value = page_base;
         endcase
     end
 endfunction
 
-// 将 0~500 的谐波刻度值转成三位左对齐 ASCII，不在文本路径中使用除法或取模。
+// 将频域横轴刻度数值转换成左对齐的 ASCII 数字字符。
 function [7:0] freq_axis_value_ascii;
     input [8:0] value;
     input integer char_slot;
@@ -602,7 +789,7 @@ function [7:0] freq_axis_value_ascii;
     end
 endfunction
 
-// 组合生成当前频域页指定刻度的字符。
+// 取出频域横轴某个刻度标签在指定字符槽位上的 ASCII 字符。
 function [7:0] freq_axis_tick_ascii;
     input [4:0] page_index;
     input [2:0] tick_index;
@@ -613,7 +800,23 @@ function [7:0] freq_axis_tick_ascii;
     end
 endfunction
 
-// 盲禄聨氓庐職茅聲驴氓颅聴莽卢娄盲赂虏盲赂颅氓聫聳氓聡潞忙聦聡氓庐職忙搂陆盲陆聧氓颅聴莽卢娄茫聙聜
+// 根据刻度值大小返回频域横轴标签的字符宽度。
+function integer freq_axis_tick_len;
+    input [4:0] page_index;
+    input [2:0] tick_index;
+    reg   [8:0] tick_value;
+    begin
+        tick_value = freq_axis_tick_value(page_index, tick_index);
+        if (tick_value >= 9'd100)
+            freq_axis_tick_len = 3;
+        else if (tick_value >= 9'd10)
+            freq_axis_tick_len = 2;
+        else
+            freq_axis_tick_len = 1;
+    end
+endfunction
+
+// 从定长字符串参数中取出指定槽位的字符。
 function [7:0] text_char_from_str;
     input [8*MAX_TEXT_LEN-1:0] str_value;
     input integer text_len;
@@ -626,69 +829,61 @@ function [7:0] text_char_from_str;
     end
 endfunction
 
-// 7 档纵向刻度统一显示为“符号 + 两位整数 + 一位小数”。
-function [7:0] tick_tens_ascii;
-    input [7:0] tens_digit;
-    begin
-        tick_tens_ascii = (tens_digit == 8'd0) ? " " : digit_to_ascii(tens_digit);
-    end
-endfunction
-
+// 将带符号的三位整数量程刻度拆成逐字符 ASCII 输出。
 function [7:0] tick_value_ascii;
     input [7:0] sign_char;
+    input [7:0] hundreds_digit;
     input [7:0] tens_digit;
     input [7:0] units_digit;
-    input [7:0] decile_digit;
     input integer char_slot;
     begin
         case (char_slot)
             0: tick_value_ascii = sign_char;
-            1: tick_value_ascii = tick_tens_ascii(tens_digit);
-            2: tick_value_ascii = digit_to_ascii(units_digit);
-            3: tick_value_ascii = ".";
-            4: tick_value_ascii = digit_to_ascii(decile_digit);
+            1: tick_value_ascii = hundreds_ascii_or_blank(1'b1, hundreds_digit);
+            2: tick_value_ascii = tens_ascii_or_blank(1'b1, hundreds_digit, tens_digit);
+            3: tick_value_ascii = digit_to_ascii(units_digit);
             default: tick_value_ascii = " ";
         endcase
     end
 endfunction
 
-// 电压纵向刻度：按 U_FULL_SCALE_X100 拆成 +FS、+2/3FS、+1/3FS、0、-1/3FS、-2/3FS、-FS。
+// 生成电压纵轴刻度文本在指定字符槽位上的 ASCII 字符。
 function [7:0] voltage_tick_ascii;
     input integer tick_index;
     input integer char_slot;
     begin
         case (tick_index)
-            0:  voltage_tick_ascii = tick_value_ascii("+", u_tick_full_tens, u_tick_full_units, u_tick_full_decile, char_slot);
-            1:  voltage_tick_ascii = tick_value_ascii("+", u_tick_two_thirds_tens, u_tick_two_thirds_units, u_tick_two_thirds_decile, char_slot);
-            2:  voltage_tick_ascii = tick_value_ascii("+", u_tick_one_third_tens, u_tick_one_third_units, u_tick_one_third_decile, char_slot);
+            0:  voltage_tick_ascii = tick_value_ascii("+", u_tick_full_hundreds, u_tick_full_tens, u_tick_full_units, char_slot);
+            1:  voltage_tick_ascii = tick_value_ascii("+", u_tick_two_thirds_hundreds, u_tick_two_thirds_tens, u_tick_two_thirds_units, char_slot);
+            2:  voltage_tick_ascii = tick_value_ascii("+", u_tick_one_third_hundreds, u_tick_one_third_tens, u_tick_one_third_units, char_slot);
             3:  voltage_tick_ascii = tick_value_ascii(" ", 8'd0, 8'd0, 8'd0, char_slot);
-            4:  voltage_tick_ascii = tick_value_ascii("-", u_tick_one_third_tens, u_tick_one_third_units, u_tick_one_third_decile, char_slot);
-            5:  voltage_tick_ascii = tick_value_ascii("-", u_tick_two_thirds_tens, u_tick_two_thirds_units, u_tick_two_thirds_decile, char_slot);
-            6:  voltage_tick_ascii = tick_value_ascii("-", u_tick_full_tens, u_tick_full_units, u_tick_full_decile, char_slot);
+            4:  voltage_tick_ascii = tick_value_ascii("-", u_tick_one_third_hundreds, u_tick_one_third_tens, u_tick_one_third_units, char_slot);
+            5:  voltage_tick_ascii = tick_value_ascii("-", u_tick_two_thirds_hundreds, u_tick_two_thirds_tens, u_tick_two_thirds_units, char_slot);
+            6:  voltage_tick_ascii = tick_value_ascii("-", u_tick_full_hundreds, u_tick_full_tens, u_tick_full_units, char_slot);
             default: voltage_tick_ascii = " ";
         endcase
     end
 endfunction
 
-// 电流纵向刻度：按 I_FULL_SCALE_X100 拆成 +FS、+2/3FS、+1/3FS、0、-1/3FS、-2/3FS、-FS。
+// 生成电流纵轴刻度文本在指定字符槽位上的 ASCII 字符。
 function [7:0] current_tick_ascii;
     input integer tick_index;
     input integer char_slot;
     begin
         case (tick_index)
-            0: current_tick_ascii = tick_value_ascii("+", i_tick_full_tens, i_tick_full_units, i_tick_full_decile, char_slot);
-            1: current_tick_ascii = tick_value_ascii("+", i_tick_two_thirds_tens, i_tick_two_thirds_units, i_tick_two_thirds_decile, char_slot);
-            2: current_tick_ascii = tick_value_ascii("+", i_tick_one_third_tens, i_tick_one_third_units, i_tick_one_third_decile, char_slot);
+            0: current_tick_ascii = tick_value_ascii("+", i_tick_full_hundreds, i_tick_full_tens, i_tick_full_units, char_slot);
+            1: current_tick_ascii = tick_value_ascii("+", i_tick_two_thirds_hundreds, i_tick_two_thirds_tens, i_tick_two_thirds_units, char_slot);
+            2: current_tick_ascii = tick_value_ascii("+", i_tick_one_third_hundreds, i_tick_one_third_tens, i_tick_one_third_units, char_slot);
             3: current_tick_ascii = tick_value_ascii(" ", 8'd0, 8'd0, 8'd0, char_slot);
-            4: current_tick_ascii = tick_value_ascii("-", i_tick_one_third_tens, i_tick_one_third_units, i_tick_one_third_decile, char_slot);
-            5: current_tick_ascii = tick_value_ascii("-", i_tick_two_thirds_tens, i_tick_two_thirds_units, i_tick_two_thirds_decile, char_slot);
-            6: current_tick_ascii = tick_value_ascii("-", i_tick_full_tens, i_tick_full_units, i_tick_full_decile, char_slot);
+            4: current_tick_ascii = tick_value_ascii("-", i_tick_one_third_hundreds, i_tick_one_third_tens, i_tick_one_third_units, char_slot);
+            5: current_tick_ascii = tick_value_ascii("-", i_tick_two_thirds_hundreds, i_tick_two_thirds_tens, i_tick_two_thirds_units, char_slot);
+            6: current_tick_ascii = tick_value_ascii("-", i_tick_full_hundreds, i_tick_full_tens, i_tick_full_units, char_slot);
             default: current_tick_ascii = " ";
         endcase
     end
 endfunction
 
-// Frequency 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
+// 生成时域页频率文本行中指定字符位置的 ASCII 字符。
 function [7:0] freq_line_ascii;
     input integer char_slot;
     begin
@@ -720,7 +915,7 @@ function [7:0] freq_line_ascii;
     end
 endfunction
 
-// 频域页右侧基波频率行，复用现有频率测量数字位，不新增频域算法。
+// 生成频域页 Fundamental 文本行中指定字符位置的 ASCII 字符。
 function [7:0] freq_fund_line_ascii;
     input integer char_slot;
     begin
@@ -754,7 +949,7 @@ function [7:0] freq_fund_line_ascii;
     end
 endfunction
 
-// 频域幅值、THD 和主导谐波行只同步界面占位，不在 LCD 层引入新的分析计算。
+// 生成频域页 U1 Magnitude 文本行中指定字符位置的 ASCII 字符。
 function [7:0] freq_u1_line_ascii;
     input integer char_slot;
     begin
@@ -767,20 +962,22 @@ function [7:0] freq_u1_line_ascii;
             5:  freq_u1_line_ascii = "g";
             6:  freq_u1_line_ascii = ":";
             7:  freq_u1_line_ascii = " ";
-            8:  freq_u1_line_ascii = "-";
-            9:  freq_u1_line_ascii = "-";
-            10: freq_u1_line_ascii = ".";
-            11: freq_u1_line_ascii = "-";
-            12: freq_u1_line_ascii = "-";
-            13: freq_u1_line_ascii = " ";
-            14: freq_u1_line_ascii = "(";
-            15: freq_u1_line_ascii = "V";
-            16: freq_u1_line_ascii = ")";
+            8:  freq_u1_line_ascii = freq_u1_mag_valid ? ((freq_u1_mag_hundreds == 8'd0) ? " " : digit_to_ascii(freq_u1_mag_hundreds)) : " ";
+            9:  freq_u1_line_ascii = freq_u1_mag_valid ? (((freq_u1_mag_hundreds == 8'd0) && (freq_u1_mag_tens == 8'd0)) ? " " : digit_to_ascii(freq_u1_mag_tens)) : " ";
+            10: freq_u1_line_ascii = freq_u1_mag_valid ? digit_to_ascii(freq_u1_mag_units) : " ";
+            11: freq_u1_line_ascii = ".";
+            12: freq_u1_line_ascii = freq_u1_mag_valid ? digit_to_ascii(freq_u1_mag_decile) : " ";
+            13: freq_u1_line_ascii = freq_u1_mag_valid ? digit_to_ascii(freq_u1_mag_percentiles) : " ";
+            14: freq_u1_line_ascii = " ";
+            15: freq_u1_line_ascii = "(";
+            16: freq_u1_line_ascii = "%";
+            17: freq_u1_line_ascii = ")";
             default: freq_u1_line_ascii = " ";
         endcase
     end
 endfunction
 
+// 生成频域页 I1 Magnitude 文本行中指定字符位置的 ASCII 字符。
 function [7:0] freq_i1_line_ascii;
     input integer char_slot;
     begin
@@ -793,20 +990,22 @@ function [7:0] freq_i1_line_ascii;
             5:  freq_i1_line_ascii = "g";
             6:  freq_i1_line_ascii = ":";
             7:  freq_i1_line_ascii = " ";
-            8:  freq_i1_line_ascii = "-";
-            9:  freq_i1_line_ascii = "-";
-            10: freq_i1_line_ascii = ".";
-            11: freq_i1_line_ascii = "-";
-            12: freq_i1_line_ascii = "-";
-            13: freq_i1_line_ascii = " ";
-            14: freq_i1_line_ascii = "(";
-            15: freq_i1_line_ascii = "A";
-            16: freq_i1_line_ascii = ")";
+            8:  freq_i1_line_ascii = freq_i1_mag_valid ? ((freq_i1_mag_hundreds == 8'd0) ? " " : digit_to_ascii(freq_i1_mag_hundreds)) : " ";
+            9:  freq_i1_line_ascii = freq_i1_mag_valid ? (((freq_i1_mag_hundreds == 8'd0) && (freq_i1_mag_tens == 8'd0)) ? " " : digit_to_ascii(freq_i1_mag_tens)) : " ";
+            10: freq_i1_line_ascii = freq_i1_mag_valid ? digit_to_ascii(freq_i1_mag_units) : " ";
+            11: freq_i1_line_ascii = ".";
+            12: freq_i1_line_ascii = freq_i1_mag_valid ? digit_to_ascii(freq_i1_mag_decile) : " ";
+            13: freq_i1_line_ascii = freq_i1_mag_valid ? digit_to_ascii(freq_i1_mag_percentiles) : " ";
+            14: freq_i1_line_ascii = " ";
+            15: freq_i1_line_ascii = "(";
+            16: freq_i1_line_ascii = "%";
+            17: freq_i1_line_ascii = ")";
             default: freq_i1_line_ascii = " ";
         endcase
     end
 endfunction
 
+// 生成频域页电压 THD 文本行中指定字符位置的 ASCII 字符。
 function [7:0] freq_thd_u_line_ascii;
     input integer char_slot;
     begin
@@ -818,20 +1017,22 @@ function [7:0] freq_thd_u_line_ascii;
             4:  freq_thd_u_line_ascii = "U";
             5:  freq_thd_u_line_ascii = ":";
             6:  freq_thd_u_line_ascii = " ";
-            7:  freq_thd_u_line_ascii = "-";
-            8:  freq_thd_u_line_ascii = "-";
-            9:  freq_thd_u_line_ascii = ".";
-            10: freq_thd_u_line_ascii = "-";
-            11: freq_thd_u_line_ascii = "-";
-            12: freq_thd_u_line_ascii = " ";
-            13: freq_thd_u_line_ascii = "(";
-            14: freq_thd_u_line_ascii = "%";
-            15: freq_thd_u_line_ascii = ")";
+            7:  freq_thd_u_line_ascii = freq_thd_u_valid ? ((freq_thd_u_hundreds == 8'd0) ? " " : digit_to_ascii(freq_thd_u_hundreds)) : " ";
+            8:  freq_thd_u_line_ascii = freq_thd_u_valid ? (((freq_thd_u_hundreds == 8'd0) && (freq_thd_u_tens == 8'd0)) ? " " : digit_to_ascii(freq_thd_u_tens)) : " ";
+            9:  freq_thd_u_line_ascii = freq_thd_u_valid ? digit_to_ascii(freq_thd_u_units) : " ";
+            10: freq_thd_u_line_ascii = ".";
+            11: freq_thd_u_line_ascii = freq_thd_u_valid ? digit_to_ascii(freq_thd_u_decile) : " ";
+            12: freq_thd_u_line_ascii = freq_thd_u_valid ? digit_to_ascii(freq_thd_u_percentiles) : " ";
+            13: freq_thd_u_line_ascii = " ";
+            14: freq_thd_u_line_ascii = "(";
+            15: freq_thd_u_line_ascii = "%";
+            16: freq_thd_u_line_ascii = ")";
             default: freq_thd_u_line_ascii = " ";
         endcase
     end
 endfunction
 
+// 生成频域页电流 THD 文本行中指定字符位置的 ASCII 字符。
 function [7:0] freq_thd_i_line_ascii;
     input integer char_slot;
     begin
@@ -843,44 +1044,133 @@ function [7:0] freq_thd_i_line_ascii;
             4:  freq_thd_i_line_ascii = "I";
             5:  freq_thd_i_line_ascii = ":";
             6:  freq_thd_i_line_ascii = " ";
-            7:  freq_thd_i_line_ascii = "-";
-            8:  freq_thd_i_line_ascii = "-";
-            9:  freq_thd_i_line_ascii = ".";
-            10: freq_thd_i_line_ascii = "-";
-            11: freq_thd_i_line_ascii = "-";
-            12: freq_thd_i_line_ascii = " ";
-            13: freq_thd_i_line_ascii = "(";
-            14: freq_thd_i_line_ascii = "%";
-            15: freq_thd_i_line_ascii = ")";
+            7:  freq_thd_i_line_ascii = freq_thd_i_valid ? ((freq_thd_i_hundreds == 8'd0) ? " " : digit_to_ascii(freq_thd_i_hundreds)) : " ";
+            8:  freq_thd_i_line_ascii = freq_thd_i_valid ? (((freq_thd_i_hundreds == 8'd0) && (freq_thd_i_tens == 8'd0)) ? " " : digit_to_ascii(freq_thd_i_tens)) : " ";
+            9:  freq_thd_i_line_ascii = freq_thd_i_valid ? digit_to_ascii(freq_thd_i_units) : " ";
+            10: freq_thd_i_line_ascii = ".";
+            11: freq_thd_i_line_ascii = freq_thd_i_valid ? digit_to_ascii(freq_thd_i_decile) : " ";
+            12: freq_thd_i_line_ascii = freq_thd_i_valid ? digit_to_ascii(freq_thd_i_percentiles) : " ";
+            13: freq_thd_i_line_ascii = " ";
+            14: freq_thd_i_line_ascii = "(";
+            15: freq_thd_i_line_ascii = "%";
+            16: freq_thd_i_line_ascii = ")";
             default: freq_thd_i_line_ascii = " ";
         endcase
     end
 endfunction
 
-function [7:0] freq_dominant_line_ascii;
+// 生成频域页基波相位差文本行中指定字符位置的 ASCII 字符。
+function [7:0] freq_phase1_line_ascii;
     input integer char_slot;
     begin
         case (char_slot)
-            0:  freq_dominant_line_ascii = "D";
-            1:  freq_dominant_line_ascii = "o";
-            2:  freq_dominant_line_ascii = "m";
-            3:  freq_dominant_line_ascii = "i";
-            4:  freq_dominant_line_ascii = "n";
-            5:  freq_dominant_line_ascii = "a";
-            6:  freq_dominant_line_ascii = "n";
-            7:  freq_dominant_line_ascii = "t";
-            8:  freq_dominant_line_ascii = " ";
-            9:  freq_dominant_line_ascii = "H";
-            10: freq_dominant_line_ascii = ":";
-            11: freq_dominant_line_ascii = " ";
-            12: freq_dominant_line_ascii = "-";
-            13: freq_dominant_line_ascii = "-";
-            default: freq_dominant_line_ascii = " ";
+            0:  freq_phase1_line_ascii = "P";
+            1:  freq_phase1_line_ascii = "h";
+            2:  freq_phase1_line_ascii = "a";
+            3:  freq_phase1_line_ascii = "s";
+            4:  freq_phase1_line_ascii = "e";
+            5:  freq_phase1_line_ascii = "1";
+            6:  freq_phase1_line_ascii = ":";
+            7:  freq_phase1_line_ascii = " ";
+            8:  freq_phase1_line_ascii = freq_phase1_valid ? (freq_phase1_neg ? "-" : "+") : " ";
+            9:  freq_phase1_line_ascii = freq_phase1_valid ? ((freq_phase1_hundreds == 8'd0) ? " " : digit_to_ascii(freq_phase1_hundreds)) : " ";
+            10: freq_phase1_line_ascii = freq_phase1_valid ? (((freq_phase1_hundreds == 8'd0) && (freq_phase1_tens == 8'd0)) ? " " : digit_to_ascii(freq_phase1_tens)) : " ";
+            11: freq_phase1_line_ascii = freq_phase1_valid ? digit_to_ascii(freq_phase1_units) : " ";
+            12: freq_phase1_line_ascii = ".";
+            13: freq_phase1_line_ascii = freq_phase1_valid ? digit_to_ascii(freq_phase1_decile) : " ";
+            14: freq_phase1_line_ascii = freq_phase1_valid ? digit_to_ascii(freq_phase1_percentiles) : " ";
+            15: freq_phase1_line_ascii = " ";
+            16: freq_phase1_line_ascii = "(";
+            17: freq_phase1_line_ascii = "d";
+            18: freq_phase1_line_ascii = "e";
+            19: freq_phase1_line_ascii = "g";
+            20: freq_phase1_line_ascii = ")";
+            default: freq_phase1_line_ascii = " ";
         endcase
     end
 endfunction
 
-// U_rms line formatter.
+// 生成频域页电压直流分量文本行中指定字符位置的 ASCII 字符。
+function [7:0] freq_dc_u_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_dc_u_line_ascii = "D";
+            1:  freq_dc_u_line_ascii = "C";
+            2:  freq_dc_u_line_ascii = "-";
+            3:  freq_dc_u_line_ascii = "U";
+            4:  freq_dc_u_line_ascii = ":";
+            5:  freq_dc_u_line_ascii = " ";
+            6:  freq_dc_u_line_ascii = freq_dc_u_valid ? ((freq_dc_u_hundreds == 8'd0) ? " " : digit_to_ascii(freq_dc_u_hundreds)) : " ";
+            7:  freq_dc_u_line_ascii = freq_dc_u_valid ? (((freq_dc_u_hundreds == 8'd0) && (freq_dc_u_tens == 8'd0)) ? " " : digit_to_ascii(freq_dc_u_tens)) : " ";
+            8:  freq_dc_u_line_ascii = freq_dc_u_valid ? digit_to_ascii(freq_dc_u_units) : " ";
+            9:  freq_dc_u_line_ascii = ".";
+            10: freq_dc_u_line_ascii = freq_dc_u_valid ? digit_to_ascii(freq_dc_u_decile) : " ";
+            11: freq_dc_u_line_ascii = freq_dc_u_valid ? digit_to_ascii(freq_dc_u_percentiles) : " ";
+            12: freq_dc_u_line_ascii = " ";
+            13: freq_dc_u_line_ascii = "(";
+            14: freq_dc_u_line_ascii = "%";
+            15: freq_dc_u_line_ascii = ")";
+            default: freq_dc_u_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// 生成频域页电流直流分量文本行中指定字符位置的 ASCII 字符。
+function [7:0] freq_dc_i_line_ascii;
+    input integer char_slot;
+    begin
+        case (char_slot)
+            0:  freq_dc_i_line_ascii = "D";
+            1:  freq_dc_i_line_ascii = "C";
+            2:  freq_dc_i_line_ascii = "-";
+            3:  freq_dc_i_line_ascii = "I";
+            4:  freq_dc_i_line_ascii = ":";
+            5:  freq_dc_i_line_ascii = " ";
+            6:  freq_dc_i_line_ascii = freq_dc_i_valid ? ((freq_dc_i_hundreds == 8'd0) ? " " : digit_to_ascii(freq_dc_i_hundreds)) : " ";
+            7:  freq_dc_i_line_ascii = freq_dc_i_valid ? (((freq_dc_i_hundreds == 8'd0) && (freq_dc_i_tens == 8'd0)) ? " " : digit_to_ascii(freq_dc_i_tens)) : " ";
+            8:  freq_dc_i_line_ascii = freq_dc_i_valid ? digit_to_ascii(freq_dc_i_units) : " ";
+            9:  freq_dc_i_line_ascii = ".";
+            10: freq_dc_i_line_ascii = freq_dc_i_valid ? digit_to_ascii(freq_dc_i_decile) : " ";
+            11: freq_dc_i_line_ascii = freq_dc_i_valid ? digit_to_ascii(freq_dc_i_percentiles) : " ";
+            12: freq_dc_i_line_ascii = " ";
+            13: freq_dc_i_line_ascii = "(";
+            14: freq_dc_i_line_ascii = "%";
+            15: freq_dc_i_line_ascii = ")";
+            default: freq_dc_i_line_ascii = " ";
+        endcase
+    end
+endfunction
+
+// 从 25 字符打包文本总线中按槽位取出单个 ASCII 字符。
+function [7:0] packed_text_char;
+    input [199:0] packed_text;
+    input integer char_slot;
+    begin
+        if ((char_slot < 0) || (char_slot >= MAX_TEXT_LEN))
+            packed_text_char = " ";
+        else
+            packed_text_char = packed_text[(MAX_TEXT_LEN - char_slot) * 8 - 1 -: 8];
+    end
+endfunction
+
+// 生成频域页电压主导谐波次序文本行中指定字符位置的 ASCII 字符。
+function [7:0] freq_dh_u_line_ascii;
+    input integer char_slot;
+    begin
+        freq_dh_u_line_ascii = packed_text_char(freq_dh_order_u_text, char_slot);
+    end
+endfunction
+
+// 生成频域页电流主导谐波次序文本行中指定字符位置的 ASCII 字符。
+function [7:0] freq_dh_i_line_ascii;
+    input integer char_slot;
+    begin
+        freq_dh_i_line_ascii = packed_text_char(freq_dh_order_i_text, char_slot);
+    end
+endfunction
+
+// 生成时域页电压 RMS 文本行中指定字符位置的 ASCII 字符。
 function [7:0] u_rms_line_ascii;
     input integer char_slot;
     begin
@@ -892,21 +1182,22 @@ function [7:0] u_rms_line_ascii;
             4:  u_rms_line_ascii = "s";
             5:  u_rms_line_ascii = ":";
             6:  u_rms_line_ascii = " ";
-            7:  u_rms_line_ascii = u_rms_digits_valid ? ((u_rms_tens == 8'd0) ? " " : digit_to_ascii(u_rms_tens)) : " ";
-            8:  u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_units) : " ";
-            9:  u_rms_line_ascii = ".";
-            10: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_decile) : " ";
-            11: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_percentiles) : " ";
-            12: u_rms_line_ascii = " ";
-            13: u_rms_line_ascii = "(";
-            14: u_rms_line_ascii = "V";
-            15: u_rms_line_ascii = ")";
+            7:  u_rms_line_ascii = hundreds_ascii_or_blank(u_rms_digits_valid, u_rms_hundreds);
+            8:  u_rms_line_ascii = tens_ascii_or_blank(u_rms_digits_valid, u_rms_hundreds, u_rms_tens);
+            9:  u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_units) : " ";
+            10: u_rms_line_ascii = ".";
+            11: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_decile) : " ";
+            12: u_rms_line_ascii = u_rms_digits_valid ? digit_to_ascii(u_rms_percentiles) : " ";
+            13: u_rms_line_ascii = " ";
+            14: u_rms_line_ascii = "(";
+            15: u_rms_line_ascii = "V";
+            16: u_rms_line_ascii = ")";
             default: u_rms_line_ascii = " ";
         endcase
     end
 endfunction
 
-// I_rms 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
+// 生成时域页电流 RMS 文本行中指定字符位置的 ASCII 字符。
 function [7:0] i_rms_line_ascii;
     input integer char_slot;
     begin
@@ -918,56 +1209,56 @@ function [7:0] i_rms_line_ascii;
             4:  i_rms_line_ascii = "s";
             5:  i_rms_line_ascii = ":";
             6:  i_rms_line_ascii = " ";
-            7:  i_rms_line_ascii = i_rms_digits_valid ? ((i_rms_tens == 8'd0) ? " " : digit_to_ascii(i_rms_tens)) : " ";
-            8:  i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_units) : " ";
-            9:  i_rms_line_ascii = ".";
-            10: i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_decile) : " ";
-            11: i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_percentiles) : " ";
-            12: i_rms_line_ascii = " ";
-            13: i_rms_line_ascii = "(";
-            14: i_rms_line_ascii = "A";
-            15: i_rms_line_ascii = ")";
+            7:  i_rms_line_ascii = hundreds_ascii_or_blank(i_rms_digits_valid, i_rms_hundreds);
+            8:  i_rms_line_ascii = tens_ascii_or_blank(i_rms_digits_valid, i_rms_hundreds, i_rms_tens);
+            9:  i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_units) : " ";
+            10: i_rms_line_ascii = ".";
+            11: i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_decile) : " ";
+            12: i_rms_line_ascii = i_rms_digits_valid ? digit_to_ascii(i_rms_percentiles) : " ";
+            13: i_rms_line_ascii = " ";
+            14: i_rms_line_ascii = "(";
+            15: i_rms_line_ascii = "A";
+            16: i_rms_line_ascii = ")";
             default: i_rms_line_ascii = " ";
         endcase
     end
 endfunction
 
-// Phase Diff 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茂录聦氓陆聯氓聣聧氓聧聲盲陆聧盲赂潞 deg茫聙聜
+// 生成时域页功率角文本行中指定字符位置的 ASCII 字符。
 function [7:0] phase_line_ascii;
     input integer char_slot;
     begin
         case (char_slot)
             0:  phase_line_ascii = "P";
-            1:  phase_line_ascii = "h";
-            2:  phase_line_ascii = "a";
-            3:  phase_line_ascii = "s";
-            4:  phase_line_ascii = "e";
+            1:  phase_line_ascii = "o";
+            2:  phase_line_ascii = "w";
+            3:  phase_line_ascii = "e";
+            4:  phase_line_ascii = "r";
             5:  phase_line_ascii = " ";
-            6:  phase_line_ascii = "D";
-            7:  phase_line_ascii = "i";
-            8:  phase_line_ascii = "f";
-            9:  phase_line_ascii = "f";
-            10: phase_line_ascii = ":";
-            11: phase_line_ascii = " ";
-            12: phase_line_ascii = phase_valid ? (phase_neg ? "-" : "+") : " ";
-            13: phase_line_ascii = phase_valid ? ((phase_hundreds == 8'd0) ? " " : digit_to_ascii(phase_hundreds)) : " ";
-            14: phase_line_ascii = phase_valid ? (((phase_hundreds == 8'd0) && (phase_tens == 8'd0)) ? " " : digit_to_ascii(phase_tens)) : " ";
-            15: phase_line_ascii = phase_valid ? digit_to_ascii(phase_units) : " ";
-            16: phase_line_ascii = ".";
-            17: phase_line_ascii = phase_valid ? digit_to_ascii(phase_decile) : " ";
-            18: phase_line_ascii = phase_valid ? digit_to_ascii(phase_percentiles) : " ";
-            19: phase_line_ascii = " ";
-            20: phase_line_ascii = "(";
-            21: phase_line_ascii = "d";
-            22: phase_line_ascii = "e";
-            23: phase_line_ascii = "g";
-            24: phase_line_ascii = ")";
+            6:  phase_line_ascii = "A";
+            7:  phase_line_ascii = "n";
+            8:  phase_line_ascii = "g";
+            9:  phase_line_ascii = ":";
+            10: phase_line_ascii = " ";
+            11: phase_line_ascii = phase_valid ? (phase_neg ? "-" : "+") : " ";
+            12: phase_line_ascii = phase_valid ? ((phase_hundreds == 8'd0) ? " " : digit_to_ascii(phase_hundreds)) : " ";
+            13: phase_line_ascii = phase_valid ? (((phase_hundreds == 8'd0) && (phase_tens == 8'd0)) ? " " : digit_to_ascii(phase_tens)) : " ";
+            14: phase_line_ascii = phase_valid ? digit_to_ascii(phase_units) : " ";
+            15: phase_line_ascii = ".";
+            16: phase_line_ascii = phase_valid ? digit_to_ascii(phase_decile) : " ";
+            17: phase_line_ascii = phase_valid ? digit_to_ascii(phase_percentiles) : " ";
+            18: phase_line_ascii = " ";
+            19: phase_line_ascii = "(";
+            20: phase_line_ascii = "d";
+            21: phase_line_ascii = "e";
+            22: phase_line_ascii = "g";
+            23: phase_line_ascii = ")";
             default: phase_line_ascii = " ";
         endcase
     end
 endfunction
 
-// Upp 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
+// 生成时域页电压峰峰值文本行中指定字符位置的 ASCII 字符。
 function [7:0] u_pp_line_ascii;
     input integer char_slot;
     begin
@@ -977,21 +1268,22 @@ function [7:0] u_pp_line_ascii;
             2:  u_pp_line_ascii = "p";
             3:  u_pp_line_ascii = ":";
             4:  u_pp_line_ascii = " ";
-            5:  u_pp_line_ascii = u_pp_digits_valid ? ((u_pp_tens == 8'd0) ? " " : digit_to_ascii(u_pp_tens)) : " ";
-            6:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_units) : " ";
-            7:  u_pp_line_ascii = ".";
-            8:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_decile) : " ";
-            9:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_percentiles) : " ";
-            10: u_pp_line_ascii = " ";
-            11: u_pp_line_ascii = "(";
-            12: u_pp_line_ascii = "V";
-            13: u_pp_line_ascii = ")";
+            5:  u_pp_line_ascii = hundreds_ascii_or_blank(u_pp_digits_valid, u_pp_hundreds);
+            6:  u_pp_line_ascii = tens_ascii_or_blank(u_pp_digits_valid, u_pp_hundreds, u_pp_tens);
+            7:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_units) : " ";
+            8:  u_pp_line_ascii = ".";
+            9:  u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_decile) : " ";
+            10: u_pp_line_ascii = u_pp_digits_valid ? digit_to_ascii(u_pp_percentiles) : " ";
+            11: u_pp_line_ascii = " ";
+            12: u_pp_line_ascii = "(";
+            13: u_pp_line_ascii = "V";
+            14: u_pp_line_ascii = ")";
             default: u_pp_line_ascii = " ";
         endcase
     end
 endfunction
 
-// Ipp 猫隆聦氓聤篓忙聙聛氓颅聴莽卢娄莽聰聼忙聢聬茫聙聜
+// 生成时域页电流峰峰值文本行中指定字符位置的 ASCII 字符。
 function [7:0] i_pp_line_ascii;
     input integer char_slot;
     begin
@@ -1001,21 +1293,22 @@ function [7:0] i_pp_line_ascii;
             2:  i_pp_line_ascii = "p";
             3:  i_pp_line_ascii = ":";
             4:  i_pp_line_ascii = " ";
-            5:  i_pp_line_ascii = i_pp_digits_valid ? ((i_pp_tens == 8'd0) ? " " : digit_to_ascii(i_pp_tens)) : " ";
-            6:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_units) : " ";
-            7:  i_pp_line_ascii = ".";
-            8:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_decile) : " ";
-            9:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_percentiles) : " ";
-            10: i_pp_line_ascii = " ";
-            11: i_pp_line_ascii = "(";
-            12: i_pp_line_ascii = "A";
-            13: i_pp_line_ascii = ")";
+            5:  i_pp_line_ascii = hundreds_ascii_or_blank(i_pp_digits_valid, i_pp_hundreds);
+            6:  i_pp_line_ascii = tens_ascii_or_blank(i_pp_digits_valid, i_pp_hundreds, i_pp_tens);
+            7:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_units) : " ";
+            8:  i_pp_line_ascii = ".";
+            9:  i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_decile) : " ";
+            10: i_pp_line_ascii = i_pp_digits_valid ? digit_to_ascii(i_pp_percentiles) : " ";
+            11: i_pp_line_ascii = " ";
+            12: i_pp_line_ascii = "(";
+            13: i_pp_line_ascii = "A";
+            14: i_pp_line_ascii = ")";
             default: i_pp_line_ascii = " ";
         endcase
     end
 endfunction
 
-// 氓掳聫氓颅聴氓聫路忙聳聡忙聹卢茂录職忙聽鹿忙聧庐忙篓陋氓聬聭氓聛聫莽搂禄莽隆庐氓庐職氓颅聴莽卢娄忙搂陆盲陆聧茫聙聜
+// 根据小字体区域内的 X 偏移返回当前命中的字符槽位。
 function integer small_text_slot;
     input [10:0] delta_x;
     input integer text_len;
@@ -1031,6 +1324,7 @@ function integer small_text_slot;
     end
 endfunction
 
+// 根据小字体区域内的 X 偏移返回字模内部的列坐标。
 function [5:0] small_text_rel_x;
     input [10:0] delta_x;
     integer idx;
@@ -1044,6 +1338,7 @@ function [5:0] small_text_rel_x;
     end
 endfunction
 
+// 判断当前像素是否落在任一电压纵轴刻度标签的高度范围内。
 function voltage_tick_hit;
     input [10:0] delta_y;
     integer idx;
@@ -1057,6 +1352,7 @@ function voltage_tick_hit;
     end
 endfunction
 
+// 根据 Y 偏移确定当前命中的电压纵轴刻度序号。
 function integer voltage_tick_slot_from_y;
     input [10:0] delta_y;
     integer idx;
@@ -1070,6 +1366,7 @@ function integer voltage_tick_slot_from_y;
     end
 endfunction
 
+// 计算当前像素在电压纵轴刻度字符内的 Y 偏移。
 function [5:0] voltage_tick_rel_y;
     input [10:0] delta_y;
     integer idx;
@@ -1083,6 +1380,7 @@ function [5:0] voltage_tick_rel_y;
     end
 endfunction
 
+// 判断当前像素是否落在任一电流纵轴刻度标签的高度范围内。
 function current_tick_hit;
     input [10:0] delta_y;
     integer idx;
@@ -1096,6 +1394,7 @@ function current_tick_hit;
     end
 endfunction
 
+// 根据 Y 偏移确定当前命中的电流纵轴刻度序号。
 function integer current_tick_slot_from_y;
     input [10:0] delta_y;
     integer idx;
@@ -1109,6 +1408,7 @@ function integer current_tick_slot_from_y;
     end
 endfunction
 
+// 计算当前像素在电流纵轴刻度字符内的 Y 偏移。
 function [5:0] current_tick_rel_y;
     input [10:0] delta_y;
     integer idx;
@@ -1122,7 +1422,7 @@ function [5:0] current_tick_rel_y;
     end
 endfunction
 
-// 氓掳聺猫炉聲氓聭陆盲赂颅盲赂聙氓聺聴 16x32 忙聳聡忙聹卢氓聦潞氓聼聼茫聙聜
+// 在指定矩形区域内渲染一行 16x32 大字体静态文本。
 task try_big_text_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1146,7 +1446,7 @@ task try_big_text_region;
     end
 endtask
 
-// 氓掳聺猫炉聲氓聭陆盲赂颅盲赂聙氓聺聴 10x20 忙聳聡忙聹卢氓聦潞氓聼聼茫聙聜
+// 在指定矩形区域内渲染一行 10x20 小字体静态文本。
 task try_small_text_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1170,7 +1470,7 @@ task try_small_text_region;
     end
 endtask
 
-// 氓掳聺猫炉聲氓聭陆盲赂颅氓路娄盲戮搂莽聰碌氓聨聥氓聢禄氓潞娄氓聦潞茫聙聜
+// 在电压纵轴刻度区域内按像素位置渲染对应的刻度文本。
 task try_voltage_tick_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1198,7 +1498,7 @@ task try_voltage_tick_region;
     end
 endtask
 
-// 氓掳聺猫炉聲氓聭陆盲赂颅氓聫鲁盲戮搂莽聰碌忙碌聛氓聢禄氓潞娄氓聦潞茫聙聜
+// 在电流纵轴刻度区域内按像素位置渲染对应的刻度文本。
 task try_current_tick_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1226,6 +1526,7 @@ task try_current_tick_region;
     end
 endtask
 
+// 在时域页参数区渲染频率文本行。
 task try_freq_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1246,6 +1547,7 @@ task try_freq_line_region;
     end
 endtask
 
+// 在时域页参数区渲染电压 RMS 文本行。
 task try_u_rms_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1266,6 +1568,7 @@ task try_u_rms_line_region;
     end
 endtask
 
+// 在时域页参数区渲染电流 RMS 文本行。
 task try_i_rms_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1286,6 +1589,7 @@ task try_i_rms_line_region;
     end
 endtask
 
+// 在时域页参数区渲染功率角文本行。
 task try_phase_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1306,6 +1610,7 @@ task try_phase_line_region;
     end
 endtask
 
+// 在时域页底部渲染电压峰峰值文本行。
 task try_u_pp_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1326,6 +1631,7 @@ task try_u_pp_line_region;
     end
 endtask
 
+// 在时域页底部渲染电流峰峰值文本行。
 task try_i_pp_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1346,6 +1652,7 @@ task try_i_pp_line_region;
     end
 endtask
 
+// 在时域页参数区渲染有功功率文本行。
 task try_active_p_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1366,6 +1673,7 @@ task try_active_p_line_region;
     end
 endtask
 
+// 在时域页参数区渲染无功功率文本行。
 task try_reactive_q_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1386,6 +1694,7 @@ task try_reactive_q_line_region;
     end
 endtask
 
+// 在时域页参数区渲染视在功率文本行。
 task try_apparent_s_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1406,6 +1715,7 @@ task try_apparent_s_line_region;
     end
 endtask
 
+// 在时域页参数区渲染功率因数文本行。
 task try_power_factor_line_region;
     input [10:0] base_x;
     input [10:0] base_y;
@@ -1426,29 +1736,54 @@ task try_power_factor_line_region;
     end
 endtask
 
-// 频域页右侧参数区使用静态界面占位和已有频率数字位，不改变测量数据链路。
+// 在时域页参数区渲染 sharp alarm 告警文本行。
+task try_sharp_alarm_line_region;
+    input [10:0] base_x;
+    input [10:0] base_y;
+    reg   [10:0] delta_x;
+    begin
+        if (!text_en && sharp_alarm_active &&
+            (pixel_xpos >= base_x) && (pixel_xpos < base_x + ALARM_LINE_W) &&
+            (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
+            delta_x         = pixel_xpos - base_x;
+            line_slot       = small_text_slot(delta_x, ALARM_LEN);
+            text_en         = 1'b1;
+            text_font_small = 1'b1;
+            text_char_idx   = ascii_to_idx(sharp_alarm_line_ascii(line_slot));
+            text_color      = ALARM_COLOR;
+            text_rel_x      = small_text_rel_x(delta_x);
+            text_rel_y      = pixel_ypos - base_y;
+        end
+    end
+endtask
+
+// 在频域页右侧参数区按行号选择并渲染对应的文本行。
 task try_freq_panel_line_region;
     input [10:0] base_y;
     input [10:0] right_x;
     input integer text_len;
-    input [2:0]  line_id;
+    input [3:0]  line_id;
     input [23:0] color_value;
     reg   [10:0] delta_x;
     reg   [7:0]  line_char;
     begin
         if (!text_en &&
-            (pixel_xpos >= LINE_X) && (pixel_xpos < right_x) &&
+            (pixel_xpos >= LINE_X) && (pixel_xpos < LINE_X + (text_len * SMALL_CHAR_W)) &&
             (pixel_ypos >= base_y) && (pixel_ypos < base_y + SMALL_CHAR_H)) begin
             delta_x   = pixel_xpos - LINE_X;
             line_slot = small_text_slot(delta_x, text_len);
 
             case (line_id)
-                3'd0: line_char = freq_fund_line_ascii(line_slot);
-                3'd1: line_char = freq_u1_line_ascii(line_slot);
-                3'd2: line_char = freq_i1_line_ascii(line_slot);
-                3'd3: line_char = freq_thd_u_line_ascii(line_slot);
-                3'd4: line_char = freq_thd_i_line_ascii(line_slot);
-                3'd5: line_char = freq_dominant_line_ascii(line_slot);
+                4'd0: line_char = freq_fund_line_ascii(line_slot);
+                4'd1: line_char = freq_thd_u_line_ascii(line_slot);
+                4'd2: line_char = freq_thd_i_line_ascii(line_slot);
+                4'd3: line_char = freq_u1_line_ascii(line_slot);
+                4'd4: line_char = freq_i1_line_ascii(line_slot);
+                4'd5: line_char = freq_phase1_line_ascii(line_slot);
+                4'd6: line_char = freq_dc_u_line_ascii(line_slot);
+                4'd7: line_char = freq_dc_i_line_ascii(line_slot);
+                4'd8: line_char = freq_dh_u_line_ascii(line_slot);
+                4'd9: line_char = freq_dh_i_line_ascii(line_slot);
                 default: line_char = " ";
             endcase
 
@@ -1462,17 +1797,18 @@ task try_freq_panel_line_region;
     end
 endtask
 
-// 在相位图下方绘制一组频域横坐标刻度，刻度值随当前谐波窗口变化。
+// 在频域页横轴刻度区域内按像素位置渲染当前窗口的谐波刻度标签。
 task try_freq_axis_tick_region;
     input [10:0] base_x;
     input [2:0]  tick_index;
     reg   [10:0] delta_x;
     begin
         if (!text_en &&
-            (pixel_xpos >= base_x) && (pixel_xpos < base_x + FREQ_AXIS_TICK_W) &&
+            (pixel_xpos >= base_x) &&
+            (pixel_xpos < base_x + (freq_axis_tick_len(harmonic_window_index, tick_index) * SMALL_CHAR_W)) &&
             (pixel_ypos >= FREQ_AXIS_TICK_Y) && (pixel_ypos < FREQ_AXIS_TICK_Y + SMALL_CHAR_H)) begin
             delta_x         = pixel_xpos - base_x;
-            line_slot       = small_text_slot(delta_x, FREQ_AXIS_TICK_LEN);
+            line_slot       = small_text_slot(delta_x, freq_axis_tick_len(harmonic_window_index, tick_index));
             text_en         = 1'b1;
             text_font_small = 1'b1;
             text_char_idx   = ascii_to_idx(freq_axis_tick_ascii(harmonic_window_index, tick_index, line_slot));
@@ -1483,7 +1819,7 @@ task try_freq_axis_tick_region;
     end
 endtask
 
-// 莽禄聞氓聬聢忙聣芦忙聫聫忙聣聙忙聹聣忙聳聡氓颅聴氓聦潞氓聼聼茂录聦氓聭陆盲赂颅盲录聵氓聟聢莽潞搂盲赂聨猫掳聝莽聰篓茅隆潞氓潞聫盲赂聙猫聡麓茫聙聜
+// 组合选择当前像素命中的文本元素，并输出对应的字体、颜色与字模内坐标。
 always @(*) begin
     text_en         = 1'b0;
     text_font_small = 1'b0;
@@ -1528,7 +1864,8 @@ always @(*) begin
             try_freq_axis_tick_region(FREQ_AXIS_TICK5_X, 3'd2);
             try_freq_axis_tick_region(FREQ_AXIS_TICK10_X, 3'd3);
             try_freq_axis_tick_region(FREQ_AXIS_TICK15_X, 3'd4);
-            try_freq_axis_tick_region(FREQ_AXIS_TICK25_X, 3'd5);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK20_X, 3'd5);
+            try_freq_axis_tick_region(FREQ_AXIS_TICK25_X, 3'd6);
         end else begin
             try_freq_axis_tick_region(FREQ_AXIS_TICK5_X, 3'd1);
             try_freq_axis_tick_region(FREQ_AXIS_TICK10_X, 3'd2);
@@ -1538,12 +1875,16 @@ always @(*) begin
         end
 
         try_small_text_region(RP_TITLE_X, RP_TITLE_Y, RP_HEAD_LEN, ACCENT_COLOR, RP_HEAD_STR);
-        try_freq_panel_line_region(LINE_Y0, 11'd756, FREQ_FUND_LEN, 3'd0, TEXT_SOFT);
-        try_freq_panel_line_region(LINE_Y0 + LINE_STEP, 11'd686, FREQ_U1_LEN, 3'd1, WAVE_U_COLOR);
-        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP, 11'd686, FREQ_I1_LEN, 3'd2, WAVE_I_COLOR);
-        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP, 11'd676, FREQ_THD_LEN, 3'd3, WAVE_U_COLOR);
-        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd676, FREQ_THD_LEN, 3'd4, WAVE_I_COLOR);
-        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd656, FREQ_DOM_LEN, 3'd5, TEXT_WHITE);
+        try_freq_panel_line_region(LINE_Y0, 11'd756, FREQ_FUND_LEN, 4'd0, TEXT_SOFT);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP, 11'd756, FREQ_THD_LEN, 4'd1, WAVE_U_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP, 11'd756, FREQ_THD_LEN, 4'd2, WAVE_I_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP, 11'd756, FREQ_U1_LEN, 4'd3, WAVE_U_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd756, FREQ_I1_LEN, 4'd4, WAVE_I_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd756, FREQ_PHASE1_LEN, 4'd5, TEXT_WHITE);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd756, FREQ_DC_LEN, 4'd6, WAVE_U_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd756, FREQ_DC_LEN, 4'd7, WAVE_I_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd756, FREQ_DH_LEN, 4'd8, WAVE_U_COLOR);
+        try_freq_panel_line_region(LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP, 11'd756, FREQ_DH_LEN, 4'd9, WAVE_I_COLOR);
     end
     else begin
         try_big_text_region(PLOT_TXT_X,  PLOT_TXT_Y,  PLOT_LEN,  TEXT_SOFT,  PLOT_STR);
@@ -1569,6 +1910,7 @@ always @(*) begin
         try_reactive_q_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP);
         try_apparent_s_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP);
         try_power_factor_line_region(LINE_X, LINE_Y0 + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP + LINE_STEP);
+        try_sharp_alarm_line_region(LINE_X, ALARM_LINE_Y);
         try_u_pp_line_region(U_PP_X, U_PP_Y);
         try_i_pp_line_region(I_PP_X, I_PP_Y);
     end

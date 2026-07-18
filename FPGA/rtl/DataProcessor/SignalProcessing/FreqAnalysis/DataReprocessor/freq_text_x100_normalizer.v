@@ -3,22 +3,30 @@
 /*
  * 模块: freq_text_x100_normalizer
  * 功能:
- *   对频域 raw 指标做 LCD 文本显示前的 x100 定点规整。
- *   当前 raw 指标已经由上游以百分比 x100 或角度 x100 给出，本模块负责统一截幅和有效位传递。
+ *   对频域 raw 文本指标做 LCD 显示前的 x100 截幅和有效位传递。
+ *   本模块串行处理各个字段，复用比较/截幅逻辑，避免并行展开造成 LUT 占用过高。
  * 输入:
  *   clk: 文本预处理工作时钟。
  *   rst_n: 低有效复位信号。
  *   start: 启动一次频域文本 x100 规整。
  *   thd_u_raw_x100: 电压 THD raw 值。
  *   thd_i_raw_x100: 电流 THD raw 值。
+ *   thd_u_valid_in: 电压 THD raw 值有效标志。
+ *   thd_i_valid_in: 电流 THD raw 值有效标志。
  *   u1_mag_raw_x100: 电压基波幅值占比 raw 值。
  *   i1_mag_raw_x100: 电流基波幅值占比 raw 值。
- *   phase1_raw_x100: 基波相位差 raw 值。
+ *   u1_mag_valid_in: 电压基波幅值占比有效标志。
+ *   i1_mag_valid_in: 电流基波幅值占比有效标志。
+ *   phase1_raw_x100: 基波 U-I 相位差 raw 值。
+ *   phase1_valid_in: 基波相位差有效标志。
  *   dc_u_raw_x100: 电压直流分量占比 raw 值。
  *   dc_i_raw_x100: 电流直流分量占比 raw 值。
+ *   dc_u_valid_in: 电压直流分量有效标志。
+ *   dc_i_valid_in: 电流直流分量有效标志。
  *   dh_order_u_raw: 电压主导谐波次数 raw 值。
  *   dh_order_i_raw: 电流主导谐波次数 raw 值。
- *   各 valid 输入: 对应 raw 指标是否有效。
+ *   dh_order_u_valid_in: 电压主导谐波次数有效标志。
+ *   dh_order_i_valid_in: 电流主导谐波次数有效标志。
  * 输出:
  *   done: 本次 x100 规整完成脉冲。
  *   各 x100/order 输出: 规整后供数位拆分使用的数值。
@@ -71,7 +79,20 @@ localparam [31:0]        PERCENT_CLIP_X100 = 32'd99999;
 localparam signed [31:0] PHASE_POS_CLIP_X100 = 32'sd18000;
 localparam signed [31:0] PHASE_NEG_CLIP_X100 = -32'sd18000;
 
-// 对百分比类和相位类显示数值做统一截幅，避免异常 raw 值破坏文本显示范围。
+localparam [3:0] IDX_THD_U      = 4'd0;
+localparam [3:0] IDX_THD_I      = 4'd1;
+localparam [3:0] IDX_U1_MAG     = 4'd2;
+localparam [3:0] IDX_I1_MAG     = 4'd3;
+localparam [3:0] IDX_PHASE1     = 4'd4;
+localparam [3:0] IDX_DC_U       = 4'd5;
+localparam [3:0] IDX_DC_I       = 4'd6;
+localparam [3:0] IDX_DH_ORDER_U = 4'd7;
+localparam [3:0] IDX_DH_ORDER_I = 4'd8;
+
+reg       busy;
+reg [3:0] item_index;
+
+// 对百分比类显示值做统一截幅，避免异常 raw 值破坏文本显示范围。
 function [31:0] clip_percent_x100;
     input [31:0] value_x100;
     begin
@@ -79,6 +100,7 @@ function [31:0] clip_percent_x100;
     end
 endfunction
 
+// 对相位类显示值做统一截幅，限制在 LCD 文本可显示的角度范围内。
 function signed [31:0] clip_phase_x100;
     input signed [31:0] value_x100;
     begin
@@ -91,9 +113,11 @@ function signed [31:0] clip_phase_x100;
     end
 endfunction
 
-// start 到来时一次性锁存规整后的 x100/order 结果。
+// 串行规整频域文本字段，复用同一组比较/截幅逻辑以降低 LUT 占用。
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
+        busy               <= 1'b0;
+        item_index         <= IDX_THD_U;
         done               <= 1'b0;
         thd_u_x100         <= 32'd0;
         thd_i_x100         <= 32'd0;
@@ -116,26 +140,71 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         done <= 1'b0;
 
-        if (start) begin
-            thd_u_x100       <= clip_percent_x100(thd_u_raw_x100);
-            thd_i_x100       <= clip_percent_x100(thd_i_raw_x100);
-            thd_u_valid      <= thd_u_valid_in;
-            thd_i_valid      <= thd_i_valid_in;
-            u1_mag_x100      <= clip_percent_x100(u1_mag_raw_x100);
-            i1_mag_x100      <= clip_percent_x100(i1_mag_raw_x100);
-            u1_mag_valid     <= u1_mag_valid_in;
-            i1_mag_valid     <= i1_mag_valid_in;
-            phase1_x100      <= clip_phase_x100(phase1_raw_x100);
-            phase1_valid     <= phase1_valid_in;
-            dc_u_x100        <= clip_percent_x100(dc_u_raw_x100);
-            dc_i_x100        <= clip_percent_x100(dc_i_raw_x100);
-            dc_u_valid       <= dc_u_valid_in;
-            dc_i_valid       <= dc_i_valid_in;
-            dh_order_u       <= dh_order_u_raw;
-            dh_order_i       <= dh_order_i_raw;
-            dh_order_u_valid <= dh_order_u_valid_in;
-            dh_order_i_valid <= dh_order_i_valid_in;
-            done             <= 1'b1;
+        if (start && !busy) begin
+            busy       <= 1'b1;
+            item_index <= IDX_THD_U;
+        end else if (busy) begin
+            case (item_index)
+                IDX_THD_U: begin
+                    thd_u_x100  <= clip_percent_x100(thd_u_raw_x100);
+                    thd_u_valid <= thd_u_valid_in;
+                    item_index  <= IDX_THD_I;
+                end
+
+                IDX_THD_I: begin
+                    thd_i_x100  <= clip_percent_x100(thd_i_raw_x100);
+                    thd_i_valid <= thd_i_valid_in;
+                    item_index  <= IDX_U1_MAG;
+                end
+
+                IDX_U1_MAG: begin
+                    u1_mag_x100  <= clip_percent_x100(u1_mag_raw_x100);
+                    u1_mag_valid <= u1_mag_valid_in;
+                    item_index   <= IDX_I1_MAG;
+                end
+
+                IDX_I1_MAG: begin
+                    i1_mag_x100  <= clip_percent_x100(i1_mag_raw_x100);
+                    i1_mag_valid <= i1_mag_valid_in;
+                    item_index   <= IDX_PHASE1;
+                end
+
+                IDX_PHASE1: begin
+                    phase1_x100  <= clip_phase_x100(phase1_raw_x100);
+                    phase1_valid <= phase1_valid_in;
+                    item_index   <= IDX_DC_U;
+                end
+
+                IDX_DC_U: begin
+                    dc_u_x100  <= clip_percent_x100(dc_u_raw_x100);
+                    dc_u_valid <= dc_u_valid_in;
+                    item_index <= IDX_DC_I;
+                end
+
+                IDX_DC_I: begin
+                    dc_i_x100  <= clip_percent_x100(dc_i_raw_x100);
+                    dc_i_valid <= dc_i_valid_in;
+                    item_index <= IDX_DH_ORDER_U;
+                end
+
+                IDX_DH_ORDER_U: begin
+                    dh_order_u       <= dh_order_u_raw;
+                    dh_order_u_valid <= dh_order_u_valid_in;
+                    item_index       <= IDX_DH_ORDER_I;
+                end
+
+                IDX_DH_ORDER_I: begin
+                    dh_order_i       <= dh_order_i_raw;
+                    dh_order_i_valid <= dh_order_i_valid_in;
+                    busy             <= 1'b0;
+                    done             <= 1'b1;
+                end
+
+                default: begin
+                    busy       <= 1'b0;
+                    item_index <= IDX_THD_U;
+                end
+            endcase
         end
     end
 end

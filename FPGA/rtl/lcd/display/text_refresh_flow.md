@@ -14,13 +14,13 @@ LCD 当前帧刷新完毕，`frame_done_toggle` 翻转，等价于本轮文字�
 
 -> 启动 `time_parameters_initiator` 原始测量调度阶段。
 
--> `time_parameters_initiator` 对 `RawDataCal` 下 p2p、phase、frequency 原始测量模块发出启动脉冲。
+-> `time_parameters_initiator` 对 `RawDataCal` 下 p2p、phase、frequency、真实 RMS/平均有功原始测量模块同时发出启动脉冲。
 
--> 等待 p2p、phase、frequency 原始测量模块 `done`，并检查对应 `valid`。
+-> 等待 p2p、phase、frequency、真实 RMS/平均有功原始测量模块 `done`，并检查对应 `valid`。
 
--> p2p raw 有效后启动 `ui_rms_measure`，得到 U/I RMS raw。
+-> `ui_rms_measure` 在同一批联合采样窗口内直接累计 `Σu²`、`Σi²`、`Σui`，得到 U/I RMS raw 和平均有功功率 raw。
 
--> RMS raw 与 phase raw 有效后启动 `power_metrics_calc`，得到 P/Q/S/PF raw。
+-> RMS raw、平均有功 raw 与 phase raw 有效后启动 `power_metrics_calc`，得到总体 P/Q/S/PF raw。
 
 -> 将同一批次获得的所有待测参数原始值锁存，统一为 `32位补码 raw`。
 
@@ -56,7 +56,7 @@ LCD 当前帧刷新完毕，`frame_done_toggle` 翻转，等价于本轮文字�
 
 `time_text_display_preprocess`: 负责文字刷新总调度，只按 `parameters_done -> x100_done -> separator_done -> commit` 顺序推进，不直接控制 RawDataCal 子模块。
 
-`time_parameters_initiator`: 负责原始测量调度，统一启动电压峰峰值、电流峰峰值、相位差和频率测量，再派生 RMS raw 和功率 raw，并锁存同一批次的 raw/valid 输出。
+`time_parameters_initiator`: 负责原始测量调度，统一启动电压峰峰值、电流峰峰值、相位差、频率、真实 RMS 和平均有功测量，再派生功率 raw，并锁存同一批次的 raw/valid 输出。
 
 `time_x100_normalizer`: 负责把 32 位补码 raw 参数统一换算为 x100 定点显示值，输出仍为 32 位补码。
 
@@ -70,7 +70,7 @@ LCD 当前帧刷新完毕，`frame_done_toggle` 翻转，等价于本轮文字�
 
 `time_text_display_preprocess` 只在空闲态响应新的 LCD 帧完成事件，避免上一轮文字包尚未提交完毕时重复启动。
 
-`time_parameters_initiator` 必须等待 p2p、phase、frequency、RMS 和功率 raw 阶段结束后才返回 `done`，每个参数是否参与显示由对应 `valid` 决定。
+`time_parameters_initiator` 必须等待 p2p、phase、frequency、真实 RMS/平均有功 和功率 raw 阶段结束后才返回 `done`，每个参数是否参与显示由对应 `valid` 决定。
 
 `time_x100_normalizer` 只能在同一批 raw 结果锁存完成后启动，`time_data_separator` 只能在 `x100_done` 后启动。
 

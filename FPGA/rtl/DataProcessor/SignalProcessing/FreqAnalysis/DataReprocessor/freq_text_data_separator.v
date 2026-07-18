@@ -3,21 +3,30 @@
 /*
  * 模块: freq_text_data_separator
  * 功能:
- *   将频域文本指标的 x100/order 数值拆分为 LCD 字符渲染需要的十进制数位和符号位。
+ *   将频域文本指标的 x100/order 数值拆分为 LCD 字符渲染需要的十进制数字位。
+ *   本模块串行复用一组比较/减法逻辑，避免每个字段并行实例化拆位器造成 LUT 超量。
  * 输入:
  *   clk: 文本预处理工作时钟。
  *   rst_n: 低有效复位信号。
  *   start: 启动一次频域文本数位拆分。
  *   thd_u_x100: 电压 THD，单位为百分比 x100。
  *   thd_i_x100: 电流 THD，单位为百分比 x100。
+ *   thd_u_valid_in: 电压 THD 有效标志。
+ *   thd_i_valid_in: 电流 THD 有效标志。
  *   u1_mag_x100: 电压基波幅值占比，单位为百分比 x100。
  *   i1_mag_x100: 电流基波幅值占比，单位为百分比 x100。
+ *   u1_mag_valid_in: 电压基波幅值占比有效标志。
+ *   i1_mag_valid_in: 电流基波幅值占比有效标志。
  *   phase1_x100: 基波 U-I 相位差，单位为度 x100。
+ *   phase1_valid_in: 基波相位差有效标志。
  *   dc_u_x100: 电压直流分量占比，单位为百分比 x100。
  *   dc_i_x100: 电流直流分量占比，单位为百分比 x100。
+ *   dc_u_valid_in: 电压直流分量有效标志。
+ *   dc_i_valid_in: 电流直流分量有效标志。
  *   dh_order_u: 电压主导谐波次数。
  *   dh_order_i: 电流主导谐波次数。
- *   各 valid 输入: 对应数值是否有效。
+ *   dh_order_u_valid_in: 电压主导谐波次数有效标志。
+ *   dh_order_i_valid_in: 电流主导谐波次数有效标志。
  * 输出:
  *   done: 本次数位拆分完成脉冲。
  *   各 digit/valid 输出: 供 LCD 文本层直接渲染的数字位、符号位和有效位。
@@ -98,21 +107,37 @@ module freq_text_data_separator (
     output reg                dh_order_i_valid
 );
 
+localparam [3:0] IDX_THD_U      = 4'd0;
+localparam [3:0] IDX_THD_I      = 4'd1;
+localparam [3:0] IDX_U1_MAG     = 4'd2;
+localparam [3:0] IDX_I1_MAG     = 4'd3;
+localparam [3:0] IDX_PHASE1     = 4'd4;
+localparam [3:0] IDX_DC_U       = 4'd5;
+localparam [3:0] IDX_DC_I       = 4'd6;
+localparam [3:0] IDX_DH_ORDER_U = 4'd7;
+localparam [3:0] IDX_DH_ORDER_I = 4'd8;
+
+reg       busy;
+reg [3:0] item_index;
+reg [2:0] digit_state;
+reg [31:0] digit_work;
+reg [7:0]  calc_hundreds;
+reg [7:0]  calc_tens;
+reg [7:0]  calc_units;
+reg [7:0]  calc_decile;
+
 wire [31:0] phase1_abs_x100;
 wire [31:0] dh_order_u_x100;
 wire [31:0] dh_order_i_x100;
 
-wire [7:0] thd_u_hundreds_wire, thd_u_tens_wire, thd_u_units_wire, thd_u_decile_wire, thd_u_percentiles_wire;
-wire [7:0] thd_i_hundreds_wire, thd_i_tens_wire, thd_i_units_wire, thd_i_decile_wire, thd_i_percentiles_wire;
-wire [7:0] u1_mag_hundreds_wire, u1_mag_tens_wire, u1_mag_units_wire, u1_mag_decile_wire, u1_mag_percentiles_wire;
-wire [7:0] i1_mag_hundreds_wire, i1_mag_tens_wire, i1_mag_units_wire, i1_mag_decile_wire, i1_mag_percentiles_wire;
-wire [7:0] phase1_hundreds_wire, phase1_tens_wire, phase1_units_wire, phase1_decile_wire, phase1_percentiles_wire;
-wire [7:0] dc_u_hundreds_wire, dc_u_tens_wire, dc_u_units_wire, dc_u_decile_wire, dc_u_percentiles_wire;
-wire [7:0] dc_i_hundreds_wire, dc_i_tens_wire, dc_i_units_wire, dc_i_decile_wire, dc_i_percentiles_wire;
-wire [7:0] dh_order_u_hundreds_wire, dh_order_u_tens_wire, dh_order_u_units_wire;
-wire [7:0] dh_order_i_hundreds_wire, dh_order_i_tens_wire, dh_order_i_units_wire;
+localparam [2:0] DIG_LOAD     = 3'd0;
+localparam [2:0] DIG_HUNDREDS = 3'd1;
+localparam [2:0] DIG_TENS     = 3'd2;
+localparam [2:0] DIG_UNITS    = 3'd3;
+localparam [2:0] DIG_DECILE   = 3'd4;
+localparam [2:0] DIG_STORE    = 3'd5;
 
-// 将有符号相位转换成绝对值，符号单独传递给 LCD 文本层。
+// 将有符号相位转换为绝对值，符号位单独传给 LCD 文本层。
 function [31:0] abs_value_of;
     input signed [31:0] signed_value;
     begin
@@ -121,6 +146,8 @@ function [31:0] abs_value_of;
 endfunction
 
 assign phase1_abs_x100 = abs_value_of(phase1_x100);
+
+// 主导谐波次数是整数，转换成 x100 格式后复用统一拆位器。
 assign dh_order_u_x100 = ({23'd0, dh_order_u} << 6) +
                          ({23'd0, dh_order_u} << 5) +
                          ({23'd0, dh_order_u} << 2);
@@ -128,91 +155,146 @@ assign dh_order_i_x100 = ({23'd0, dh_order_i} << 6) +
                          ({23'd0, dh_order_i} << 5) +
                          ({23'd0, dh_order_i} << 2);
 
-// 百分比类、相位类和整数谐波次数统一复用 x100 数位拆分模块。
-value_x100_to_digits u_thd_u_digits (
-    .value_x100 (thd_u_x100),
-    .hundreds   (thd_u_hundreds_wire),
-    .tens       (thd_u_tens_wire),
-    .units      (thd_u_units_wire),
-    .decile     (thd_u_decile_wire),
-    .percentiles(thd_u_percentiles_wire)
-);
+// 根据当前字段选择要进入串行拆位流程的 x100 数值。
+function [31:0] select_digit_value;
+    input [3:0] index;
+    begin
+        select_digit_value = 32'd0;
 
-value_x100_to_digits u_thd_i_digits (
-    .value_x100 (thd_i_x100),
-    .hundreds   (thd_i_hundreds_wire),
-    .tens       (thd_i_tens_wire),
-    .units      (thd_i_units_wire),
-    .decile     (thd_i_decile_wire),
-    .percentiles(thd_i_percentiles_wire)
-);
+        case (index)
+            IDX_THD_U:      select_digit_value = thd_u_x100;
+            IDX_THD_I:      select_digit_value = thd_i_x100;
+            IDX_U1_MAG:     select_digit_value = u1_mag_x100;
+            IDX_I1_MAG:     select_digit_value = i1_mag_x100;
+            IDX_PHASE1:     select_digit_value = phase1_abs_x100;
+            IDX_DC_U:       select_digit_value = dc_u_x100;
+            IDX_DC_I:       select_digit_value = dc_i_x100;
+            IDX_DH_ORDER_U: select_digit_value = dh_order_u_x100;
+            IDX_DH_ORDER_I: select_digit_value = dh_order_i_x100;
+            default:        select_digit_value = 32'd0;
+        endcase
+    end
+endfunction
 
-value_x100_to_digits u_u1_mag_digits (
-    .value_x100 (u1_mag_x100),
-    .hundreds   (u1_mag_hundreds_wire),
-    .tens       (u1_mag_tens_wire),
-    .units      (u1_mag_units_wire),
-    .decile     (u1_mag_decile_wire),
-    .percentiles(u1_mag_percentiles_wire)
-);
+// 当前字段完成后跳转到下一个字段；最后一个字段完成时结束本轮拆位。
+function [3:0] next_item_index;
+    input [3:0] index;
+    begin
+        next_item_index = IDX_THD_U;
 
-value_x100_to_digits u_i1_mag_digits (
-    .value_x100 (i1_mag_x100),
-    .hundreds   (i1_mag_hundreds_wire),
-    .tens       (i1_mag_tens_wire),
-    .units      (i1_mag_units_wire),
-    .decile     (i1_mag_decile_wire),
-    .percentiles(i1_mag_percentiles_wire)
-);
+        case (index)
+            IDX_THD_U:      next_item_index = IDX_THD_I;
+            IDX_THD_I:      next_item_index = IDX_U1_MAG;
+            IDX_U1_MAG:     next_item_index = IDX_I1_MAG;
+            IDX_I1_MAG:     next_item_index = IDX_PHASE1;
+            IDX_PHASE1:     next_item_index = IDX_DC_U;
+            IDX_DC_U:       next_item_index = IDX_DC_I;
+            IDX_DC_I:       next_item_index = IDX_DH_ORDER_U;
+            IDX_DH_ORDER_U: next_item_index = IDX_DH_ORDER_I;
+            default:        next_item_index = IDX_THD_U;
+        endcase
+    end
+endfunction
 
-value_x100_to_digits u_phase1_digits (
-    .value_x100 (phase1_abs_x100),
-    .hundreds   (phase1_hundreds_wire),
-    .tens       (phase1_tens_wire),
-    .units      (phase1_units_wire),
-    .decile     (phase1_decile_wire),
-    .percentiles(phase1_percentiles_wire)
-);
+// 把当前字段的拆位结果写入对应输出寄存器。
+task store_digit_result;
+    begin
+        case (item_index)
+            IDX_THD_U: begin
+                thd_u_hundreds    <= calc_hundreds;
+                thd_u_tens        <= calc_tens;
+                thd_u_units       <= calc_units;
+                thd_u_decile      <= calc_decile;
+                thd_u_percentiles <= digit_work[7:0];
+                thd_u_valid       <= thd_u_valid_in;
+            end
 
-value_x100_to_digits u_dc_u_digits (
-    .value_x100 (dc_u_x100),
-    .hundreds   (dc_u_hundreds_wire),
-    .tens       (dc_u_tens_wire),
-    .units      (dc_u_units_wire),
-    .decile     (dc_u_decile_wire),
-    .percentiles(dc_u_percentiles_wire)
-);
+            IDX_THD_I: begin
+                thd_i_hundreds    <= calc_hundreds;
+                thd_i_tens        <= calc_tens;
+                thd_i_units       <= calc_units;
+                thd_i_decile      <= calc_decile;
+                thd_i_percentiles <= digit_work[7:0];
+                thd_i_valid       <= thd_i_valid_in;
+            end
 
-value_x100_to_digits u_dc_i_digits (
-    .value_x100 (dc_i_x100),
-    .hundreds   (dc_i_hundreds_wire),
-    .tens       (dc_i_tens_wire),
-    .units      (dc_i_units_wire),
-    .decile     (dc_i_decile_wire),
-    .percentiles(dc_i_percentiles_wire)
-);
+            IDX_U1_MAG: begin
+                u1_mag_hundreds    <= calc_hundreds;
+                u1_mag_tens        <= calc_tens;
+                u1_mag_units       <= calc_units;
+                u1_mag_decile      <= calc_decile;
+                u1_mag_percentiles <= digit_work[7:0];
+                u1_mag_valid       <= u1_mag_valid_in;
+            end
 
-value_x100_to_digits u_dh_order_u_digits (
-    .value_x100 (dh_order_u_x100),
-    .hundreds   (dh_order_u_hundreds_wire),
-    .tens       (dh_order_u_tens_wire),
-    .units      (dh_order_u_units_wire),
-    .decile     (),
-    .percentiles()
-);
+            IDX_I1_MAG: begin
+                i1_mag_hundreds    <= calc_hundreds;
+                i1_mag_tens        <= calc_tens;
+                i1_mag_units       <= calc_units;
+                i1_mag_decile      <= calc_decile;
+                i1_mag_percentiles <= digit_work[7:0];
+                i1_mag_valid       <= i1_mag_valid_in;
+            end
 
-value_x100_to_digits u_dh_order_i_digits (
-    .value_x100 (dh_order_i_x100),
-    .hundreds   (dh_order_i_hundreds_wire),
-    .tens       (dh_order_i_tens_wire),
-    .units      (dh_order_i_units_wire),
-    .decile     (),
-    .percentiles()
-);
+            IDX_PHASE1: begin
+                phase1_neg         <= phase1_x100[31] && (phase1_abs_x100 != 32'd0);
+                phase1_hundreds    <= calc_hundreds;
+                phase1_tens        <= calc_tens;
+                phase1_units       <= calc_units;
+                phase1_decile      <= calc_decile;
+                phase1_percentiles <= digit_work[7:0];
+                phase1_valid       <= phase1_valid_in;
+            end
 
-// 在 start 到来时一次性提交所有拆分结果，保证 LCD 文本包来自同一批 raw 指标。
+            IDX_DC_U: begin
+                dc_u_hundreds    <= calc_hundreds;
+                dc_u_tens        <= calc_tens;
+                dc_u_units       <= calc_units;
+                dc_u_decile      <= calc_decile;
+                dc_u_percentiles <= digit_work[7:0];
+                dc_u_valid       <= dc_u_valid_in;
+            end
+
+            IDX_DC_I: begin
+                dc_i_hundreds    <= calc_hundreds;
+                dc_i_tens        <= calc_tens;
+                dc_i_units       <= calc_units;
+                dc_i_decile      <= calc_decile;
+                dc_i_percentiles <= digit_work[7:0];
+                dc_i_valid       <= dc_i_valid_in;
+            end
+
+            IDX_DH_ORDER_U: begin
+                dh_order_u_hundreds <= calc_hundreds;
+                dh_order_u_tens     <= calc_tens;
+                dh_order_u_units    <= calc_units;
+                dh_order_u_valid    <= dh_order_u_valid_in;
+            end
+
+            IDX_DH_ORDER_I: begin
+                dh_order_i_hundreds <= calc_hundreds;
+                dh_order_i_tens     <= calc_tens;
+                dh_order_i_units    <= calc_units;
+                dh_order_i_valid    <= dh_order_i_valid_in;
+            end
+
+            default: begin
+            end
+        endcase
+    end
+endtask
+
+// 串行锁存每个字段的拆位结果，完成后给上级一个 done 脉冲。
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
+        busy                  <= 1'b0;
+        item_index            <= IDX_THD_U;
+        digit_state           <= DIG_LOAD;
+        digit_work            <= 32'd0;
+        calc_hundreds         <= 8'd0;
+        calc_tens             <= 8'd0;
+        calc_units            <= 8'd0;
+        calc_decile           <= 8'd0;
         done                  <= 1'b0;
         thd_u_hundreds        <= 8'd0;
         thd_u_tens            <= 8'd0;
@@ -268,59 +350,75 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         done <= 1'b0;
 
-        if (start) begin
-            thd_u_hundreds      <= thd_u_hundreds_wire;
-            thd_u_tens          <= thd_u_tens_wire;
-            thd_u_units         <= thd_u_units_wire;
-            thd_u_decile        <= thd_u_decile_wire;
-            thd_u_percentiles   <= thd_u_percentiles_wire;
-            thd_u_valid         <= thd_u_valid_in;
-            thd_i_hundreds      <= thd_i_hundreds_wire;
-            thd_i_tens          <= thd_i_tens_wire;
-            thd_i_units         <= thd_i_units_wire;
-            thd_i_decile        <= thd_i_decile_wire;
-            thd_i_percentiles   <= thd_i_percentiles_wire;
-            thd_i_valid         <= thd_i_valid_in;
-            u1_mag_hundreds     <= u1_mag_hundreds_wire;
-            u1_mag_tens         <= u1_mag_tens_wire;
-            u1_mag_units        <= u1_mag_units_wire;
-            u1_mag_decile       <= u1_mag_decile_wire;
-            u1_mag_percentiles  <= u1_mag_percentiles_wire;
-            u1_mag_valid        <= u1_mag_valid_in;
-            i1_mag_hundreds     <= i1_mag_hundreds_wire;
-            i1_mag_tens         <= i1_mag_tens_wire;
-            i1_mag_units        <= i1_mag_units_wire;
-            i1_mag_decile       <= i1_mag_decile_wire;
-            i1_mag_percentiles  <= i1_mag_percentiles_wire;
-            i1_mag_valid        <= i1_mag_valid_in;
-            phase1_neg          <= phase1_x100[31] && (phase1_abs_x100 != 32'd0);
-            phase1_hundreds     <= phase1_hundreds_wire;
-            phase1_tens         <= phase1_tens_wire;
-            phase1_units        <= phase1_units_wire;
-            phase1_decile       <= phase1_decile_wire;
-            phase1_percentiles  <= phase1_percentiles_wire;
-            phase1_valid        <= phase1_valid_in;
-            dc_u_hundreds       <= dc_u_hundreds_wire;
-            dc_u_tens           <= dc_u_tens_wire;
-            dc_u_units          <= dc_u_units_wire;
-            dc_u_decile         <= dc_u_decile_wire;
-            dc_u_percentiles    <= dc_u_percentiles_wire;
-            dc_u_valid          <= dc_u_valid_in;
-            dc_i_hundreds       <= dc_i_hundreds_wire;
-            dc_i_tens           <= dc_i_tens_wire;
-            dc_i_units          <= dc_i_units_wire;
-            dc_i_decile         <= dc_i_decile_wire;
-            dc_i_percentiles    <= dc_i_percentiles_wire;
-            dc_i_valid          <= dc_i_valid_in;
-            dh_order_u_hundreds <= dh_order_u_hundreds_wire;
-            dh_order_u_tens     <= dh_order_u_tens_wire;
-            dh_order_u_units    <= dh_order_u_units_wire;
-            dh_order_u_valid    <= dh_order_u_valid_in;
-            dh_order_i_hundreds <= dh_order_i_hundreds_wire;
-            dh_order_i_tens     <= dh_order_i_tens_wire;
-            dh_order_i_units    <= dh_order_i_units_wire;
-            dh_order_i_valid    <= dh_order_i_valid_in;
-            done                <= 1'b1;
+        if (start && !busy) begin
+            busy       <= 1'b1;
+            item_index <= IDX_THD_U;
+            digit_state <= DIG_LOAD;
+        end else if (busy) begin
+            case (digit_state)
+                DIG_LOAD: begin
+                    digit_work    <= select_digit_value(item_index);
+                    calc_hundreds <= 8'd0;
+                    calc_tens     <= 8'd0;
+                    calc_units    <= 8'd0;
+                    calc_decile   <= 8'd0;
+                    digit_state   <= DIG_HUNDREDS;
+                end
+
+                DIG_HUNDREDS: begin
+                    if ((digit_work >= 32'd10000) && (calc_hundreds < 8'd9)) begin
+                        digit_work    <= digit_work - 32'd10000;
+                        calc_hundreds <= calc_hundreds + 8'd1;
+                    end else begin
+                        digit_state <= DIG_TENS;
+                    end
+                end
+
+                DIG_TENS: begin
+                    if ((digit_work >= 32'd1000) && (calc_tens < 8'd9)) begin
+                        digit_work <= digit_work - 32'd1000;
+                        calc_tens  <= calc_tens + 8'd1;
+                    end else begin
+                        digit_state <= DIG_UNITS;
+                    end
+                end
+
+                DIG_UNITS: begin
+                    if ((digit_work >= 32'd100) && (calc_units < 8'd9)) begin
+                        digit_work <= digit_work - 32'd100;
+                        calc_units <= calc_units + 8'd1;
+                    end else begin
+                        digit_state <= DIG_DECILE;
+                    end
+                end
+
+                DIG_DECILE: begin
+                    if ((digit_work >= 32'd10) && (calc_decile < 8'd9)) begin
+                        digit_work  <= digit_work - 32'd10;
+                        calc_decile <= calc_decile + 8'd1;
+                    end else begin
+                        digit_state <= DIG_STORE;
+                    end
+                end
+
+                DIG_STORE: begin
+                    store_digit_result();
+
+                    if (item_index == IDX_DH_ORDER_I) begin
+                        busy <= 1'b0;
+                        done <= 1'b1;
+                    end else begin
+                        item_index  <= next_item_index(item_index);
+                        digit_state <= DIG_LOAD;
+                    end
+                end
+
+                default: begin
+                    busy        <= 1'b0;
+                    item_index  <= IDX_THD_U;
+                    digit_state <= DIG_LOAD;
+                end
+            endcase
         end
     end
 end

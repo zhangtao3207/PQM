@@ -74,6 +74,7 @@ integer amp_px;
 integer y_next;
 reg [7:0] y_clamped;
 
+// 波形图按动态零点绘制，只展示交流分量相对零点的摆动。
 assign display_zero_code    = zero_valid ? zero_code : CENTER_DEFAULT;
 assign sample_delta_abs     = (sample_code >= display_zero_code) ?
                               {1'b0, (sample_code - display_zero_code)} :

@@ -1,8 +1,8 @@
-
 /*
  * 模块: time_data_separator
  * 功能:
- *   在所有 x100 数据已经稳定后，统一提取符号位并拆分出显示所需的十进制各位。
+ *   在所有 x100 数据稳定后，统一提取符号位并拆分出 LCD 显示所需的十进制各位。
+ *   本模块串行复用一组比较/减法逻辑，避免多个并行拆位器占用大量 LUT。
  * 输入:
  *   clk: 工作时钟。
  *   rst_n: 低有效复位。
@@ -25,8 +25,7 @@
  *   power_metrics_valid: 功率相关数据是否有效。
  * 输出:
  *   done: 本次统一拆位完成脉冲。
- *   各量的 sign/hundreds/tens/units/decile/percentiles/valid:
- *     提供给显示链路的标准化数字位与符号位。
+ *   各 sign/hundreds/tens/units/decile/percentiles/valid: 提供给显示链路的数字位与符号位。
  */
 module time_data_separator (
     input  wire                    clk,
@@ -123,6 +122,33 @@ module time_data_separator (
     output reg                     power_metrics_digits_valid
 );
 
+localparam [3:0] IDX_U_RMS       = 4'd0;
+localparam [3:0] IDX_I_RMS       = 4'd1;
+localparam [3:0] IDX_PHASE       = 4'd2;
+localparam [3:0] IDX_FREQ        = 4'd3;
+localparam [3:0] IDX_U_PP        = 4'd4;
+localparam [3:0] IDX_I_PP        = 4'd5;
+localparam [3:0] IDX_ACTIVE_P    = 4'd6;
+localparam [3:0] IDX_REACTIVE_Q  = 4'd7;
+localparam [3:0] IDX_APPARENT_S  = 4'd8;
+localparam [3:0] IDX_POWER_FACT  = 4'd9;
+
+localparam [2:0] DIG_LOAD     = 3'd0;
+localparam [2:0] DIG_HUNDREDS = 3'd1;
+localparam [2:0] DIG_TENS     = 3'd2;
+localparam [2:0] DIG_UNITS    = 3'd3;
+localparam [2:0] DIG_DECILE   = 3'd4;
+localparam [2:0] DIG_STORE    = 3'd5;
+
+reg       busy;
+reg [3:0] item_index;
+reg [2:0] digit_state;
+reg [31:0] digit_work;
+reg [7:0]  calc_hundreds;
+reg [7:0]  calc_tens;
+reg [7:0]  calc_units;
+reg [7:0]  calc_decile;
+
 wire [31:0] u_rms_abs_value;
 wire [31:0] i_rms_abs_value;
 wire [31:0] u_pp_abs_value;
@@ -134,72 +160,14 @@ wire [31:0] reactive_q_abs_value;
 wire [31:0] apparent_s_abs_value;
 wire [31:0] power_factor_abs_value;
 
-wire [7:0] u_rms_hundreds_wire;
-wire [7:0] u_rms_tens_wire;
-wire [7:0] u_rms_units_wire;
-wire [7:0] u_rms_decile_wire;
-wire [7:0] u_rms_percentiles_wire;
-wire [7:0] i_rms_hundreds_wire;
-wire [7:0] i_rms_tens_wire;
-wire [7:0] i_rms_units_wire;
-wire [7:0] i_rms_decile_wire;
-wire [7:0] i_rms_percentiles_wire;
-wire [7:0] u_pp_hundreds_wire;
-wire [7:0] u_pp_tens_wire;
-wire [7:0] u_pp_units_wire;
-wire [7:0] u_pp_decile_wire;
-wire [7:0] u_pp_percentiles_wire;
-wire [7:0] i_pp_hundreds_wire;
-wire [7:0] i_pp_tens_wire;
-wire [7:0] i_pp_units_wire;
-wire [7:0] i_pp_decile_wire;
-wire [7:0] i_pp_percentiles_wire;
-wire [7:0] phase_hundreds_wire;
-wire [7:0] phase_tens_wire;
-wire [7:0] phase_units_wire;
-wire [7:0] phase_decile_wire;
-wire [7:0] phase_percentiles_wire;
-wire [7:0] freq_hundreds_wire;
-wire [7:0] freq_tens_wire;
-wire [7:0] freq_units_wire;
-wire [7:0] freq_decile_wire;
-wire [7:0] freq_percentiles_wire;
-wire [7:0] active_p_hundreds_wire;
-wire [7:0] active_p_tens_wire;
-wire [7:0] active_p_units_wire;
-wire [7:0] active_p_decile_wire;
-wire [7:0] active_p_percentiles_wire;
-wire [7:0] reactive_q_hundreds_wire;
-wire [7:0] reactive_q_tens_wire;
-wire [7:0] reactive_q_units_wire;
-wire [7:0] reactive_q_decile_wire;
-wire [7:0] reactive_q_percentiles_wire;
-wire [7:0] apparent_s_hundreds_wire;
-wire [7:0] apparent_s_tens_wire;
-wire [7:0] apparent_s_units_wire;
-wire [7:0] apparent_s_decile_wire;
-wire [7:0] apparent_s_percentiles_wire;
-wire [7:0] power_factor_hundreds_wire;
-wire [7:0] power_factor_tens_wire;
-wire [7:0] power_factor_units_wire;
-wire [7:0] power_factor_decile_wire;
-wire [7:0] power_factor_percentiles_wire;
-
-// 将补码输入统一转换为绝对值，供后续十进制拆位模块使用。
+// 将补码输入统一转换为绝对值，供后续十进制拆位流程使用。
 function [31:0] abs_value_of;
     input signed [31:0] signed_value;
-    reg [31:0]          abs_value;
-begin
-    if (signed_value[31]) begin
-        abs_value = ~signed_value + 32'd1;
-    end else begin
-        abs_value = signed_value[31:0];
+    begin
+        abs_value_of = signed_value[31] ? (~signed_value + 32'd1) : signed_value[31:0];
     end
-    abs_value_of = abs_value;
-end
 endfunction
 
-// 对所有 x100 补码量统一提取绝对值，符号位在主输出寄存时单独保存。
 assign u_rms_abs_value        = abs_value_of(u_rms_x100);
 assign i_rms_abs_value        = abs_value_of(i_rms_x100);
 assign u_pp_abs_value         = abs_value_of(u_pp_x100);
@@ -211,109 +179,161 @@ assign reactive_q_abs_value   = abs_value_of(reactive_q_x100);
 assign apparent_s_abs_value   = abs_value_of(apparent_s_x100);
 assign power_factor_abs_value = abs_value_of(power_factor_x100);
 
-// U RMS 数值拆位实例。
-value_x100_to_digits u_u_rms_digits (
-    .value_x100  (u_rms_abs_value),
-    .hundreds    (u_rms_hundreds_wire),
-    .tens        (u_rms_tens_wire),
-    .units       (u_rms_units_wire),
-    .decile      (u_rms_decile_wire),
-    .percentiles (u_rms_percentiles_wire)
-);
+// 根据当前字段选择要进入串行拆位流程的 x100 绝对值。
+function [31:0] select_digit_value;
+    input [3:0] index;
+    begin
+        select_digit_value = 32'd0;
 
-// I RMS 数值拆位实例。
-value_x100_to_digits u_i_rms_digits (
-    .value_x100  (i_rms_abs_value),
-    .hundreds    (i_rms_hundreds_wire),
-    .tens        (i_rms_tens_wire),
-    .units       (i_rms_units_wire),
-    .decile      (i_rms_decile_wire),
-    .percentiles (i_rms_percentiles_wire)
-);
+        case (index)
+            IDX_U_RMS:      select_digit_value = u_rms_abs_value;
+            IDX_I_RMS:      select_digit_value = i_rms_abs_value;
+            IDX_PHASE:      select_digit_value = phase_abs_value;
+            IDX_FREQ:       select_digit_value = freq_abs_value;
+            IDX_U_PP:       select_digit_value = u_pp_abs_value;
+            IDX_I_PP:       select_digit_value = i_pp_abs_value;
+            IDX_ACTIVE_P:   select_digit_value = active_p_abs_value;
+            IDX_REACTIVE_Q: select_digit_value = reactive_q_abs_value;
+            IDX_APPARENT_S: select_digit_value = apparent_s_abs_value;
+            IDX_POWER_FACT: select_digit_value = power_factor_abs_value;
+            default:        select_digit_value = 32'd0;
+        endcase
+    end
+endfunction
 
-// U 峰峰值数值拆位实例。
-value_x100_to_digits u_u_pp_digits (
-    .value_x100  (u_pp_abs_value),
-    .hundreds    (u_pp_hundreds_wire),
-    .tens        (u_pp_tens_wire),
-    .units       (u_pp_units_wire),
-    .decile      (u_pp_decile_wire),
-    .percentiles (u_pp_percentiles_wire)
-);
+// 当前字段完成后跳转到下一个字段。
+function [3:0] next_item_index;
+    input [3:0] index;
+    begin
+        next_item_index = IDX_U_RMS;
 
-// I 峰峰值数值拆位实例。
-value_x100_to_digits u_i_pp_digits (
-    .value_x100  (i_pp_abs_value),
-    .hundreds    (i_pp_hundreds_wire),
-    .tens        (i_pp_tens_wire),
-    .units       (i_pp_units_wire),
-    .decile      (i_pp_decile_wire),
-    .percentiles (i_pp_percentiles_wire)
-);
+        case (index)
+            IDX_U_RMS:      next_item_index = IDX_I_RMS;
+            IDX_I_RMS:      next_item_index = IDX_PHASE;
+            IDX_PHASE:      next_item_index = IDX_FREQ;
+            IDX_FREQ:       next_item_index = IDX_U_PP;
+            IDX_U_PP:       next_item_index = IDX_I_PP;
+            IDX_I_PP:       next_item_index = IDX_ACTIVE_P;
+            IDX_ACTIVE_P:   next_item_index = IDX_REACTIVE_Q;
+            IDX_REACTIVE_Q: next_item_index = IDX_APPARENT_S;
+            IDX_APPARENT_S: next_item_index = IDX_POWER_FACT;
+            default:        next_item_index = IDX_U_RMS;
+        endcase
+    end
+endfunction
 
-// 相位差数值拆位实例。
-value_x100_to_digits u_phase_digits (
-    .value_x100  (phase_abs_value),
-    .hundreds    (phase_hundreds_wire),
-    .tens        (phase_tens_wire),
-    .units       (phase_units_wire),
-    .decile      (phase_decile_wire),
-    .percentiles (phase_percentiles_wire)
-);
+// 把当前字段的拆位结果写入对应输出寄存器。
+task store_digit_result;
+    begin
+        case (item_index)
+            IDX_U_RMS: begin
+                u_rms_hundreds     <= calc_hundreds;
+                u_rms_tens         <= calc_tens;
+                u_rms_units        <= calc_units;
+                u_rms_decile       <= calc_decile;
+                u_rms_percentiles  <= digit_work[7:0];
+                u_rms_digits_valid <= rms_valid;
+            end
 
-// 频率数值拆位实例。
-value_x100_to_digits u_freq_digits (
-    .value_x100  (freq_abs_value),
-    .hundreds    (freq_hundreds_wire),
-    .tens        (freq_tens_wire),
-    .units       (freq_units_wire),
-    .decile      (freq_decile_wire),
-    .percentiles (freq_percentiles_wire)
-);
+            IDX_I_RMS: begin
+                i_rms_hundreds     <= calc_hundreds;
+                i_rms_tens         <= calc_tens;
+                i_rms_units        <= calc_units;
+                i_rms_decile       <= calc_decile;
+                i_rms_percentiles  <= digit_work[7:0];
+                i_rms_digits_valid <= rms_valid;
+            end
 
-// 有功功率数值拆位实例。
-value_x100_to_digits u_active_p_digits (
-    .value_x100  (active_p_abs_value),
-    .hundreds    (active_p_hundreds_wire),
-    .tens        (active_p_tens_wire),
-    .units       (active_p_units_wire),
-    .decile      (active_p_decile_wire),
-    .percentiles (active_p_percentiles_wire)
-);
+            IDX_PHASE: begin
+                phase_neg          <= phase_x100_signed[31] && (phase_abs_value != 32'd0);
+                phase_hundreds     <= calc_hundreds;
+                phase_tens         <= calc_tens;
+                phase_units        <= calc_units;
+                phase_decile       <= calc_decile;
+                phase_percentiles  <= digit_work[7:0];
+                phase_digits_valid <= phase_valid;
+            end
 
-// 无功功率数值拆位实例。
-value_x100_to_digits u_reactive_q_digits (
-    .value_x100  (reactive_q_abs_value),
-    .hundreds    (reactive_q_hundreds_wire),
-    .tens        (reactive_q_tens_wire),
-    .units       (reactive_q_units_wire),
-    .decile      (reactive_q_decile_wire),
-    .percentiles (reactive_q_percentiles_wire)
-);
+            IDX_FREQ: begin
+                freq_hundreds     <= calc_hundreds;
+                freq_tens         <= calc_tens;
+                freq_units        <= calc_units;
+                freq_decile       <= calc_decile;
+                freq_percentiles  <= digit_work[7:0];
+                freq_digits_valid <= freq_valid;
+            end
 
-// 视在功率数值拆位实例。
-value_x100_to_digits u_apparent_s_digits (
-    .value_x100  (apparent_s_abs_value),
-    .hundreds    (apparent_s_hundreds_wire),
-    .tens        (apparent_s_tens_wire),
-    .units       (apparent_s_units_wire),
-    .decile      (apparent_s_decile_wire),
-    .percentiles (apparent_s_percentiles_wire)
-);
+            IDX_U_PP: begin
+                u_pp_hundreds     <= calc_hundreds;
+                u_pp_tens         <= calc_tens;
+                u_pp_units        <= calc_units;
+                u_pp_decile       <= calc_decile;
+                u_pp_percentiles  <= digit_work[7:0];
+                u_pp_digits_valid <= u_pp_valid;
+            end
 
-// 功率因数数值拆位实例。
-value_x100_to_digits u_power_factor_digits (
-    .value_x100  (power_factor_abs_value),
-    .hundreds    (power_factor_hundreds_wire),
-    .tens        (power_factor_tens_wire),
-    .units       (power_factor_units_wire),
-    .decile      (power_factor_decile_wire),
-    .percentiles (power_factor_percentiles_wire)
-);
+            IDX_I_PP: begin
+                i_pp_hundreds     <= calc_hundreds;
+                i_pp_tens         <= calc_tens;
+                i_pp_units        <= calc_units;
+                i_pp_decile       <= calc_decile;
+                i_pp_percentiles  <= digit_work[7:0];
+                i_pp_digits_valid <= i_pp_valid;
+            end
 
-// 仅在上游确认所有 x100 数据稳定后，统一锁存本次拆位结果和符号位。
+            IDX_ACTIVE_P: begin
+                active_p_neg         <= active_p_x100[31] && (active_p_abs_value != 32'd0);
+                active_p_hundreds    <= calc_hundreds;
+                active_p_tens        <= calc_tens;
+                active_p_units       <= calc_units;
+                active_p_decile      <= calc_decile;
+                active_p_percentiles <= digit_work[7:0];
+            end
+
+            IDX_REACTIVE_Q: begin
+                reactive_q_neg         <= reactive_q_x100[31] && (reactive_q_abs_value != 32'd0);
+                reactive_q_hundreds    <= calc_hundreds;
+                reactive_q_tens        <= calc_tens;
+                reactive_q_units       <= calc_units;
+                reactive_q_decile      <= calc_decile;
+                reactive_q_percentiles <= digit_work[7:0];
+            end
+
+            IDX_APPARENT_S: begin
+                apparent_s_hundreds    <= calc_hundreds;
+                apparent_s_tens        <= calc_tens;
+                apparent_s_units       <= calc_units;
+                apparent_s_decile      <= calc_decile;
+                apparent_s_percentiles <= digit_work[7:0];
+            end
+
+            IDX_POWER_FACT: begin
+                power_factor_neg         <= power_factor_x100[31] && (power_factor_abs_value != 32'd0);
+                power_factor_hundreds    <= calc_hundreds;
+                power_factor_tens        <= calc_tens;
+                power_factor_units       <= calc_units;
+                power_factor_decile      <= calc_decile;
+                power_factor_percentiles <= digit_work[7:0];
+                power_metrics_digits_valid <= power_metrics_valid;
+            end
+
+            default: begin
+            end
+        endcase
+    end
+endtask
+
+// 串行完成所有时域文本字段的拆位，完成后给上级 done 脉冲。
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
+        busy                       <= 1'b0;
+        item_index                 <= IDX_U_RMS;
+        digit_state                <= DIG_LOAD;
+        digit_work                 <= 32'd0;
+        calc_hundreds              <= 8'd0;
+        calc_tens                  <= 8'd0;
+        calc_units                 <= 8'd0;
+        calc_decile                <= 8'd0;
         done                       <= 1'b0;
         u_rms_hundreds             <= 8'd0;
         u_rms_tens                 <= 8'd0;
@@ -379,77 +399,75 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         done <= 1'b0;
 
-        if (start) begin
-            u_rms_hundreds             <= u_rms_hundreds_wire;
-            u_rms_tens                 <= u_rms_tens_wire;
-            u_rms_units                <= u_rms_units_wire;
-            u_rms_decile               <= u_rms_decile_wire;
-            u_rms_percentiles          <= u_rms_percentiles_wire;
-            u_rms_digits_valid         <= rms_valid;
-            i_rms_hundreds             <= i_rms_hundreds_wire;
-            i_rms_tens                 <= i_rms_tens_wire;
-            i_rms_units                <= i_rms_units_wire;
-            i_rms_decile               <= i_rms_decile_wire;
-            i_rms_percentiles          <= i_rms_percentiles_wire;
-            i_rms_digits_valid         <= rms_valid;
+        if (start && !busy) begin
+            busy        <= 1'b1;
+            item_index  <= IDX_U_RMS;
+            digit_state <= DIG_LOAD;
+        end else if (busy) begin
+            case (digit_state)
+                DIG_LOAD: begin
+                    digit_work    <= select_digit_value(item_index);
+                    calc_hundreds <= 8'd0;
+                    calc_tens     <= 8'd0;
+                    calc_units    <= 8'd0;
+                    calc_decile   <= 8'd0;
+                    digit_state   <= DIG_HUNDREDS;
+                end
 
-            phase_neg                  <= phase_x100_signed[31] && (phase_abs_value != 32'd0);
-            phase_hundreds             <= phase_hundreds_wire;
-            phase_tens                 <= phase_tens_wire;
-            phase_units                <= phase_units_wire;
-            phase_decile               <= phase_decile_wire;
-            phase_percentiles          <= phase_percentiles_wire;
-            phase_digits_valid         <= phase_valid;
+                DIG_HUNDREDS: begin
+                    if ((digit_work >= 32'd10000) && (calc_hundreds < 8'd9)) begin
+                        digit_work    <= digit_work - 32'd10000;
+                        calc_hundreds <= calc_hundreds + 8'd1;
+                    end else begin
+                        digit_state <= DIG_TENS;
+                    end
+                end
 
-            freq_hundreds              <= freq_hundreds_wire;
-            freq_tens                  <= freq_tens_wire;
-            freq_units                 <= freq_units_wire;
-            freq_decile                <= freq_decile_wire;
-            freq_percentiles           <= freq_percentiles_wire;
-            freq_digits_valid          <= freq_valid;
+                DIG_TENS: begin
+                    if ((digit_work >= 32'd1000) && (calc_tens < 8'd9)) begin
+                        digit_work <= digit_work - 32'd1000;
+                        calc_tens  <= calc_tens + 8'd1;
+                    end else begin
+                        digit_state <= DIG_UNITS;
+                    end
+                end
 
-            u_pp_hundreds              <= u_pp_hundreds_wire;
-            u_pp_tens                  <= u_pp_tens_wire;
-            u_pp_units                 <= u_pp_units_wire;
-            u_pp_decile                <= u_pp_decile_wire;
-            u_pp_percentiles           <= u_pp_percentiles_wire;
-            u_pp_digits_valid          <= u_pp_valid;
-            i_pp_hundreds              <= i_pp_hundreds_wire;
-            i_pp_tens                  <= i_pp_tens_wire;
-            i_pp_units                 <= i_pp_units_wire;
-            i_pp_decile                <= i_pp_decile_wire;
-            i_pp_percentiles           <= i_pp_percentiles_wire;
-            i_pp_digits_valid          <= i_pp_valid;
+                DIG_UNITS: begin
+                    if ((digit_work >= 32'd100) && (calc_units < 8'd9)) begin
+                        digit_work <= digit_work - 32'd100;
+                        calc_units <= calc_units + 8'd1;
+                    end else begin
+                        digit_state <= DIG_DECILE;
+                    end
+                end
 
-            active_p_neg               <= active_p_x100[31] && (active_p_abs_value != 32'd0);
-            active_p_hundreds          <= active_p_hundreds_wire;
-            active_p_tens              <= active_p_tens_wire;
-            active_p_units             <= active_p_units_wire;
-            active_p_decile            <= active_p_decile_wire;
-            active_p_percentiles       <= active_p_percentiles_wire;
+                DIG_DECILE: begin
+                    if ((digit_work >= 32'd10) && (calc_decile < 8'd9)) begin
+                        digit_work  <= digit_work - 32'd10;
+                        calc_decile <= calc_decile + 8'd1;
+                    end else begin
+                        digit_state <= DIG_STORE;
+                    end
+                end
 
-            reactive_q_neg             <= reactive_q_x100[31] && (reactive_q_abs_value != 32'd0);
-            reactive_q_hundreds        <= reactive_q_hundreds_wire;
-            reactive_q_tens            <= reactive_q_tens_wire;
-            reactive_q_units           <= reactive_q_units_wire;
-            reactive_q_decile          <= reactive_q_decile_wire;
-            reactive_q_percentiles     <= reactive_q_percentiles_wire;
+                DIG_STORE: begin
+                    store_digit_result();
 
-            apparent_s_hundreds        <= apparent_s_hundreds_wire;
-            apparent_s_tens            <= apparent_s_tens_wire;
-            apparent_s_units           <= apparent_s_units_wire;
-            apparent_s_decile          <= apparent_s_decile_wire;
-            apparent_s_percentiles     <= apparent_s_percentiles_wire;
+                    if (item_index == IDX_POWER_FACT) begin
+                        busy <= 1'b0;
+                        done <= 1'b1;
+                    end else begin
+                        item_index  <= next_item_index(item_index);
+                        digit_state <= DIG_LOAD;
+                    end
+                end
 
-            power_factor_neg           <= power_factor_x100[31] && (power_factor_abs_value != 32'd0);
-            power_factor_hundreds      <= power_factor_hundreds_wire;
-            power_factor_tens          <= power_factor_tens_wire;
-            power_factor_units         <= power_factor_units_wire;
-            power_factor_decile        <= power_factor_decile_wire;
-            power_factor_percentiles   <= power_factor_percentiles_wire;
-            power_metrics_digits_valid <= power_metrics_valid;
-
-            done                       <= 1'b1;
+                default: begin
+                    busy        <= 1'b0;
+                    item_index  <= IDX_U_RMS;
+                    digit_state <= DIG_LOAD;
+                end
+            endcase
         end
     end
 end
