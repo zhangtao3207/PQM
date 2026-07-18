@@ -124,6 +124,12 @@ main
 | `rtl/DataProcessor/GraphicsLoad/FreqDomain/freq_display_adapter.v` | `freq_display_adapter` | 将滤波后的谐波幅值占比和相位角转换为 LCD 频谱/相位柱图高度。 |
 | `rtl/DataProcessor/GraphicsLoad/FreqDomain/freq_text_display_preprocess.v` | `freq_text_display_preprocess` | 组织频域文本指标的规整、拆位和 LCD 文本提交。 |
 
+## PSInterface
+
+| 路径 | 模块 | 简要说明 |
+|---|---|---|
+| `rtl/PSInterface/pqm_axis_sample_stream.v` | `pqm_axis_sample_stream` | 将 U/I 原始样本和源序号封装为 64 位 AXI4-Stream；DMA 反压时记录并丢弃新样本，避免阻塞 ADC 与测量链路。 |
+
 ## lcd/display
 
 | 路径 | 模块 | 简要说明 |

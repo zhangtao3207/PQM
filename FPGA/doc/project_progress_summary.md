@@ -56,9 +56,11 @@ UART 输出方面，当前 UART 已经改回 ASCII 文本协议，不再发送�
 
 2026-04-23：完成 UART ASCII 协议重构。`uart_measurement_streamer.v` 从二进制帧发送重新改为 ASCII 文本发送；新协议固定输出 `p2p`、`rms`、`pa`、`p`、`THD`、`Mag`、`Ph` 七行；`Mag` 行扩展为 `1..500` 次谐波的 U/I 幅值占比对，总计 `1000` 个值；`Ph` 行扩展为 `1..500` 次谐波相位差，总计 `500` 个值；发送起点也调整为“完整谐波帧 + 已提交文本快照”。
 
+2026-07-19：启动 Zynq PS/PL 重构。新增可由 Vivado 2018.3 批处理重建的 PS Block Design，固定 DDR、AXI BRAM、DMA、VDMA、800x480 视频和中断连接；新增 `pqm_axis_sample_stream`，以 64 位 `{序号, 电流, 电压}` 数据项向 PS 发送原始样本，DMA 反压时丢弃显示样本但不阻塞 ADC 与测量链路。
+
 ## 当前已知问题
 
-当前本地环境里仍未发现 `iverilog`、`xvlog` 或 `vivado` 命令，因此本轮无法补做本地语法检查和综合验证。
+当前已确认 Vivado/XSim 2018.3 位于 `D:/zt/Xilinx`，PS Block Design 和新增 PS 接口 RTL 均使用仓库脚本执行本地检查。完整 SoC 综合与上板验证仍需在顶层集成完成后执行。
 
 当前 UART ASCII 整包大约 `11610` 字节，在线发送时间约 `1.01 s`，发送周期明显长于旧二进制版本。
 

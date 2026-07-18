@@ -213,7 +213,7 @@ git commit -m "feat(fpga): add reproducible Zynq PS block design"
 - Create: `FPGA/rtl/PSInterface/pqm_axis_sample_stream.v`
 - Create: `FPGA/sim/PSInterface/tb_pqm_axis_sample_stream.v`
 
-- [ ] **Step 1: Write the failing RTL test**
+- [x] **Step 1: Write the failing RTL test**
 
 The test shall send 2,052 sample-valid pulses, hold `m_axis_tready=0` for four middle samples, and assert:
 
@@ -229,7 +229,7 @@ Run: `powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_xsim.ps1 -Test p
 
 Expected: FAIL because the DUT is missing.
 
-- [ ] **Step 2: Implement the sample stream**
+- [x] **Step 2: Implement the sample stream**
 
 Use this interface exactly:
 
@@ -253,7 +253,7 @@ module pqm_axis_sample_stream #(
 
 Each source sample increments `source_sequence`. If the one-entry output register is occupied and not accepted, count the source sample as dropped. Count frame position only on `tvalid && tready`, and assert TLAST on accepted item 2,048. Saturate `drop_count` at `32'hFFFF_FFFF`.
 
-- [ ] **Step 3: Run the test and lint forbidden arithmetic**
+- [x] **Step 3: Run the test and lint forbidden arithmetic**
 
 Run:
 
@@ -264,7 +264,7 @@ rg -n "[/\*%]" FPGA/rtl/PSInterface/pqm_axis_sample_stream.v
 
 Expected: XSim prints `PASS`; the `rg` output contains only comment delimiters, never arithmetic operators.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add FPGA/rtl/PSInterface/pqm_axis_sample_stream.v FPGA/sim/PSInterface/tb_pqm_axis_sample_stream.v
