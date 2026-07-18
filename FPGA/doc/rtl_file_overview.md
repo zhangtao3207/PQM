@@ -129,6 +129,7 @@ main
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
 | `rtl/PSInterface/pqm_axis_sample_stream.v` | `pqm_axis_sample_stream` | 将 U/I 原始样本和源序号封装为 64 位 AXI4-Stream；DMA 反压时记录并丢弃新样本，避免阻塞 ADC 与测量链路。 |
+| `rtl/PSInterface/pqm_shared_memory_bridge.v` | `pqm_shared_memory_bridge` | 通过 BRAM 串行发布一致性标量快照、双 bank 谐波和带序号命令响应，保证 PS 只读取已提交代数。 |
 
 ## lcd/display
 

@@ -279,7 +279,7 @@ git commit -m "feat(fpga): stream sequenced ADC samples to PS"
 - Create: `FPGA/sim/PSInterface/tb_pqm_shared_memory_bridge.v`
 - Create: `ARM/app/src/drivers/pqm_axi/pqm_shared_memory_map.h`
 
-- [ ] **Step 1: Define one ABI in Verilog and C**
+- [x] **Step 1: Define one ABI in Verilog and C**
 
 Use these fixed word offsets:
 
@@ -299,7 +299,7 @@ Use these fixed word offsets:
 
 Each harmonic entry is four words: U magnitude ratio, I magnitude ratio, signed phase, flags.
 
-- [ ] **Step 2: Write the failing coherence test**
+- [x] **Step 2: Write the failing coherence test**
 
 The test changes all source metrics while a commit is active, then verifies that BRAM contains only the latched generation and that `SNAPSHOT_SEQ` is written last. It also writes a command word through the simulated PS BRAM port and verifies a single command pulse and matching response sequence.
 
@@ -307,7 +307,7 @@ Run: `powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_xsim.ps1 -Test p
 
 Expected: FAIL because the bridge is missing.
 
-- [ ] **Step 3: Implement the serialized writer**
+- [x] **Step 3: Implement the serialized writer**
 
 The bridge owns BRAM port B:
 
@@ -321,13 +321,13 @@ input  wire [31:0] bram_rddata
 
 On `snapshot_commit`, latch all scalar inputs, write payload words, then write the incremented sequence. Harmonic data writes only to the inactive bank and publishes the active-bank bit plus generation after entry 500 is complete. Command polling shall not interrupt an active publish state; it runs when the writer is idle.
 
-- [ ] **Step 4: Verify RTL and ABI equality**
+- [x] **Step 4: Verify RTL and ABI equality**
 
 Run XSim, then run a PowerShell comparison that extracts hexadecimal constants from `.vh` and `.h` and fails on any mismatch.
 
 Expected: XSim and ABI comparison both print `PASS`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add FPGA/rtl/PSInterface/pqm_shared_memory_map.vh FPGA/rtl/PSInterface/pqm_shared_memory_bridge.v FPGA/sim/PSInterface/tb_pqm_shared_memory_bridge.v ARM/app/src/drivers/pqm_axi/pqm_shared_memory_map.h

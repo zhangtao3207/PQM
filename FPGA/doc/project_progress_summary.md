@@ -56,7 +56,7 @@ UART 输出方面，当前 UART 已经改回 ASCII 文本协议，不再发送�
 
 2026-04-23：完成 UART ASCII 协议重构。`uart_measurement_streamer.v` 从二进制帧发送重新改为 ASCII 文本发送；新协议固定输出 `p2p`、`rms`、`pa`、`p`、`THD`、`Mag`、`Ph` 七行；`Mag` 行扩展为 `1..500` 次谐波的 U/I 幅值占比对，总计 `1000` 个值；`Ph` 行扩展为 `1..500` 次谐波相位差，总计 `500` 个值；发送起点也调整为“完整谐波帧 + 已提交文本快照”。
 
-2026-07-19：启动 Zynq PS/PL 重构。新增可由 Vivado 2018.3 批处理重建的 PS Block Design，固定 DDR、AXI BRAM、DMA、VDMA、800x480 视频和中断连接；新增 `pqm_axis_sample_stream`，以 64 位 `{序号, 电流, 电压}` 数据项向 PS 发送原始样本，DMA 反压时丢弃显示样本但不阻塞 ADC 与测量链路。
+2026-07-19：启动 Zynq PS/PL 重构。新增可由 Vivado 2018.3 批处理重建的 PS Block Design，固定 DDR、AXI BRAM、DMA、VDMA、800x480 视频和中断连接；新增 `pqm_axis_sample_stream`，以 64 位 `{序号, 电流, 电压}` 数据项向 PS 发送原始样本，DMA 反压时丢弃显示样本但不阻塞 ADC 与测量链路；新增 C/Verilog 共用的共享内存 ABI 与 `pqm_shared_memory_bridge`，按“负载先写、序号后写”发布标量和谐波代数。
 
 ## 当前已知问题
 

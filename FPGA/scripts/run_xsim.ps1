@@ -49,7 +49,7 @@ foreach ($name in $tests) {
 
     Push-Location $buildDir
     try {
-        & $xvlog -work xil_defaultlib $dut $testbench
+        & $xvlog -work xil_defaultlib -i $rtlRoot $dut $testbench
         if ($LASTEXITCODE -ne 0) { throw "xvlog failed for $name" }
 
         $snapshot = "sim_$name"
