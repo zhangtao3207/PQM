@@ -32,3 +32,6 @@ __synthesis_is_complete__
 # Local hidden backup trees
 FPGA/rtl/.ADC_SERIAL/
 FPGA/rtl/.ADC_TEMP/
+
+# Isolated feature worktrees
+.worktrees/
