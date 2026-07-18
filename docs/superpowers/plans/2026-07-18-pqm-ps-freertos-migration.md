@@ -100,7 +100,7 @@ git commit -m "build: add reproducible PQM SoC tool wrappers"
 - Create: `FPGA/scripts/check_pqm_ps_bd.tcl`
 - Create: `FPGA/scripts/build_pqm_soc.tcl`
 
-- [ ] **Step 1: Write a failing block-design contract check**
+- [x] **Step 1: Write a failing block-design contract check**
 
 `check_pqm_ps_bd.tcl` opens `FPGA/prj_soc/PQM_SOC.xpr`, opens `pqm_ps.bd`, and fails unless these cells and interfaces exist:
 
@@ -130,7 +130,7 @@ Run before implementation:
 
 Expected: FAIL because `PQM_SOC.xpr` does not exist.
 
-- [ ] **Step 2: Create the deterministic PS7 configuration**
+- [x] **Step 2: Create the deterministic PS7 configuration**
 
 `create_pqm_ps_bd.tcl` shall set:
 
@@ -159,7 +159,7 @@ set_property -dict [list \
 
 Enable GPIO EMIO bits for touch reset, touch interrupt, and the physical fallback key. Use HP0 only for VDMA reads and HP1 only for DMA writes.
 
-- [ ] **Step 3: Instantiate the Xilinx IP data paths**
+- [x] **Step 3: Instantiate the Xilinx IP data paths**
 
 Create and connect:
 
@@ -183,13 +183,13 @@ assign_bd_address -offset 0x43000000 -range 64K \
   [get_bd_addr_segs processing_system7_0/Data/SEG_axi_vdma_0_Reg]
 ```
 
-- [ ] **Step 4: Create the reproducible project script**
+- [x] **Step 4: Create the reproducible project script**
 
 `create_pqm_soc_project.tcl` removes only `FPGA/prj_soc`, creates `PQM_SOC.xpr`, imports handwritten RTL, existing XCI files, and constraints, sources `create_pqm_ps_bd.tcl`, validates the design, creates the HDL wrapper, and sets top to `main`.
 
 `build_pqm_soc.tcl` opens that project, resets and launches synthesis/implementation, checks run status, writes timing/utilization reports under `FPGA/export/reports`, writes `pqm_soc.bit`, and exports `pqm_soc.hdf` with the bitstream.
 
-- [ ] **Step 5: Run the block-design contract**
+- [x] **Step 5: Run the block-design contract**
 
 Run:
 
@@ -200,7 +200,7 @@ powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_vivado.ps1 -Script FPG
 
 Expected: both commands exit 0 and report all required cells and addresses.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add FPGA/scripts/create_pqm_soc_project.tcl FPGA/scripts/create_pqm_ps_bd.tcl FPGA/scripts/check_pqm_ps_bd.tcl FPGA/scripts/build_pqm_soc.tcl
