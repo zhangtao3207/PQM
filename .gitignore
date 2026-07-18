@@ -35,3 +35,13 @@ FPGA/rtl/.ADC_TEMP/
 
 # Isolated feature worktrees
 .worktrees/
+
+# Reproducible SoC build outputs
+FPGA/prj_soc/
+FPGA/export/
+FPGA/sim/build/
+ARM/sdk_workspace/
+ARM/build/
+ARM/test_build/
+*.wdb
+*.vcd

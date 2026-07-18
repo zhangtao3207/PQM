@@ -42,7 +42,7 @@ The migration adds these focused ownership units:
 - Create: `ARM/scripts/run_xsct.ps1`
 - Create: `ARM/README.md`
 
-- [ ] **Step 1: Write the failing toolchain smoke test**
+- [x] **Step 1: Write the failing toolchain smoke test**
 
 Create `FPGA/scripts/run_vivado.ps1` so it rejects a missing Tcl script and returns Vivado's exit code:
 
@@ -59,11 +59,11 @@ Run: `powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_vivado.ps1 -Scri
 
 Expected: nonzero exit with `Tcl script not found`.
 
-- [ ] **Step 2: Add the SDK and XSim wrappers**
+- [x] **Step 2: Add the SDK and XSim wrappers**
 
 `ARM/scripts/run_xsct.ps1` invokes `D:/zt/Xilinx/SDK/2018.3/bin/xsct.bat`; `FPGA/scripts/run_xsim.ps1` invokes `xvlog.bat`, `xelab.bat`, and `xsim.bat` in a per-test build directory and fails on any nonzero exit.
 
-- [ ] **Step 3: Isolate generated output**
+- [x] **Step 3: Isolate generated output**
 
 Append these exact ignore rules:
 
@@ -79,13 +79,13 @@ ARM/test_build/
 
 Do not ignore `ARM/app`, `ARM/scripts`, `ARM/tests`, `FPGA/scripts`, or block-design Tcl sources.
 
-- [ ] **Step 4: Verify wrapper behavior**
+- [x] **Step 4: Verify wrapper behavior**
 
 Run: `powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_xsim.ps1 -Test missing`
 
 Expected: nonzero exit naming the missing test, without creating files outside `FPGA/sim/build`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .gitignore FPGA/scripts ARM/scripts ARM/README.md
