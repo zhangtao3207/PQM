@@ -340,11 +340,11 @@ git commit -m "feat: add coherent PS PL shared memory ABI"
 - Create: `FPGA/rtl/PSInterface/pqm_axis_rgb565_to_rgb888.v`
 - Create: `FPGA/sim/PSInterface/tb_pqm_axis_rgb565_to_rgb888.v`
 
-- [ ] **Step 1: Write the failing color and handshake test**
+- [x] **Step 1: Write the failing color and handshake test**
 
 Test black, white, red, green, blue, `16'h7BEF`, and randomized ready stalls. Require TUSER and TLAST to remain paired with their pixel while stalled.
 
-- [ ] **Step 2: Implement endpoint-preserving expansion**
+- [x] **Step 2: Implement endpoint-preserving expansion**
 
 ```verilog
 assign rgb888[23:16] = {rgb565[15:11], rgb565[15:13]};
@@ -354,13 +354,13 @@ assign rgb888[7:0]   = {rgb565[4:0],   rgb565[4:2]};
 
 Use an AXI register slice with `s_axis_tready = !valid_reg || m_axis_tready`; never alter sideband signals while `m_axis_tvalid && !m_axis_tready`.
 
-- [ ] **Step 3: Run XSim**
+- [x] **Step 3: Run XSim**
 
 Run: `powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_xsim.ps1 -Test pqm_axis_rgb565_to_rgb888`
 
 Expected: `PASS` with all randomized stalls completed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add FPGA/rtl/PSInterface/pqm_axis_rgb565_to_rgb888.v FPGA/sim/PSInterface/tb_pqm_axis_rgb565_to_rgb888.v
