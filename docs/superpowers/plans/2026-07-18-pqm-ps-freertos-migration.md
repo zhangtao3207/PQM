@@ -590,15 +590,15 @@ git commit -m "feat(arm): drive LVGL through double-buffered VDMA"
 - Create: `ARM/tests/test_pqm_touch.c`
 - Modify: `ARM/app/src/ui/pqm_lvgl_port.c`
 
-- [ ] **Step 1: Write failing coordinate and packet tests**
+- [x] **Step 1: Write failing coordinate and packet tests**
 
 Use captured Goodix/FT touch register packets from the existing `touch_dri.v` behavior. Test no-touch, press, move, release, malformed point count, I2C timeout, and panel-edge coordinates.
 
-- [ ] **Step 2: Implement the PS touch driver**
+- [x] **Step 2: Implement the PS touch driver**
 
 Use `XIicPs` through I2C0 EMIO and `XGpioPs` EMIO bits for reset/interrupt. Probe the supported controller addresses used by the existing RTL, perform the controller-specific reset sequence, read at most one primary point for LVGL, and clear the controller status register after each read.
 
-- [ ] **Step 3: Add fault isolation**
+- [x] **Step 3: Add fault isolation**
 
 After three consecutive I2C failures, disable the GPIO interrupt and retry initialization every 500 ms. Never block `ui_task`; publish the last state as released during recovery.
 
@@ -606,7 +606,7 @@ After three consecutive I2C failures, disable the GPIO interrupt and retry initi
 
 Expected: native tests pass and physical touches at all four corners map within `[0,799] x [0,479]`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add ARM/app/src/drivers/pqm_touch ARM/app/src/ui/pqm_lvgl_port.c ARM/tests/test_pqm_touch.c

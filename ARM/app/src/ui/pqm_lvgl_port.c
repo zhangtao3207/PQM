@@ -8,6 +8,17 @@
 
 #define PQM_LVGL_FLUSH_TIMEOUT_TICKS pdMS_TO_TICKS(100u)
 
+static void pqm_lvgl_touch_read(lv_indev_drv_t *driver, lv_indev_data_t *data)
+{
+    pqm_lvgl_port_t *port = (pqm_lvgl_port_t *)driver->user_data;
+    pqm_touch_point_t point;
+
+    pqm_touch_get_point(port->touch, &point);
+    data->point.x = (lv_coord_t)point.x;
+    data->point.y = (lv_coord_t)point.y;
+    data->state = point.pressed ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+}
+
 static void pqm_lvgl_flush(lv_disp_drv_t *driver, const lv_area_t *area,
                            lv_color_t *color_buffer)
 {
@@ -43,6 +54,8 @@ bool pqm_lvgl_port_initialize(pqm_lvgl_port_t *port, pqm_video_t *video)
     }
 
     port->video = video;
+    port->touch = NULL;
+    port->input_device = NULL;
     port->flush_pending = false;
     port->flush_started = 0u;
 
@@ -61,6 +74,20 @@ bool pqm_lvgl_port_initialize(pqm_lvgl_port_t *port, pqm_video_t *video)
     port->display_driver.user_data = port;
     port->display = lv_disp_drv_register(&port->display_driver);
     return port->display != NULL;
+}
+
+bool pqm_lvgl_port_attach_touch(pqm_lvgl_port_t *port, pqm_touch_t *touch)
+{
+    if (port == NULL || touch == NULL) {
+        return false;
+    }
+    port->touch = touch;
+    lv_indev_drv_init(&port->input_driver);
+    port->input_driver.type = LV_INDEV_TYPE_POINTER;
+    port->input_driver.read_cb = pqm_lvgl_touch_read;
+    port->input_driver.user_data = port;
+    port->input_device = lv_indev_drv_register(&port->input_driver);
+    return port->input_device != NULL;
 }
 
 void pqm_lvgl_port_process(pqm_lvgl_port_t *port)

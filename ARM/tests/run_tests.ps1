@@ -4,6 +4,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $gcc = 'D:/zt/Xilinx/Vivado/2018.3/msys64/mingw64/bin/gcc.exe'
 $buildDir = Join-Path $repoRoot 'ARM/test_build'
 $driverDir = Join-Path $repoRoot 'ARM/app/src/drivers/pqm_axi'
+$touchDir = Join-Path $repoRoot 'ARM/app/src/drivers/pqm_touch'
 $waveformDir = Join-Path $repoRoot 'ARM/app/src/services/waveform'
 
 if (-not (Test-Path -LiteralPath $gcc)) {
@@ -39,4 +40,8 @@ Invoke-NativeTest -Name 'test_pqm_axi' -IncludeDirectory $driverDir -Sources @(
 Invoke-NativeTest -Name 'test_pqm_waveform' -IncludeDirectory $waveformDir -Sources @(
     (Join-Path $repoRoot 'ARM/tests/test_pqm_waveform.c'),
     (Join-Path $waveformDir 'pqm_waveform.c')
+)
+Invoke-NativeTest -Name 'test_pqm_touch' -IncludeDirectory $touchDir -Sources @(
+    (Join-Path $repoRoot 'ARM/tests/test_pqm_touch.c'),
+    (Join-Path $touchDir 'pqm_touch_protocol.c')
 )
