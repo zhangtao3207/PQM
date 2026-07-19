@@ -110,6 +110,13 @@ set_property -dict [list \
     CONFIG.REG_CONFIG {1} \
 ] $sample_slice
 
+set sample_cdc [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:1.1 axis_sample_cdc]
+set_property -dict [list \
+    CONFIG.TDATA_NUM_BYTES {8} \
+    CONFIG.HAS_TKEEP {1} \
+    CONFIG.HAS_TLAST {1} \
+] $sample_cdc
+
 set vdma [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_vdma:6.3 axi_vdma_0]
 set_property -dict [list \
     CONFIG.c_include_mm2s {1} \
@@ -139,9 +146,10 @@ connect_bd_intf_net [get_bd_intf_pins $dma/M_AXI_SG] [get_bd_intf_pins $axi_hp1/
 connect_bd_intf_net [get_bd_intf_pins $axi_hp1/M00_AXI] [get_bd_intf_pins $ps/S_AXI_HP1]
 
 connect_bd_intf_net [get_bd_intf_pins $sample_slice/M_AXIS] [get_bd_intf_pins $dma/S_AXIS_S2MM]
-externalize_intf [get_bd_intf_pins $sample_slice/S_AXIS] S_AXIS_SAMPLES
+connect_bd_intf_net [get_bd_intf_pins $sample_cdc/M_AXIS] [get_bd_intf_pins $sample_slice/S_AXIS]
+externalize_intf [get_bd_intf_pins $sample_cdc/S_AXIS] S_AXIS_SAMPLES
 externalize_intf [get_bd_intf_pins $vdma/M_AXIS_MM2S] M_AXIS_VIDEO_RGB565
-set_property CONFIG.FREQ_HZ {100000000} [get_bd_intf_ports S_AXIS_SAMPLES]
+set_property CONFIG.FREQ_HZ {50000000} [get_bd_intf_ports S_AXIS_SAMPLES]
 set_property CONFIG.FREQ_HZ {25000000} [get_bd_intf_ports M_AXIS_VIDEO_RGB565]
 
 # Pixel clock, 800x480 timing and native RGB888 video output.
@@ -209,6 +217,7 @@ connect_bd_net [get_bd_pins $ps/FCLK_CLK0] \
     [get_bd_pins $bram_ctrl/s_axi_aclk] \
     [get_bd_pins $dma/s_axi_lite_aclk] [get_bd_pins $dma/m_axi_s2mm_aclk] [get_bd_pins $dma/m_axi_sg_aclk] \
     [get_bd_pins $sample_slice/aclk] \
+    [get_bd_pins $sample_cdc/m_axis_aclk] \
     [get_bd_pins $vdma/s_axi_lite_aclk] [get_bd_pins $vdma/m_axi_mm2s_aclk] \
     [get_bd_pins $vtc/s_axi_aclk] \
     [get_bd_pins $clk_pixel/clk_in1] [get_bd_pins $rst_axi/slowest_sync_clk]
@@ -227,7 +236,7 @@ connect_bd_net [get_bd_pins $clk_pixel/clk_out1] \
 connect_bd_net [get_bd_pins $clk_pixel/locked] [get_bd_pins $rst_vid/dcm_locked]
 
 set pl_axi_clk [create_bd_port -dir O -type clk PL_AXI_CLK]
-set_property -dict [list CONFIG.FREQ_HZ {100000000} CONFIG.ASSOCIATED_BUSIF {S_AXIS_SAMPLES}] $pl_axi_clk
+set_property CONFIG.FREQ_HZ {100000000} $pl_axi_clk
 connect_bd_net [get_bd_pins $ps/FCLK_CLK0] $pl_axi_clk
 set pl_axi_resetn [create_bd_port -dir O -type rst PL_AXI_ARESETN]
 connect_bd_net [get_bd_pins $rst_axi/peripheral_aresetn] $pl_axi_resetn
@@ -238,6 +247,12 @@ connect_bd_net [get_bd_pins $clk_pixel/clk_out1] $pixel_clk
 set pixel_resetn [create_bd_port -dir O -type rst PIXEL_ARESETN]
 connect_bd_net [get_bd_pins $rst_vid/peripheral_aresetn] $pixel_resetn
 
+set sample_axis_clk [create_bd_port -dir I -type clk SAMPLE_AXIS_CLK]
+set_property -dict [list CONFIG.FREQ_HZ {50000000} CONFIG.ASSOCIATED_BUSIF {S_AXIS_SAMPLES}] $sample_axis_clk
+connect_bd_net $sample_axis_clk [get_bd_pins $sample_cdc/s_axis_aclk]
+set sample_axis_resetn [create_bd_port -dir I -type rst SAMPLE_AXIS_ARESETN]
+connect_bd_net $sample_axis_resetn [get_bd_pins $sample_cdc/s_axis_aresetn]
+
 connect_bd_net [get_bd_pins $rst_axi/interconnect_aresetn] \
     [get_bd_pins $axi_ctrl/ARESETN] [get_bd_pins $axi_ctrl/S00_ARESETN] \
     [get_bd_pins $axi_ctrl/M00_ARESETN] [get_bd_pins $axi_ctrl/M01_ARESETN] [get_bd_pins $axi_ctrl/M02_ARESETN] \
@@ -245,7 +260,7 @@ connect_bd_net [get_bd_pins $rst_axi/interconnect_aresetn] \
     [get_bd_pins $axi_hp1/ARESETN] [get_bd_pins $axi_hp1/S00_ARESETN] [get_bd_pins $axi_hp1/S01_ARESETN] [get_bd_pins $axi_hp1/M00_ARESETN]
 connect_bd_net [get_bd_pins $rst_axi/peripheral_aresetn] \
     [get_bd_pins $bram_ctrl/s_axi_aresetn] [get_bd_pins $dma/axi_resetn] [get_bd_pins $vdma/axi_resetn] \
-    [get_bd_pins $sample_slice/aresetn] [get_bd_pins $vtc/s_axi_aresetn]
+    [get_bd_pins $sample_slice/aresetn] [get_bd_pins $sample_cdc/m_axis_aresetn] [get_bd_pins $vtc/s_axi_aresetn]
 connect_bd_net [get_bd_pins $rst_vid/peripheral_aresetn] [get_bd_pins $vtc/resetn] [get_bd_pins $video_out/aresetn]
 connect_bd_net [get_bd_pins $logic_one/dout] [get_bd_pins $vtc/clken] [get_bd_pins $vtc/s_axi_aclken] [get_bd_pins $video_out/aclken]
 connect_bd_net [get_bd_pins $video_out/vtg_ce] [get_bd_pins $vtc/gen_clken]

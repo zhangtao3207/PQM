@@ -21,6 +21,7 @@ set required_cells {
     blk_mem_gen_shared
     axi_dma_0
     axis_sample_slice
+    axis_sample_cdc
     axi_vdma_0
     v_tc_0
     v_axi4s_vid_out_0

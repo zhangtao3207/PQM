@@ -1,6 +1,6 @@
 # PQM 项目进度总结
 
-更新时间：2026-04-23
+更新时间：2026-07-19
 
 ## 文档职责
 
@@ -13,20 +13,14 @@ PQM 当前 RTL 的目标是基于 FPGA 实现电能质量测量链路。系统�
 ## 当前总体结构
 
 ```text
-AD7606 ADC
-  -> rtl/main.v
-  -> DataProcessor
-     -> TimeAnalysis
-     -> FreqAnalysis
-  -> GraphicsLoad
-     -> TimeDomain
-     -> FreqDomain
-  -> lcd/display
-  -> lcd/touch
-  -> uart
+AD7606 ADC -> pqm_legacy_core -> 时域/频域测量与 FFT
+                         |-> AXI DMA -> PS DDR 原始样本环形缓冲
+                         |-> AXI BRAM -> PS 标量/谐波共享内存
+PS FreeRTOS/LVGL -> 双 framebuffer -> AXI VDMA -> RGB888 LCD
+PS I2C/GPIO EMIO -> 触摸控制器与按键
 ```
 
-`rtl/main.v` 是系统顶层，负责连接 ADC、测量处理、LCD、触控、告警和 UART。
+`rtl/main.v` 是 SoC 顶层，负责连接 `pqm_legacy_core`、Zynq PS、AXI DMA/VDMA、共享 BRAM、LCD 和触摸 EMIO。`LEGACY_PL_DISPLAY=1` 时仍可切回旧 PL 显示链路。
 
 ## 当前状态
 
@@ -58,9 +52,13 @@ UART 输出方面，当前 UART 已经改回 ASCII 文本协议，不再发送�
 
 2026-07-19：启动 Zynq PS/PL 重构。新增可由 Vivado 2018.3 批处理重建的 PS Block Design，固定 DDR、AXI BRAM、DMA、VDMA、800x480 视频和中断连接；新增 `pqm_axis_sample_stream`，以 64 位 `{序号, 电流, 电压}` 数据项向 PS 发送原始样本，DMA 反压时丢弃显示样本但不阻塞 ADC 与测量链路；新增 C/Verilog 共用的共享内存 ABI 与 `pqm_shared_memory_bridge`，按“负载先写、序号后写”发布标量和谐波代数；新增 RGB565 至 RGB888 弹性转换级，供 PS 双 framebuffer 经 VDMA 驱动现有 LCD。
 
+2026-07-19：完成过渡 SoC 顶层集成。原顶层重命名为 `pqm_legacy_core`，测量结果、原始样本、PL 工作时钟和复位均已导出；新 `main` 接入 AXI 样本 CDC、共享 BRAM 端口 B、VDMA 视频、PS 中断以及 I2C/GPIO EMIO，并保留编译期旧显示回退开关。板级输入时钟现在只进入 MMCM，所有 PL 逻辑统一使用缓冲后的 50 MHz 时钟。`freq_metrics_raw_calc` 的平方和累加器禁止折叠进 DSP48，消除了综合时序环。PS 模式和兼容 PL 模式均完成综合检查，最终 PS 模式结果为 `0 Critical Warnings / 0 Errors`，三个 PS 接口 XSim 测试和 41 项 C/Verilog ABI 对照全部通过。
+
 ## 当前已知问题
 
-当前已确认 Vivado/XSim 2018.3 位于 `D:/zt/Xilinx`，PS Block Design 和新增 PS 接口 RTL 均使用仓库脚本执行本地检查。完整 SoC 综合与上板验证仍需在顶层集成完成后执行。
+当前过渡顶层在 PS 模式下仍会实例化旧 LCD/触摸/波形渲染层，以复用其中尚未拆出的测量与 FFT 结果。后续需把纯测量链从 `lcd_display` 中独立出来，才能真正释放 PL 字库、背景、波形像素和触摸协议资源。
+
+完整 SoC 已通过综合，但实现、生成 bitstream、FreeRTOS/LVGL 软件联调和上板验证仍待完成。
 
 当前 UART ASCII 整包大约 `11610` 字节，在线发送时间约 `1.01 s`，发送周期明显长于旧二进制版本。
 

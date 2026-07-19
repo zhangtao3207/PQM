@@ -376,20 +376,20 @@ git commit -m "feat(fpga): add RGB565 AXI video conversion"
 - Modify: `FPGA/prj/PQM.xdc`
 - Modify: `FPGA/scripts/create_pqm_soc_project.tcl`
 
-- [ ] **Step 1: Preserve the existing top behavior as a named fallback**
+- [x] **Step 1: Preserve the existing top behavior as a named fallback**
 
 Rename the old module to `pqm_legacy_core`. Add outputs for signed channel-1/channel-3 samples, `adc_frame_valid`, ADC timeout, and the scalar/harmonic results needed by the shared-memory bridge. Keep executable behavior unchanged.
 
-- [ ] **Step 2: Write an elaboration test for both display modes**
+- [x] **Step 2: Write an elaboration test for both display modes**
 
 The new `main` has parameter `LEGACY_PL_DISPLAY`. Run Vivado elaboration once with `1` and once with `0`; each run must have exactly one driver for every LCD and touch pin.
 
-- [ ] **Step 3: Implement the SoC top**
+- [x] **Step 3: Implement the SoC top**
 
 `main` instantiates:
 
 - `pqm_legacy_core` for acquisition and measurements;
-- generated `pqm_ps_wrapper`;
+- generated `pqm_ps` block-design module with explicit EMIO I/O/T signals;
 - `pqm_axis_sample_stream` into AXI DMA S2MM stream input;
 - `pqm_shared_memory_bridge` into BRAM port B;
 - `pqm_axis_rgb565_to_rgb888` between VDMA and Video Out;
@@ -398,7 +398,7 @@ The new `main` has parameter `LEGACY_PL_DISPLAY`. Run Vivado elaboration once wi
 
 The PS mode shall not instantiate PL font ROM, text preprocessing, background rendering, wave-pixel detection, or PL touch protocol logic once Task 12 removes the fallback dependency.
 
-- [ ] **Step 4: Validate and synthesize the transitional design**
+- [x] **Step 4: Validate and synthesize the transitional design**
 
 Run:
 
@@ -409,7 +409,7 @@ powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_vivado.ps1 -Script FPG
 
 Expected: synthesis completes with no critical warnings about unconstrained clocks, unconnected HP ports, multiple LCD drivers, or AXI width mismatch.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add FPGA/rtl/main.v FPGA/rtl/pqm_legacy_core.v FPGA/rtl/PSInterface/pqm_touch_iobuf.v FPGA/prj/PQM.xdc FPGA/scripts/create_pqm_soc_project.tcl

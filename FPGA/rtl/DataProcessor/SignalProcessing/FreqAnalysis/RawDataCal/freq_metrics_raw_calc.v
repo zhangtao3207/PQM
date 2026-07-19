@@ -74,8 +74,9 @@ module freq_metrics_raw_calc (
 );
 
 reg        frame_end_pending;
-reg [45:0] u_square_sum_work;
-reg [45:0] i_square_sum_work;
+// 异步复位累加器使用逻辑加法链，避免综合器把反馈路径折叠进 DSP48 形成时序环。
+(* use_dsp = "no" *) reg [45:0] u_square_sum_work;
+(* use_dsp = "no" *) reg [45:0] i_square_sum_work;
 reg [16:0] u_fund_mag_work;
 reg [16:0] i_fund_mag_work;
 reg        u_fund_valid_work;

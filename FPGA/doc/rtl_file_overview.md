@@ -1,6 +1,6 @@
 # RTL 文件总览
 
-更新时间：2026-04-23
+更新时间：2026-07-19
 
 ## 文档职责
 
@@ -13,23 +13,19 @@
 
 ```text
 main
-  -> ADC_PARALLEL
-  -> DataProcessor
-     -> TimeAnalysis
-     -> FreqAnalysis
-  -> GraphicsLoad
-     -> TimeDomain
-     -> FreqDomain
-  -> lcd/display
-  -> lcd/touch
-  -> uart
+  -> pqm_legacy_core -> ADC / TimeAnalysis / FreqAnalysis
+  -> pqm_axis_sample_stream -> AXI DMA
+  -> pqm_shared_memory_bridge -> AXI BRAM
+  -> pqm_ps -> DDR / DMA / VDMA / EMIO
+  -> pqm_axis_rgb565_to_rgb888 -> LCD
 ```
 
 ## 顶层
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
-| `rtl/main.v` | `main` | 系统顶层，连接 AD7606、时域/频域处理、LCD、触控、UART、`key0` 量程切换和 LED/蜂鸣器告警输出。 |
+| `rtl/main.v` | `main` | SoC 顶层，连接旧测量核心、Zynq PS、AXI DMA/VDMA、共享 BRAM、LCD 与触摸 EMIO，并提供编译期旧显示回退开关。 |
+| `rtl/pqm_legacy_core.v` | `pqm_legacy_core` | 保留原 AD7606、时域/频域测量、FFT、告警和回退显示链路，并向 PS 接口导出样本、标量与谐波结果。 |
 
 ## ADC_PARALLEL
 
@@ -90,7 +86,7 @@ main
 |---|---|---|
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal/fft_fundamental_freq_tracker.v` | `fft_fundamental_freq_tracker` | 跟踪 FFT 基波频率结果并做平滑。 |
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal/freq_harmonic_iir_filter.v` | `freq_harmonic_iir_filter` | 对频域谐波流做统一 IIR 平滑，作为后续频域模块的主谐波数据接口。 |
-| `rtl/DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal/freq_metrics_raw_calc.v` | `freq_metrics_raw_calc` | 从滤波后的谐波结果中提取 `THD`、基波幅值/相位、`DC` 等 raw 指标。 |
+| `rtl/DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal/freq_metrics_raw_calc.v` | `freq_metrics_raw_calc` | 从滤波后的谐波结果中提取 `THD`、基波幅值/相位、`DC` 等 raw 指标；平方和累加器固定使用逻辑加法链，避免 DSP48 反馈时序环。 |
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal/freq_thd_raw_calc.v` | `freq_thd_raw_calc` | 计算电压/电流总谐波畸变率 raw 值。 |
 
 ## DataProcessor/SignalProcessing/FreqAnalysis/DataReprocessor
@@ -110,7 +106,7 @@ main
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
-| `rtl/DataProcessor/GraphicsLoad/TimeDomain/time_text_display_preprocess.v` | `time_text_display_preprocess` | 组织时域文本计算、规整、拆位和提交；当前也负责 sharp alarm 检测与量程切档后的基线处理。 |
+| `rtl/DataProcessor/GraphicsLoad/TimeDomain/time_text_display_preprocess.v` | `time_text_display_preprocess` | 组织时域文本计算、规整、拆位和提交；负责 sharp alarm 与量程基线，并向 PS 快照链路导出 x100 定点结果。 |
 | `rtl/DataProcessor/GraphicsLoad/TimeDomain/time_wave_display_capture.v` | `time_wave_display_capture` | 捕获时域波形显示帧并协调触发、冻结和显示 bank 切换。 |
 | `rtl/DataProcessor/GraphicsLoad/TimeDomain/time_wave_display_resampler.v` | `time_wave_display_resampler` | 将采样点重采样为 LCD 波形宽度对应的数据并换算屏幕 `Y` 坐标。 |
 | `rtl/DataProcessor/GraphicsLoad/TimeDomain/time_wave_frame_writer.v` | `time_wave_frame_writer` | 将重采样后的时域波形写入显示 RAM。 |
@@ -131,6 +127,7 @@ main
 | `rtl/PSInterface/pqm_axis_sample_stream.v` | `pqm_axis_sample_stream` | 将 U/I 原始样本和源序号封装为 64 位 AXI4-Stream；DMA 反压时记录并丢弃新样本，避免阻塞 ADC 与测量链路。 |
 | `rtl/PSInterface/pqm_axis_rgb565_to_rgb888.v` | `pqm_axis_rgb565_to_rgb888` | 将 VDMA 的 RGB565 像素扩展为 RGB888，并在视频反压期间保持像素、帧首和行末标志稳定。 |
 | `rtl/PSInterface/pqm_shared_memory_bridge.v` | `pqm_shared_memory_bridge` | 通过 BRAM 串行发布一致性标量快照、双 bank 谐波和带序号命令响应，保证 PS 只读取已提交代数。 |
+| `rtl/PSInterface/pqm_touch_iobuf.v` | `pqm_touch_iobuf` | 为 PS I2C EMIO 的实际 SCL/SDA 引脚实例化 IOBUF，并映射触摸复位、中断与物理按键 GPIO。 |
 
 ## lcd/display
 

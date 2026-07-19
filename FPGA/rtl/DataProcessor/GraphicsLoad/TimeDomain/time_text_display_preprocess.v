@@ -85,6 +85,15 @@
  *   power_factor_units: 功率因数个位数字。
  *   power_factor_decile: 功率因数十分位数字。
  *   power_factor_percentiles: 功率因数百分位数字。
+ *   u_rms_x100_value: 电压 RMS 的 x100 定点结果。
+ *   i_rms_x100_value: 电流 RMS 的 x100 定点结果。
+ *   u_pp_x100_value: 电压峰峰值的 x100 定点结果。
+ *   i_pp_x100_value: 电流峰峰值的 x100 定点结果。
+ *   freq_x100_value: 频率的 x100 定点结果。
+ *   active_p_x100_value: 有功功率的 x100 定点结果。
+ *   reactive_q_x100_value: 无功功率的 x100 定点结果。
+ *   apparent_s_x100_value: 视在功率的 x100 定点结果。
+ *   power_factor_x100_value: 功率因数的 x100 定点结果。
  *   power_metrics_valid: 功率相关结果有效指示。
  *   sharp_alarm_active: 尖变告警保持标志。
  *   sharp_alarm_code: 尖变告警类型编码。
@@ -174,6 +183,15 @@ module time_text_display_preprocess #(
     output reg [7:0]               power_factor_units,
     output reg [7:0]               power_factor_decile,
     output reg [7:0]               power_factor_percentiles,
+    output wire signed [31:0]      u_rms_x100_value,
+    output wire signed [31:0]      i_rms_x100_value,
+    output wire signed [31:0]      u_pp_x100_value,
+    output wire signed [31:0]      i_pp_x100_value,
+    output wire signed [31:0]      freq_x100_value,
+    output wire signed [31:0]      active_p_x100_value,
+    output wire signed [31:0]      reactive_q_x100_value,
+    output wire signed [31:0]      apparent_s_x100_value,
+    output wire signed [31:0]      power_factor_x100_value,
     output reg                     power_metrics_valid,
     output reg                     sharp_alarm_active,
     output reg [2:0]               sharp_alarm_code
@@ -293,6 +311,33 @@ wire                          base_packet_valid;
 wire                          power_packet_valid;
 wire [31:0]                   u_rms_x100_abs_wire;
 wire [31:0]                   i_rms_x100_abs_wire;
+
+// 电压 RMS x100 结果直接导出给 PS 快照链路。
+assign u_rms_x100_value = u_rms_x100_wire;
+
+// 电流 RMS x100 结果直接导出给 PS 快照链路。
+assign i_rms_x100_value = i_rms_x100_wire;
+
+// 电压峰峰值 x100 结果直接导出给 PS 快照链路。
+assign u_pp_x100_value = u_pp_x100_wire;
+
+// 电流峰峰值 x100 结果直接导出给 PS 快照链路。
+assign i_pp_x100_value = i_pp_x100_wire;
+
+// 频率 x100 结果直接导出给 PS 快照链路。
+assign freq_x100_value = freq_x100_wire;
+
+// 有功功率 x100 结果直接导出给 PS 快照链路。
+assign active_p_x100_value = active_p_x100_wire;
+
+// 无功功率 x100 结果直接导出给 PS 快照链路。
+assign reactive_q_x100_value = reactive_q_x100_wire;
+
+// 视在功率 x100 结果直接导出给 PS 快照链路。
+assign apparent_s_x100_value = apparent_s_x100_wire;
+
+// 功率因数 x100 结果直接导出给 PS 快照链路。
+assign power_factor_x100_value = power_factor_x100_wire;
 wire [31:0]                   u_rms_baseline_abs_wire;
 wire [31:0]                   i_rms_baseline_abs_wire;
 wire [31:0]                   u_rms_delta_abs_wire;

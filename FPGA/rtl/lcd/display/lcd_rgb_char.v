@@ -31,6 +31,17 @@
  *   alarm_active: 时域异常告警活动位。
  *   uart_stream_tx_en: 串口测量文本发送请求。
  *   uart_stream_tx_data: 串口测量文本发送字节。
+ *   ps_snapshot_words: 按共享内存 ABI 排列的标量快照。
+ *   ps_snapshot_commit_toggle: 标量快照提交 toggle。
+ *   ps_harmonic_valid: 谐波条目有效标志。
+ *   ps_harmonic_last: 谐波帧尾标志。
+ *   ps_harmonic_index: 谐波阶次。
+ *   ps_harmonic_u_ratio: 谐波电压幅值占比。
+ *   ps_harmonic_i_ratio: 谐波电流幅值占比。
+ *   ps_harmonic_phase: 谐波相位差。
+ *   ps_harmonic_flags: 谐波有效性标志。
+ * 输入:
+ *   ps_harmonic_ready: PS 共享内存桥允许接收当前谐波条目。
  * 双向:
  *   lcd_rgb: LCD RGB 数据总线。
  */
@@ -64,7 +75,17 @@ module lcd_rgb_char(
     output     [15:0]  lcd_id,
     output             alarm_active,
     output             uart_stream_tx_en,
-    output     [7:0]   uart_stream_tx_data
+    output     [7:0]   uart_stream_tx_data,
+    output    [511:0]  ps_snapshot_words,
+    output             ps_snapshot_commit_toggle,
+    output             ps_harmonic_valid,
+    input              ps_harmonic_ready,
+    output             ps_harmonic_last,
+    output      [8:0]  ps_harmonic_index,
+    output     [31:0]  ps_harmonic_u_ratio,
+    output     [31:0]  ps_harmonic_i_ratio,
+    output     [31:0]  ps_harmonic_phase,
+    output     [31:0]  ps_harmonic_flags
 );
 
 wire  [10:0]  pixel_xpos_w;
@@ -158,7 +179,17 @@ lcd_display u_lcd_display(
     .pixel_data     (pixel_data_w),
     .alarm_active   (alarm_active),
     .uart_stream_tx_en  (uart_stream_tx_en),
-    .uart_stream_tx_data(uart_stream_tx_data)
+    .uart_stream_tx_data(uart_stream_tx_data),
+    .ps_snapshot_words(ps_snapshot_words),
+    .ps_snapshot_commit_toggle(ps_snapshot_commit_toggle),
+    .ps_harmonic_valid(ps_harmonic_valid),
+    .ps_harmonic_ready(ps_harmonic_ready),
+    .ps_harmonic_last(ps_harmonic_last),
+    .ps_harmonic_index(ps_harmonic_index),
+    .ps_harmonic_u_ratio(ps_harmonic_u_ratio),
+    .ps_harmonic_i_ratio(ps_harmonic_i_ratio),
+    .ps_harmonic_phase(ps_harmonic_phase),
+    .ps_harmonic_flags(ps_harmonic_flags)
 );
 
 lcd_driver u_lcd_driver(

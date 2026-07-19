@@ -33,6 +33,17 @@
  *   alarm_active          - 尖峰告警输出。
  *   uart_stream_tx_en     - UART 测量串流发送使能。
  *   uart_stream_tx_data   - UART 测量串流发送字节。
+ *   ps_snapshot_words     - 按共享内存 ABI 排列的 16 个标量 word。
+ *   ps_snapshot_commit_toggle - 标量或频域结果更新后的提交 toggle。
+ *   ps_harmonic_valid     - 向 PS 发布的谐波条目有效标志。
+ *   ps_harmonic_last      - 当前谐波条目为本帧最后一项。
+ *   ps_harmonic_index     - 当前谐波阶次。
+ *   ps_harmonic_u_ratio   - 当前谐波电压幅值占比。
+ *   ps_harmonic_i_ratio   - 当前谐波电流幅值占比。
+ *   ps_harmonic_phase     - 当前谐波相位差。
+ *   ps_harmonic_flags     - 当前谐波有效性标志。
+ * 输入:
+ *   ps_harmonic_ready     - PS 共享内存桥允许接收当前谐波条目。
  */
 module lcd_display(
     input              lcd_pclk,
@@ -62,7 +73,17 @@ module lcd_display(
     output reg [23:0]  pixel_data,
     output             alarm_active,
     output             uart_stream_tx_en,
-    output     [7:0]   uart_stream_tx_data
+    output     [7:0]   uart_stream_tx_data,
+    output    [511:0]  ps_snapshot_words,
+    output             ps_snapshot_commit_toggle,
+    output             ps_harmonic_valid,
+    input              ps_harmonic_ready,
+    output             ps_harmonic_last,
+    output      [8:0]  ps_harmonic_index,
+    output     [31:0]  ps_harmonic_u_ratio,
+    output     [31:0]  ps_harmonic_i_ratio,
+    output     [31:0]  ps_harmonic_phase,
+    output     [31:0]  ps_harmonic_flags
 );
 
 // 界面字符尺寸、主题色、布局坐标和显示量程参数。
@@ -482,6 +503,7 @@ wire [7:0]  freq_i_bar_height;
 wire [7:0]  freq_phase_bar_height;
 wire        freq_sample_valid;
 wire        freq_harmonic_ready;
+wire        freq_display_harmonic_ready;
 wire        freq_harmonic_valid;
 wire        freq_harmonic_last;
 wire [8:0]  freq_harmonic_order_stream;
@@ -540,6 +562,15 @@ wire        uart_stream_tx_en_wire;
 wire [7:0]  uart_stream_tx_data_wire;
 wire [31:0] u_full_scale_x100_wave;
 wire [31:0] i_full_scale_x100_wave;
+wire signed [31:0] u_rms_x100_wire;
+wire signed [31:0] i_rms_x100_wire;
+wire signed [31:0] u_pp_x100_wire;
+wire signed [31:0] i_pp_x100_wire;
+wire signed [31:0] freq_x100_wire;
+wire signed [31:0] active_p_x100_wire;
+wire signed [31:0] reactive_q_x100_wire;
+wire signed [31:0] apparent_s_x100_wire;
+wire signed [31:0] power_factor_x100_wire;
 
 // 组合生成字体 ROM 地址、文本提交沿和顶层告警/UART 输出映射。
 assign font_addr_16x32 = text_blank ? 12'd0 : ({5'd0, font_char_idx} << 5) + {6'd0, text_rel_y[4:0]};
@@ -551,6 +582,55 @@ assign uart_stream_tx_en   = uart_stream_tx_en_wire;
 assign uart_stream_tx_data = uart_stream_tx_data_wire;
 assign u_full_scale_x100_wave = full_scale_low_range_active ? U_FULL_SCALE_LOW_X100 : U_FULL_SCALE_HIGH_X100;
 assign i_full_scale_x100_wave = full_scale_low_range_active ? I_FULL_SCALE_LOW_X100 : I_FULL_SCALE_HIGH_X100;
+
+// 标量快照按共享内存 ABI 的 word15 至 word0 顺序打包。
+assign ps_snapshot_words = {
+    {16'd0, 4'd0, freq_metrics_raw_valid, freq_dc_i_raw_valid, freq_dc_u_raw_valid,
+     freq_thd_i_raw_valid, freq_thd_u_raw_valid, power_metrics_valid, freq_valid,
+     phase_valid, i_pp_digits_valid, u_pp_digits_valid, i_rms_digits_valid, u_rms_digits_valid},
+    {28'd0, sharp_alarm_code, sharp_alarm_active},
+    freq_dc_i_raw_x100,
+    freq_dc_u_raw_x100,
+    freq_thd_i_raw_x100,
+    freq_thd_u_raw_x100,
+    power_factor_x100_wire,
+    apparent_s_x100_wire,
+    reactive_q_x100_wire,
+    active_p_x100_wire,
+    {{15{phase_x100_signed[16]}}, phase_x100_signed},
+    freq_x100_wire,
+    i_pp_x100_wire,
+    u_pp_x100_wire,
+    i_rms_x100_wire,
+    u_rms_x100_wire
+};
+
+// 时域或频域结果更新时，把现有文本包提交 toggle 同步导出给 PS 快照桥。
+assign ps_snapshot_commit_toggle = text_packet_commit_toggle_wave;
+
+// 谐波有效标志直接透传，ready 由现有显示消费者和 PS 消费者共同决定。
+assign ps_harmonic_valid = freq_harmonic_valid;
+
+// 谐波帧尾标志直接透传给 PS 双 bank 发布逻辑。
+assign ps_harmonic_last = freq_harmonic_last;
+
+// 谐波阶次直接透传给 PS 双 bank 发布逻辑。
+assign ps_harmonic_index = freq_harmonic_order_stream;
+
+// 16 位电压幅值占比零扩展为共享内存 word。
+assign ps_harmonic_u_ratio = {16'd0, freq_harmonic_u_pct_x100};
+
+// 16 位电流幅值占比零扩展为共享内存 word。
+assign ps_harmonic_i_ratio = {16'd0, freq_harmonic_i_pct_x100};
+
+// 16 位有符号相位差扩展为共享内存 word。
+assign ps_harmonic_phase = {{16{freq_phase_diff_deg_x100[15]}}, freq_phase_diff_deg_x100};
+
+// 谐波标志记录相位有效和谐波存在状态。
+assign ps_harmonic_flags = {30'd0, freq_phase_diff_valid_stream, freq_harmonic_present_stream};
+
+// 只有现有频谱链路和 PS 共享内存桥均就绪时才接收一个谐波拍。
+assign freq_harmonic_ready = freq_display_harmonic_ready && ps_harmonic_ready;
 // 将时域与频域测量字段打包成统一文本包，供 LCD 和 UART 复用。
 assign text_packet_wave = {
     u_rms_hundreds, u_rms_tens, u_rms_units, u_rms_decile, u_rms_percentiles, u_rms_digits_valid,
@@ -719,6 +799,15 @@ time_text_display_preprocess #(
     .power_factor_units(power_factor_units),
     .power_factor_decile(power_factor_decile),
     .power_factor_percentiles(power_factor_percentiles),
+    .u_rms_x100_value (u_rms_x100_wire),
+    .i_rms_x100_value (i_rms_x100_wire),
+    .u_pp_x100_value  (u_pp_x100_wire),
+    .i_pp_x100_value  (i_pp_x100_wire),
+    .freq_x100_value  (freq_x100_wire),
+    .active_p_x100_value(active_p_x100_wire),
+    .reactive_q_x100_value(reactive_q_x100_wire),
+    .apparent_s_x100_value(apparent_s_x100_wire),
+    .power_factor_x100_value(power_factor_x100_wire),
     .power_metrics_valid(power_metrics_valid),
     .sharp_alarm_active(sharp_alarm_active),
     .sharp_alarm_code (sharp_alarm_code)
@@ -1002,7 +1091,7 @@ freq_display_adapter u_freq_display_adapter (
     .rst_n                  (sys_rst_n),
     .enable                 (1'b1),
     .s_harmonic_valid       (freq_harmonic_valid),
-    .s_harmonic_ready       (freq_harmonic_ready),
+    .s_harmonic_ready       (freq_display_harmonic_ready),
     .s_harmonic_last        (freq_harmonic_last),
     .s_harmonic_order       (freq_harmonic_order_stream),
     .s_harmonic_present     (freq_harmonic_present_stream),

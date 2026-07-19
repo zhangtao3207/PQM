@@ -29,10 +29,23 @@ if {[llength $rtl_files] == 0} {
     error "No handwritten RTL found under [file join $fpga_dir rtl]"
 }
 add_files -norecurse $rtl_files
+set_property include_dirs [list [file join $fpga_dir rtl PSInterface]] [get_filesets sources_1]
 
 set xci_files [glob -nocomplain [file join $fpga_dir prj PQM.srcs sources_1 ip * *.xci]]
 if {[llength $xci_files] != 0} {
-    add_files -norecurse $xci_files
+    set copied_xci {}
+    set imported_ip_dir [file join $project_dir PQM_SOC.srcs sources_1 ip]
+    foreach source_xci $xci_files {
+        set ip_name [file rootname [file tail $source_xci]]
+        set target_dir [file join $imported_ip_dir $ip_name]
+        set target_xci [file join $target_dir [file tail $source_xci]]
+        file mkdir $target_dir
+        file copy -force $source_xci $target_xci
+        lappend copied_xci $target_xci
+    }
+    add_files -norecurse $copied_xci
+    set_property generate_synth_checkpoint false [get_files $copied_xci]
+    generate_target all [get_ips]
 }
 
 set constraints_file [file join $fpga_dir prj PQM.xdc]
