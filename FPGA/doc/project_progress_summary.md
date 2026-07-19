@@ -54,11 +54,13 @@ UART 输出方面，当前 UART 已经改回 ASCII 文本协议，不再发送�
 
 2026-07-19：完成过渡 SoC 顶层集成。原顶层重命名为 `pqm_legacy_core`，测量结果、原始样本、PL 工作时钟和复位均已导出；新 `main` 接入 AXI 样本 CDC、共享 BRAM 端口 B、VDMA 视频、PS 中断以及 I2C/GPIO EMIO，并保留编译期旧显示回退开关。板级输入时钟现在只进入 MMCM，所有 PL 逻辑统一使用缓冲后的 50 MHz 时钟。`freq_metrics_raw_calc` 的平方和累加器禁止折叠进 DSP48，消除了综合时序环。PS 模式和兼容 PL 模式均完成综合检查，最终 PS 模式结果为 `0 Critical Warnings / 0 Errors`，三个 PS 接口 XSim 测试和 41 项 C/Verilog ABI 对照全部通过。
 
+2026-07-19：完成首个 PS FreeRTOS 软件基线。LVGL 固定为 v8.3.11，新增共享内存 ABI 驱动及主机单元测试，并由 Vivado 导出的 HDF 自动生成 FreeRTOS 10 BSP 和 Cortex-A9 应用；`pqm_freertos.elf` 已成功构建。完整 SoC 已生成 bitstream，但实现报告仍显示旧 PL LCD 字库和文字预处理链路留在 PS 模式网表中，导致 50 MHz 域 WNS 为 -3.459 ns；后续删除旧渲染链路后必须重新实现并收敛时序。
+
 ## 当前已知问题
 
 当前过渡顶层在 PS 模式下仍会实例化旧 LCD/触摸/波形渲染层，以复用其中尚未拆出的测量与 FFT 结果。后续需把纯测量链从 `lcd_display` 中独立出来，才能真正释放 PL 字库、背景、波形像素和触摸协议资源。
 
-完整 SoC 已通过综合，但实现、生成 bitstream、FreeRTOS/LVGL 软件联调和上板验证仍待完成。
+完整 SoC 已生成 bitstream，FreeRTOS 启动 ELF 已构建；DMA/VDMA、触摸、LVGL 页面、旧 PL 渲染移除、最终时序收敛和上板验证仍待完成。
 
 当前 UART ASCII 整包大约 `11610` 字节，在线发送时间约 `1.01 s`，发送周期明显长于旧二进制版本。
 

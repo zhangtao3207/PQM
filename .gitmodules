@@ -1,0 +1,3 @@
+[submodule "ARM/third_party/lvgl"]
+	path = ARM/third_party/lvgl
+	url = https://gitee.com/mirrors/lvgl.git

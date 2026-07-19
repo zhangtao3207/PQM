@@ -17,6 +17,12 @@ This directory contains the Cortex-A9 software for the PQM Zynq-7020 migration.
 
 ## Tool Entry Points
 
+Run the platform-neutral PS/PL ABI tests:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ARM/tests/run_tests.ps1
+```
+
 Run an XSCT script through the fixed SDK 2018.3 installation:
 
 ```powershell
@@ -24,3 +30,7 @@ powershell -ExecutionPolicy Bypass -File ARM/scripts/run_xsct.ps1 -Script ARM/sc
 ```
 
 The hardware handoff is generated under `FPGA/export` by the Vivado build scripts. Do not edit generated BSP or workspace files by hand.
+
+`create_workspace.tcl` recreates the FreeRTOS BSP and application, imports the
+tracked application sources, and verifies that
+`ARM/sdk_workspace/pqm_freertos/Release/pqm_freertos.elf` was produced.

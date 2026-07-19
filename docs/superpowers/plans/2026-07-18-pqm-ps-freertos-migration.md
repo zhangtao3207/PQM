@@ -428,7 +428,7 @@ git commit -m "feat(fpga): integrate PS communication and video paths"
 - Create: `ARM/tests/test_pqm_axi.c`
 - Modify: `.gitmodules`
 
-- [ ] **Step 1: Add the pinned LVGL dependency**
+- [x] **Step 1: Add the pinned LVGL dependency**
 
 Run:
 
@@ -439,7 +439,7 @@ git -C ARM/third_party/lvgl checkout v8.3.11
 
 Verify: `git submodule status` starts with commit `74d0a816a440eea53e030c4f1af842a94f7ce3d3`.
 
-- [ ] **Step 2: Write the failing native ABI tests**
+- [x] **Step 2: Write the failing native ABI tests**
 
 Use MinGW GCC at `D:/zt/Xilinx/Vivado/2018.3/msys64/mingw64/bin/gcc.exe`. Tests cover magic/version rejection, stable snapshot read, retry on changed sequence, signed field decoding, and command timeout.
 
@@ -447,7 +447,7 @@ Run: `powershell -ExecutionPolicy Bypass -File ARM/tests/run_tests.ps1`
 
 Expected: compile fails because `pqm_axi.c` is missing.
 
-- [ ] **Step 3: Implement the platform-neutral ABI reader**
+- [x] **Step 3: Implement the platform-neutral ABI reader**
 
 Expose:
 
@@ -463,7 +463,7 @@ bool pqm_axi_send_command(pqm_axi_t *axi, uint32_t command, uint32_t argument,
 
 The Xilinx backend uses volatile 32-bit reads/writes at `XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR`. Host tests inject an in-memory backend.
 
-- [ ] **Step 4: Generate the SDK workspace**
+- [x] **Step 4: Generate the SDK workspace**
 
 `create_workspace.tcl` shall:
 
@@ -478,7 +478,7 @@ regenbsp -bsp pqm_bsp
 
 Import `ARM/app/src` and `ARM/third_party/lvgl/src` as linked sources and set include paths for LVGL and the generated BSP.
 
-- [ ] **Step 5: Build FreeRTOS boot smoke application**
+- [x] **Step 5: Build FreeRTOS boot smoke application**
 
 `main.c` initializes the platform, prints PS/PL ABI identity on PS UART, creates `system_task`, then starts the scheduler. Stack/allocation hooks print the failing task and force watchdog reset.
 
@@ -490,7 +490,7 @@ powershell -ExecutionPolicy Bypass -File ARM/scripts/run_xsct.ps1 -Script ARM/sc
 
 Expected: `pqm_freertos.elf` is produced with no unresolved LVGL or Xilinx driver symbols.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .gitmodules ARM/third_party/lvgl ARM/scripts ARM/app ARM/tests
