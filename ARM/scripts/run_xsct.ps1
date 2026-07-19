@@ -15,5 +15,9 @@ if (-not (Test-Path -LiteralPath $Script)) {
 }
 
 $resolvedScript = (Resolve-Path -LiteralPath $Script).Path
-& $xsct $resolvedScript
-exit $LASTEXITCODE
+$output = & $xsct $resolvedScript 2>&1
+$exitCode = $LASTEXITCODE
+$output | ForEach-Object { Write-Host $_ }
+if ($exitCode -ne 0 -or (($output -join "`n") -match '(?m)^\s+while executing\s*$')) {
+    throw "XSCT script failed: $resolvedScript"
+}

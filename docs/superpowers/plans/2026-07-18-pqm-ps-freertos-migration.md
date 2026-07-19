@@ -625,15 +625,15 @@ git commit -m "feat(arm): port LCD touch input to PS"
 - Create: `ARM/app/src/ui/pqm_ui_frequency.c`
 - Create: `ARM/tests/test_pqm_measurement.c`
 
-- [ ] **Step 1: Write failing fixed-point formatting tests**
+- [x] **Step 1: Write failing fixed-point formatting tests**
 
 Cover zero, positive, negative, minimum/maximum raw inputs, invalid flags, saturation, signed P/Q/phase, PF, THD, and frequency. Expected strings must match the legacy screen units and decimal precision.
 
-- [ ] **Step 2: Implement measurement conversion**
+- [x] **Step 2: Implement measurement conversion**
 
 Keep raw-to-engineering scale constants in one table. Return typed values plus validity, never preformatted global strings. Formatting helpers accept caller-owned buffers and always terminate them.
 
-- [ ] **Step 3: Recreate the two current pages**
+- [x] **Step 3: Recreate the two current pages**
 
 Use LVGL objects for:
 
@@ -645,7 +645,7 @@ Use LVGL objects for:
 
 Do not place feature-description or help text on screen. Use the existing `FPGA/rtl/lcd/lcd.html` only as the layout reference.
 
-- [ ] **Step 4: Integrate the FreeRTOS tasks**
+- [x] **Step 4: Integrate the FreeRTOS tasks**
 
 Create `dma_rx_task`, `measurement_task`, `touch_task`, `ui_task`, and `system_task` with static stacks and queues. Measurement and waveform producers publish immutable latest-value messages; only `ui_task` mutates LVGL objects.
 
@@ -653,7 +653,7 @@ Create `dma_rx_task`, `measurement_task`, `touch_task`, `ui_task`, and `system_t
 
 For the MATLAB Q15 input fixture, log PS measurements and compare them with the current PL UART/legacy page values. Every displayed field must match the agreed scale and sign; waveform shape and harmonic ordering must match.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add ARM/app/src/services/measurement ARM/app/src/ui ARM/tests/test_pqm_measurement.c

@@ -6,6 +6,7 @@ $buildDir = Join-Path $repoRoot 'ARM/test_build'
 $driverDir = Join-Path $repoRoot 'ARM/app/src/drivers/pqm_axi'
 $touchDir = Join-Path $repoRoot 'ARM/app/src/drivers/pqm_touch'
 $waveformDir = Join-Path $repoRoot 'ARM/app/src/services/waveform'
+$measurementDir = Join-Path $repoRoot 'ARM/app/src/services/measurement'
 
 if (-not (Test-Path -LiteralPath $gcc)) {
     throw "MinGW GCC not found: $gcc"
@@ -44,4 +45,8 @@ Invoke-NativeTest -Name 'test_pqm_waveform' -IncludeDirectory $waveformDir -Sour
 Invoke-NativeTest -Name 'test_pqm_touch' -IncludeDirectory $touchDir -Sources @(
     (Join-Path $repoRoot 'ARM/tests/test_pqm_touch.c'),
     (Join-Path $touchDir 'pqm_touch_protocol.c')
+)
+Invoke-NativeTest -Name 'test_pqm_measurement' -IncludeDirectory $measurementDir -Sources @(
+    (Join-Path $repoRoot 'ARM/tests/test_pqm_measurement.c'),
+    (Join-Path $measurementDir 'pqm_measurement.c')
 )

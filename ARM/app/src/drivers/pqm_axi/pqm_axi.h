@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 #define PQM_AXI_SNAPSHOT_MAX_RETRIES 4u
+#define PQM_HARMONIC_ENTRY_COUNT (PQM_SHM_HARMONIC_LAST_INDEX + 1u)
 
 typedef uint32_t (*pqm_read_word_fn)(void *context, uint32_t word_offset);
 typedef void (*pqm_write_word_fn)(void *context, uint32_t word_offset, uint32_t value);
@@ -42,11 +43,25 @@ typedef struct {
     uint32_t validity;
 } pqm_measurement_raw_t;
 
+typedef struct {
+    uint16_t u_ratio_x100;
+    uint16_t i_ratio_x100;
+    int16_t phase_x100;
+    uint8_t flags;
+} pqm_harmonic_raw_t;
+
+typedef struct {
+    uint32_t generation;
+    pqm_harmonic_raw_t entries[PQM_HARMONIC_ENTRY_COUNT];
+} pqm_harmonic_raw_snapshot_t;
+
 void pqm_axi_init(pqm_axi_t *axi, void *context,
                   pqm_read_word_fn read_word, pqm_write_word_fn write_word);
 void pqm_axi_init_mmio(pqm_axi_t *axi, uintptr_t base_address);
 bool pqm_axi_validate(pqm_axi_t *axi);
 bool pqm_axi_read_snapshot(pqm_axi_t *axi, pqm_measurement_raw_t *out);
+bool pqm_axi_read_harmonics(pqm_axi_t *axi,
+                            pqm_harmonic_raw_snapshot_t *out);
 bool pqm_axi_send_command(pqm_axi_t *axi, uint32_t command, uint32_t argument,
                           uint32_t timeout_polls, uint32_t *response);
 

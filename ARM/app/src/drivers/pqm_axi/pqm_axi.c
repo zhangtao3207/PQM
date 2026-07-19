@@ -37,6 +37,16 @@ static int32_t pqm_decode_signed_word(uint32_t word)
     return -1 - (int32_t)(~word);
 }
 
+static int16_t pqm_decode_signed_halfword(uint32_t word)
+{
+    uint16_t value = (uint16_t)word;
+
+    if ((value & 0x8000u) == 0u) {
+        return (int16_t)value;
+    }
+    return (int16_t)(-1 - (int32_t)(uint16_t)(~value));
+}
+
 void pqm_axi_init(pqm_axi_t *axi, void *context,
                   pqm_read_word_fn read_word, pqm_write_word_fn write_word)
 {
@@ -134,6 +144,58 @@ bool pqm_axi_read_snapshot(pqm_axi_t *axi, pqm_measurement_raw_t *out)
         }
     }
 
+    return false;
+}
+
+bool pqm_axi_read_harmonics(pqm_axi_t *axi,
+                            pqm_harmonic_raw_snapshot_t *out)
+{
+    uint32_t attempt;
+
+    if (!pqm_axi_can_read(axi) || out == NULL) {
+        return false;
+    }
+    for (attempt = 0u; attempt < PQM_AXI_SNAPSHOT_MAX_RETRIES; ++attempt) {
+        uint32_t generation_before;
+        uint32_t generation_after;
+        uint32_t status_before;
+        uint32_t status_after;
+        uint32_t bank_base;
+        uint32_t index;
+
+        status_before = axi->read_word(axi->context, PQM_SHM_STATUS_WORD);
+        if ((status_before & PQM_SHM_STATUS_HARMONIC_VALID) == 0u) {
+            return false;
+        }
+        generation_before = axi->read_word(
+            axi->context, PQM_SHM_HARMONIC_GENERATION_WORD);
+        bank_base = (status_before & PQM_SHM_STATUS_HARMONIC_BANK) != 0u
+                        ? PQM_SHM_HARMONIC_BANK1_WORD
+                        : PQM_SHM_HARMONIC_BANK0_WORD;
+        for (index = 0u; index < PQM_HARMONIC_ENTRY_COUNT; ++index) {
+            uint32_t entry_base = bank_base +
+                (index * PQM_SHM_HARMONIC_ENTRY_WORDS);
+
+            out->entries[index].u_ratio_x100 = (uint16_t)
+                axi->read_word(axi->context, entry_base);
+            out->entries[index].i_ratio_x100 = (uint16_t)
+                axi->read_word(axi->context, entry_base + 1u);
+            out->entries[index].phase_x100 = pqm_decode_signed_halfword(
+                axi->read_word(axi->context, entry_base + 2u));
+            out->entries[index].flags = (uint8_t)
+                axi->read_word(axi->context, entry_base + 3u);
+        }
+        generation_after = axi->read_word(
+            axi->context, PQM_SHM_HARMONIC_GENERATION_WORD);
+        status_after = axi->read_word(axi->context, PQM_SHM_STATUS_WORD);
+        if (generation_before == generation_after &&
+            ((status_before ^ status_after) &
+             (PQM_SHM_STATUS_HARMONIC_BANK |
+              PQM_SHM_STATUS_HARMONIC_VALID)) == 0u) {
+            out->generation = generation_after;
+            return true;
+        }
+    }
     return false;
 }
 

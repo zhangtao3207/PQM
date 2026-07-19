@@ -5,7 +5,7 @@
 
 #include "pqm_axi.h"
 
-#define MOCK_WORD_COUNT 256u
+#define MOCK_WORD_COUNT 0x1400u
 
 typedef struct {
     uint32_t words[MOCK_WORD_COUNT];
@@ -167,12 +167,43 @@ static void test_command_response_and_timeout(void)
     CHECK(response == 0xA55A1234u);
 }
 
+static void test_harmonic_bank_snapshot(void)
+{
+    mock_memory_t memory;
+    pqm_axi_t axi;
+    pqm_harmonic_raw_snapshot_t harmonics;
+    uint32_t entry_base;
+
+    initialize_valid_memory(&memory);
+    memory.words[PQM_SHM_STATUS_WORD] |=
+        PQM_SHM_STATUS_HARMONIC_VALID | PQM_SHM_STATUS_HARMONIC_BANK;
+    memory.words[PQM_SHM_HARMONIC_GENERATION_WORD] = 19u;
+    entry_base = PQM_SHM_HARMONIC_BANK1_WORD +
+                 (17u * PQM_SHM_HARMONIC_ENTRY_WORDS);
+    memory.words[entry_base] = 8750u;
+    memory.words[entry_base + 1u] = 6250u;
+    memory.words[entry_base + 2u] = (uint32_t)(int32_t)-1234;
+    memory.words[entry_base + 3u] = 3u;
+    axi = make_axi(&memory);
+
+    CHECK(pqm_axi_read_harmonics(&axi, &harmonics));
+    CHECK(harmonics.generation == 19u);
+    CHECK(harmonics.entries[17].u_ratio_x100 == 8750u);
+    CHECK(harmonics.entries[17].i_ratio_x100 == 6250u);
+    CHECK(harmonics.entries[17].phase_x100 == -1234);
+    CHECK(harmonics.entries[17].flags == 3u);
+
+    memory.words[PQM_SHM_STATUS_WORD] &= ~PQM_SHM_STATUS_HARMONIC_VALID;
+    CHECK(!pqm_axi_read_harmonics(&axi, &harmonics));
+}
+
 int main(void)
 {
     test_validate_identity();
     test_stable_snapshot_and_signed_fields();
     test_snapshot_retries_changed_sequence();
     test_command_response_and_timeout();
+    test_harmonic_bank_snapshot();
 
     if (failures != 0) {
         printf("FAIL: pqm_axi (%d failures)\n", failures);
