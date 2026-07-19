@@ -4,9 +4,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $gcc = 'D:/zt/Xilinx/Vivado/2018.3/msys64/mingw64/bin/gcc.exe'
 $buildDir = Join-Path $repoRoot 'ARM/test_build'
 $driverDir = Join-Path $repoRoot 'ARM/app/src/drivers/pqm_axi'
-$testSource = Join-Path $repoRoot 'ARM/tests/test_pqm_axi.c'
-$driverSource = Join-Path $driverDir 'pqm_axi.c'
-$testBinary = Join-Path $buildDir 'test_pqm_axi.exe'
+$waveformDir = Join-Path $repoRoot 'ARM/app/src/services/waveform'
 
 if (-not (Test-Path -LiteralPath $gcc)) {
     throw "MinGW GCC not found: $gcc"
@@ -15,12 +13,30 @@ if (-not (Test-Path -LiteralPath $gcc)) {
 $env:PATH = "$(Split-Path -Parent $gcc);$env:PATH"
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
-& $gcc -std=c11 -Wall -Wextra -Werror -I $driverDir $testSource $driverSource -o $testBinary
-if ($LASTEXITCODE -ne 0) {
-    throw 'Failed to compile pqm_axi host tests'
+function Invoke-NativeTest {
+    param(
+        [Parameter(Mandatory = $true)] [string]$Name,
+        [Parameter(Mandatory = $true)] [string]$IncludeDirectory,
+        [Parameter(Mandatory = $true)] [string[]]$Sources
+    )
+
+    $testBinary = Join-Path $buildDir "$Name.exe"
+    & $gcc -std=c11 -Wall -Wextra -Werror -I $IncludeDirectory $Sources -o $testBinary
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to compile $Name host tests"
+    }
+
+    & $testBinary
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Name host tests failed"
+    }
 }
 
-& $testBinary
-if ($LASTEXITCODE -ne 0) {
-    throw 'pqm_axi host tests failed'
-}
+Invoke-NativeTest -Name 'test_pqm_axi' -IncludeDirectory $driverDir -Sources @(
+    (Join-Path $repoRoot 'ARM/tests/test_pqm_axi.c'),
+    (Join-Path $driverDir 'pqm_axi.c')
+)
+Invoke-NativeTest -Name 'test_pqm_waveform' -IncludeDirectory $waveformDir -Sources @(
+    (Join-Path $repoRoot 'ARM/tests/test_pqm_waveform.c'),
+    (Join-Path $waveformDir 'pqm_waveform.c')
+)

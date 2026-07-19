@@ -506,11 +506,11 @@ git commit -m "feat(arm): bootstrap FreeRTOS and shared memory ABI"
 - Create: `ARM/app/src/services/waveform/pqm_waveform.h`
 - Create: `ARM/tests/test_pqm_waveform.c`
 
-- [ ] **Step 1: Write failing waveform tests**
+- [x] **Step 1: Write failing waveform tests**
 
 Tests cover contiguous frames, wraparound sequence arithmetic, one and multiple dropped regions, 2,048-to-400-column min/max resampling, constant signals, signed endpoints, and clipping.
 
-- [ ] **Step 2: Implement deterministic resampling**
+- [x] **Step 2: Implement deterministic resampling**
 
 Expose:
 
@@ -523,15 +523,15 @@ void pqm_waveform_resample(const pqm_waveform_t *state,
 
 Each output column contains U-min/U-max/I-min/I-max. Use integer bucket boundaries derived from cumulative indices so all 2,048 inputs are consumed exactly once. A sequence discontinuity marks the frame invalid and preserves the previous valid display frame.
 
-- [ ] **Step 3: Implement the AXI DMA SG ring**
+- [x] **Step 3: Implement the AXI DMA SG ring**
 
 Allocate four 16 KiB, 64-byte-aligned buffers and descriptors in a linker section outside the framebuffer region. The ISR acknowledges only IOC/error bits and notifies `dma_rx_task`. The task invalidates cache for the completed buffer, validates sample sequences, publishes the latest valid frame, then returns the descriptor to hardware.
 
-- [ ] **Step 4: Run native tests and ARM build**
+- [x] **Step 4: Run native tests and ARM build**
 
 Expected: all native tests pass; SDK build has no pointer-width, alignment, or volatile warnings.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add ARM/app/src/drivers/pqm_dma ARM/app/src/services/waveform ARM/tests
