@@ -546,9 +546,9 @@ git commit -m "feat(arm): receive and resample ADC DMA frames"
 - Create: `ARM/app/src/ui/pqm_lvgl_port.c`
 - Create: `ARM/app/src/ui/pqm_lvgl_port.h`
 - Create: `ARM/app/src/lv_conf.h`
-- Create: `ARM/app/src/lscript.ld`
+- Modify: `ARM/scripts/create_workspace.tcl`
 
-- [ ] **Step 1: Add compile-time framebuffer assertions**
+- [x] **Step 1: Add compile-time framebuffer assertions**
 
 ```c
 #define PQM_LCD_WIDTH 800u
@@ -559,15 +559,15 @@ _Static_assert((PQM_FB0_ADDR & 63u) == 0u, "framebuffer 0 alignment");
 _Static_assert((PQM_FB1_ADDR & 63u) == 0u, "framebuffer 1 alignment");
 ```
 
-- [ ] **Step 2: Configure and test VDMA with solid frames**
+- [x] **Step 2: Configure VDMA with solid-frame smoke patterns**
 
 Initialize two frame stores at 800 pixels, 480 lines, stride 1,600 bytes. Fill front/back with alternating red, green, blue, white, and black. Clean cache before requesting a frame switch. Count frame-done and VDMA error interrupts.
 
-- [ ] **Step 3: Configure LVGL v8.3.11**
+- [x] **Step 3: Configure LVGL v8.3.11**
 
 Set `LV_COLOR_DEPTH 16`, `LV_COLOR_16_SWAP 0`, custom allocator disabled, logging enabled through PS UART in debug builds, and full-refresh double buffering. `ui_task` is the only LVGL caller and runs `lv_timer_handler()` at a 5 ms minimum wake interval.
 
-- [ ] **Step 4: Implement synchronized buffer ownership**
+- [x] **Step 4: Implement synchronized buffer ownership**
 
 The flush callback cleans only the rendered area, records the pending frame store, and completes `lv_disp_flush_ready()` after VDMA confirms the frame-boundary switch. A 100 ms timeout restarts only VDMA and retains the current front buffer.
 
@@ -575,10 +575,10 @@ The flush callback cleans only the rendered area, records the pending frame stor
 
 Expected: stable 800x480 color sequence, correct RGB channel order, no tearing, and zero VDMA errors for 10 minutes.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
-git add ARM/app/src/drivers/pqm_video ARM/app/src/ui/pqm_lvgl_port.* ARM/app/src/lv_conf.h ARM/app/src/lscript.ld
+git add ARM/app/src/drivers/pqm_video ARM/app/src/ui/pqm_lvgl_port.* ARM/app/src/lv_conf.h ARM/scripts/create_workspace.tcl
 git commit -m "feat(arm): drive LVGL through double-buffered VDMA"
 ```
 
