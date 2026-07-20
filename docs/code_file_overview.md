@@ -106,8 +106,8 @@ LVGL量程按钮 -> measurement任务 -> AXI BRAM命令 -> PL量程控制
 | 文件 | 简要作用 |
 |---|---|
 | `FPGA/rtl/main.v` | SoC顶层；连接AD7606测量核心、Zynq PS、DMA、VDMA、共享BRAM、LCD和触摸EMIO。 |
-| `FPGA/rtl/pqm_legacy_core.v` | 保存原测量链和兼容PL显示路径，并向新PS接口导出样本、标量和谐波。 |
-| `FPGA/rtl/DataProcessor/pqm_measurement_core.v` | 默认PS模式测量核心，不实例化PL字体、像素合成、触摸和显示UART。 |
+| `FPGA/rtl/pqm_pl_core.v` | 完成AD7606采集、零点跟踪、告警，并向PS接口导出样本、标量和谐波。 |
+| `FPGA/rtl/DataProcessor/pqm_measurement_core.v` | 纯测量核心，完成时域、频域、谐波和告警计算。 |
 | `FPGA/rtl/PSInterface/pqm_axis_sample_stream.v` | 将电压、电流和源序号封装为64位AXI4-Stream采样流。 |
 | `FPGA/rtl/PSInterface/pqm_shared_memory_bridge.v` | 向AXI BRAM发布一致性标量、双缓冲谐波、运行计数和命令响应。 |
 | `FPGA/rtl/PSInterface/pqm_range_command_controller.v` | 接收PS量程命令，原子切换PL换算档位并返回确认。 |
@@ -119,7 +119,6 @@ LVGL量程按钮 -> measurement任务 -> AXI BRAM命令 -> PL量程控制
 - `DataProcessor/BasicMath`保存乘法、除法、开方、取模和数位转换基础模块。
 - `TimeAnalysis`完成RMS、峰峰值、频率、相位和功率测量。
 - `FreqAnalysis`完成FFT适配、幅相计算、谐波统计、滤波和THD。
-- `GraphicsLoad`和`lcd`仅服务于`LEGACY_PL_DISPLAY=1`兼容模式。
 - `ADC_PARALLEL`负责AD7606转换和并行采样时序。
 
 ## 5. FPGA构建与验证脚本
@@ -132,7 +131,6 @@ LVGL量程按钮 -> measurement任务 -> AXI BRAM命令 -> PL量程控制
 | `FPGA/scripts/create_pqm_soc_project.tcl` | 从源码重新创建完整SoC工程。 |
 | `FPGA/scripts/build_pqm_soc.tcl` | 执行综合、实现、Bitstream生成和HDF导出。 |
 | `FPGA/scripts/check_pqm_ps_bd.tcl` | 检查Block Design中的接口、地址和连接。 |
-| `FPGA/scripts/check_pqm_top_modes.tcl` | 分别检查默认PS模式和兼容PL模式顶层。 |
 | `FPGA/scripts/check_pqm_soc_reports.ps1` | 检查WNS、LUT门限和默认模式中是否残留旧显示层级。 |
 | `FPGA/scripts/check_freq_metrics_synth.tcl` | 对频域指标关键模块执行独立综合检查。 |
 | `FPGA/scripts/vivado_synth_pre.tcl` | 处理Vivado 2018.3在受管理目录中的已知临时文件删除问题。 |

@@ -57,6 +57,7 @@ if ($lutPercent -ge 55.0) {
 
 $hierarchyText = Get-Content -Raw -LiteralPath $HierarchyReport
 $obsoleteHierarchy = @(
+    'pqm_legacy_core',
     'g_legacy_measurement_display',
     'g_legacy_interfaces',
     'u_lcd_display',

@@ -2,14 +2,12 @@
 
 /*
  * 模块名称：main
- * 功能说明：PQM SoC 顶层，连接现有 PL 测量核心、Zynq PS、共享内存、DMA 和 PS framebuffer 视频。
- * 参数说明：
- *   LEGACY_PL_DISPLAY：为 1 时由旧 PL 显示/触摸链路驱动物理引脚，为 0 时由 PS 路径驱动。
+ * 功能说明：PQM SoC顶层，连接PL采集测量核心、Zynq PS、共享内存、DMA和PS帧缓存视频。
  * 输入端口：
  *   sys_clk：PL 采集和测量 50 MHz 时钟。
  *   sys_rst_n：PL 低有效系统复位。
- *   key0：物理回退按键。
- *   uart_rxd：旧 PL UART 接收输入。
+ *   key0：送入PS GPIO的物理按键。
+ *   uart_rxd：保留的板级串口输入引脚，新架构不在PL中处理。
  *   Busy：AD7606 忙输入。
  *   Frstdata：AD7606 首数据输入。
  *   DB0：AD7606 数据位 0。
@@ -29,7 +27,7 @@
  *   DB14：AD7606 数据位 14。
  *   DB15：AD7606 数据位 15。
  * 输出端口：
- *   uart_txd：旧 PL UART 发送输出。
+ *   uart_txd：保留的板级串口输出，PL固定为空闲高电平。
  *   led：告警 LED 输出。
  *   buzzer：告警蜂鸣器输出。
  *   touch_rst_n：触摸控制器低有效复位。
@@ -51,13 +49,11 @@
  *   touch_sda：触摸 I2C 数据线。
  *   touch_scl：触摸 I2C 时钟线。
  *   touch_int：触摸中断线。
- *   lcd_rgb：LCD RGB888 数据线，旧模式下兼容面板 ID 读取。
+ *   lcd_rgb：由PS视频通路驱动的LCD RGB888数据线。
  *   DDR_*：Zynq PS DDR3 专用接口。
  *   FIXED_IO_*：Zynq PS MIO、时钟和复位专用接口。
  */
-module main #(
-    parameter integer LEGACY_PL_DISPLAY = 0
-)(
+module main (
     input  wire        sys_clk,
     input  wire        sys_rst_n,
     input  wire        key0,
@@ -125,18 +121,6 @@ module main #(
     inout  wire        FIXED_IO_ps_srstb
 );
 
-wire        legacy_touch_sda;
-wire        legacy_touch_scl;
-wire        legacy_touch_int;
-wire        legacy_touch_rst_n;
-wire        legacy_key0;
-wire        legacy_lcd_de;
-wire        legacy_lcd_hs;
-wire        legacy_lcd_vs;
-wire        legacy_lcd_bl;
-wire        legacy_lcd_clk;
-wire        legacy_lcd_rst_n;
-wire [23:0] legacy_lcd_rgb;
 wire [15:0] adc_u_sample;
 wire [15:0] adc_i_sample;
 wire        adc_frame_valid;
@@ -145,14 +129,14 @@ wire        pl_measure_clk;
 wire        pl_measure_resetn;
 wire [511:0] snapshot_words;
 wire        snapshot_commit_toggle;
-wire        legacy_harmonic_valid;
-wire        legacy_harmonic_ready;
-wire        legacy_harmonic_last;
-wire [8:0]  legacy_harmonic_index;
-wire [31:0] legacy_harmonic_u_ratio;
-wire [31:0] legacy_harmonic_i_ratio;
-wire [31:0] legacy_harmonic_phase;
-wire [31:0] legacy_harmonic_flags;
+wire        pl_harmonic_valid;
+wire        pl_harmonic_ready;
+wire        pl_harmonic_last;
+wire [8:0]  pl_harmonic_index;
+wire [31:0] pl_harmonic_u_ratio;
+wire [31:0] pl_harmonic_i_ratio;
+wire [31:0] pl_harmonic_phase;
+wire [31:0] pl_harmonic_flags;
 
 wire        sample_axis_ready;
 wire [63:0] sample_axis_data;
@@ -221,18 +205,11 @@ wire        harmonic_irq;
 reg  [31:0] snapshot_sequence_d1;
 reg  [31:0] harmonic_generation_d1;
 
-// 旧 PL 核心继续负责 ADC、测量、FFT、告警和回退显示。
-pqm_legacy_core #(
-    .LEGACY_PL_DISPLAY(LEGACY_PL_DISPLAY)
-) u_pqm_legacy_core (
-    .sys_clk(sys_clk), .sys_rst_n(sys_rst_n), .key0(legacy_key0),
+// PL核心负责AD7606采集、测量、FFT和告警，不再包含显示、触摸或UART协议。
+pqm_pl_core u_pqm_pl_core (
+    .sys_clk(sys_clk), .sys_rst_n(sys_rst_n),
     .ps_low_range_active(ps_low_range_active),
-    .uart_rxd(uart_rxd), .uart_txd(uart_txd), .led(led), .buzzer(buzzer),
-    .touch_sda(legacy_touch_sda), .touch_scl(legacy_touch_scl),
-    .touch_int(legacy_touch_int), .touch_rst_n(legacy_touch_rst_n),
-    .lcd_de(legacy_lcd_de), .lcd_hs(legacy_lcd_hs), .lcd_vs(legacy_lcd_vs),
-    .lcd_bl(legacy_lcd_bl), .lcd_clk(legacy_lcd_clk), .lcd_rst_n(legacy_lcd_rst_n),
-    .lcd_rgb(legacy_lcd_rgb),
+    .led(led), .buzzer(buzzer),
     .OS1(OS1), .OS0(OS0), .OS2(OS2), .Convst(Convst), .RD(RD), .RESET(RESET),
     .Busy(Busy), .cs(cs), .Range(Range), .Frstdata(Frstdata),
     .DB0(DB0), .DB1(DB1), .DB2(DB2), .DB3(DB3),
@@ -243,10 +220,10 @@ pqm_legacy_core #(
     .ps_adc_frame_valid(adc_frame_valid), .ps_adc_timeout(adc_timeout),
     .ps_pl_clk(pl_measure_clk), .ps_pl_reset_n(pl_measure_resetn),
     .ps_snapshot_words(snapshot_words), .ps_snapshot_commit_toggle(snapshot_commit_toggle),
-    .ps_harmonic_valid(legacy_harmonic_valid), .ps_harmonic_ready(legacy_harmonic_ready),
-    .ps_harmonic_last(legacy_harmonic_last), .ps_harmonic_index(legacy_harmonic_index),
-    .ps_harmonic_u_ratio(legacy_harmonic_u_ratio), .ps_harmonic_i_ratio(legacy_harmonic_i_ratio),
-    .ps_harmonic_phase(legacy_harmonic_phase), .ps_harmonic_flags(legacy_harmonic_flags)
+    .ps_harmonic_valid(pl_harmonic_valid), .ps_harmonic_ready(pl_harmonic_ready),
+    .ps_harmonic_last(pl_harmonic_last), .ps_harmonic_index(pl_harmonic_index),
+    .ps_harmonic_u_ratio(pl_harmonic_u_ratio), .ps_harmonic_i_ratio(pl_harmonic_i_ratio),
+    .ps_harmonic_phase(pl_harmonic_phase), .ps_harmonic_flags(pl_harmonic_flags)
 );
 
 // 原始 ADC 样本流：DMA 反压时丢弃新样本，不反压旧 PL 采集链路。
@@ -288,12 +265,12 @@ end
 assign snapshot_commit = snapshot_pending && snapshot_bridge_ready;
 
 // 谐波 0 号条目先启动非活动 bank，流保持到桥返回 ready。
-assign harmonic_frame_start = legacy_harmonic_valid
-                            && (legacy_harmonic_index == 9'd0)
+assign harmonic_frame_start = pl_harmonic_valid
+                            && (pl_harmonic_index == 9'd0)
                             && harmonic_start_ready;
 
-// 旧 FFT 流仅在共享内存桥允许时完成握手。
-assign legacy_harmonic_ready = harmonic_bridge_ready;
+// FFT谐波流仅在共享内存桥允许时完成握手。
+assign pl_harmonic_ready = harmonic_bridge_ready;
 
 // 标量序号变化生成快照中断脉冲。
 assign snapshot_irq = (snapshot_sequence != snapshot_sequence_d1);
@@ -307,10 +284,10 @@ pqm_shared_memory_bridge u_pqm_shared_memory_bridge (
     .snapshot_commit(snapshot_commit), .snapshot_ready(snapshot_bridge_ready),
     .snapshot_words(snapshot_words),
     .harmonic_frame_start(harmonic_frame_start), .harmonic_start_ready(harmonic_start_ready),
-    .harmonic_valid(legacy_harmonic_valid), .harmonic_ready(harmonic_bridge_ready),
-    .harmonic_index(legacy_harmonic_index), .harmonic_u_ratio(legacy_harmonic_u_ratio),
-    .harmonic_i_ratio(legacy_harmonic_i_ratio), .harmonic_phase(legacy_harmonic_phase),
-    .harmonic_flags(legacy_harmonic_flags),
+    .harmonic_valid(pl_harmonic_valid), .harmonic_ready(harmonic_bridge_ready),
+    .harmonic_index(pl_harmonic_index), .harmonic_u_ratio(pl_harmonic_u_ratio),
+    .harmonic_i_ratio(pl_harmonic_i_ratio), .harmonic_phase(pl_harmonic_phase),
+    .harmonic_flags(pl_harmonic_flags),
     .command_valid(command_valid), .command_code(command_code),
     .command_argument(command_argument), .command_sequence(command_sequence),
     .command_response_valid(command_response_valid), .command_response_ready(command_response_ready),
@@ -381,87 +358,38 @@ pqm_ps u_pqm_ps (
     .pl_fault_irq(adc_timeout), .pl_harmonic_irq(harmonic_irq), .pl_snapshot_irq(snapshot_irq)
 );
 
-generate
-    if (LEGACY_PL_DISPLAY != 0) begin : g_legacy_display
-        // 兼容模式由旧 PL 按键去抖链路读取物理按键。
-        assign legacy_key0 = key0;
+// PS触摸边界把I2C EMIO和GPIO EMIO连接到面板及物理按键。
+pqm_touch_iobuf u_pqm_touch_iobuf (
+    .ps_i2c_scl_o(ps_touch_i2c_scl_o), .ps_i2c_scl_t(ps_touch_i2c_scl_t),
+    .ps_i2c_scl_i(ps_touch_i2c_scl_i), .ps_i2c_sda_o(ps_touch_i2c_sda_o),
+    .ps_i2c_sda_t(ps_touch_i2c_sda_t), .ps_i2c_sda_i(ps_touch_i2c_sda_i),
+    .ps_gpio_o(ps_touch_gpio_o), .ps_gpio_i(ps_touch_gpio_i),
+    .touch_scl(touch_scl), .touch_sda(touch_sda),
+    .touch_int(touch_int), .touch_rst_n(touch_rst_n), .key0(key0)
+);
 
-        // 兼容模式不使用 PS GPIO 输入。
-        assign ps_touch_gpio_i = 64'd0;
+// 板级PL UART已停用，发送引脚保持8N1空闲高电平。
+assign uart_txd = 1'b1;
 
-        // 兼容模式把 PS I2C 时钟输入保持为总线空闲高电平。
-        assign ps_touch_i2c_scl_i = 1'b1;
+// PS视频通路持续驱动LCD RGB888数据总线。
+assign lcd_rgb = ps_lcd_data;
 
-        // 兼容模式把 PS I2C 数据输入保持为总线空闲高电平。
-        assign ps_touch_i2c_sda_i = 1'b1;
+// PS Video Out的active_video作为LCD数据有效。
+assign lcd_de = ps_lcd_active_video;
 
-        // 旧显示模式把内部 LCD 双向总线连接到物理 RGB 引脚。
-        tran u_legacy_lcd_rgb_tran (lcd_rgb, legacy_lcd_rgb);
+// PS VTC产生LCD行同步。
+assign lcd_hs = ps_lcd_hsync;
 
-        // 旧触摸模式把内部 SDA 双向线连接到物理引脚。
-        tran u_legacy_touch_sda_tran (touch_sda, legacy_touch_sda);
+// PS VTC产生LCD场同步。
+assign lcd_vs = ps_lcd_vsync;
 
-        // 旧触摸模式把内部中断双向线连接到物理引脚。
-        tran u_legacy_touch_int_tran (touch_int, legacy_touch_int);
+// 背光保持开启，后续可由PS GPIO或PWM接管亮度。
+assign lcd_bl = 1'b1;
 
-        // 旧触摸 SCL 由 PL I2C 驱动。
-        assign touch_scl = legacy_touch_scl;
+// PS像素时钟驱动LCD采样时钟。
+assign lcd_clk = ps_pixel_clk;
 
-        // 旧触摸复位由 PL 触摸控制器驱动。
-        assign touch_rst_n = legacy_touch_rst_n;
-
-        // 旧 LCD 数据有效信号直通物理引脚。
-        assign lcd_de = legacy_lcd_de;
-
-        // 旧 LCD 行同步信号直通物理引脚。
-        assign lcd_hs = legacy_lcd_hs;
-
-        // 旧 LCD 场同步信号直通物理引脚。
-        assign lcd_vs = legacy_lcd_vs;
-
-        // 旧 LCD 背光信号直通物理引脚。
-        assign lcd_bl = legacy_lcd_bl;
-
-        // 旧 LCD 像素时钟直通物理引脚。
-        assign lcd_clk = legacy_lcd_clk;
-
-        // 旧 LCD 复位信号直通物理引脚。
-        assign lcd_rst_n = legacy_lcd_rst_n;
-    end else begin : g_ps_display
-        // PS 模式禁用旧 PL 按键链路，避免同一输入同时归属两个 IOBUF。
-        assign legacy_key0 = 1'b1;
-
-        // PS 触摸边界把 I2C EMIO 和 GPIO EMIO 连接到现有面板引脚。
-        pqm_touch_iobuf u_pqm_touch_iobuf (
-            .ps_i2c_scl_o(ps_touch_i2c_scl_o), .ps_i2c_scl_t(ps_touch_i2c_scl_t),
-            .ps_i2c_scl_i(ps_touch_i2c_scl_i), .ps_i2c_sda_o(ps_touch_i2c_sda_o),
-            .ps_i2c_sda_t(ps_touch_i2c_sda_t), .ps_i2c_sda_i(ps_touch_i2c_sda_i),
-            .ps_gpio_o(ps_touch_gpio_o), .ps_gpio_i(ps_touch_gpio_i),
-            .touch_scl(touch_scl), .touch_sda(touch_sda),
-            .touch_int(touch_int), .touch_rst_n(touch_rst_n), .key0(key0)
-        );
-
-        // PS 视频数据持续驱动 RGB888 物理总线。
-        assign lcd_rgb = ps_lcd_data;
-
-        // PS Video Out 的 active_video 作为 LCD 数据有效。
-        assign lcd_de = ps_lcd_active_video;
-
-        // PS VTC 产生 LCD 行同步。
-        assign lcd_hs = ps_lcd_hsync;
-
-        // PS VTC 产生 LCD 场同步。
-        assign lcd_vs = ps_lcd_vsync;
-
-        // PS 模式保持背光开启，亮度管理留给后续 GPIO/PWM 驱动。
-        assign lcd_bl = 1'b1;
-
-        // PS Clock Wizard 的 25 MHz 输出作为 LCD 像素时钟。
-        assign lcd_clk = ps_pixel_clk;
-
-        // 像素时钟域复位释放后解除 LCD 复位。
-        assign lcd_rst_n = ps_pixel_resetn[0];
-    end
-endgenerate
+// PS像素域复位直接控制LCD复位。
+assign lcd_rst_n = ps_pixel_resetn[0];
 
 endmodule

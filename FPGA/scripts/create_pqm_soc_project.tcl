@@ -35,7 +35,7 @@ if {[llength $rtl_files] == 0} {
 add_files -norecurse $rtl_files
 set_property include_dirs [list [file join $fpga_dir rtl PSInterface]] [get_filesets sources_1]
 
-set xci_files [glob -nocomplain [file join $fpga_dir prj PQM.srcs sources_1 ip * *.xci]]
+set xci_files [glob -nocomplain [file join $fpga_dir ip * *.xci]]
 if {[llength $xci_files] != 0} {
     set copied_xci {}
     set imported_ip_dir [file join $project_dir PQM_SOC.srcs sources_1 ip]
@@ -52,7 +52,7 @@ if {[llength $xci_files] != 0} {
     generate_target all [get_ips]
 }
 
-set constraints_file [file join $fpga_dir prj PQM.xdc]
+set constraints_file [file join $fpga_dir data PQM.xdc]
 if {![file exists $constraints_file]} {
     error "Constraints file not found: $constraints_file"
 }

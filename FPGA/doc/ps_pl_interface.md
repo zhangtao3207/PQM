@@ -4,7 +4,7 @@
 
 ## 职责边界
 
-PL 保留 AD7606 采集、零点跟踪、时域测量、FFT、谐波统计、骤变告警以及确定性的 AXI 数据发布。PS 运行 FreeRTOS 10 与 LVGL 8.3.11，负责波形重采样、页面绘制、触摸、量程命令和系统监控。默认构建参数为 `LEGACY_PL_DISPLAY=0`；旧 PL LCD/触摸/UART 显示链仅在参数为 `1` 时实例化。
+PL 保留 AD7606 采集、零点跟踪、时域测量、FFT、谐波统计、骤变告警以及确定性的 AXI 数据发布。PS 运行 FreeRTOS 10 与 LVGL 8.3.11，负责波形重采样、页面绘制、触摸、量程命令和系统监控。旧PL LCD、触摸、UART和文字格式化链路已从当前工程删除。
 
 ```text
 AD7606 -> PL measurement/FFT -> AXI BRAM -> measurement task -> LVGL
@@ -74,8 +74,6 @@ bits 15:0   voltage ADC code
 powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_xsim.ps1 -All
 powershell -ExecutionPolicy Bypass -File ARM/tests/run_tests.ps1
 powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_vivado.ps1 -Script FPGA/scripts/create_pqm_soc_project.tcl
-$env:PQM_TOP_MODES='0,1'
-powershell -ExecutionPolicy Bypass -File FPGA/scripts/run_vivado.ps1 -Script FPGA/scripts/check_pqm_top_modes.tcl
 powershell -ExecutionPolicy Bypass -File ARM/scripts/run_xsct.ps1 -Script ARM/scripts/create_workspace.tcl
 powershell -ExecutionPolicy Bypass -File ARM/scripts/build_boot_image.ps1
 ```

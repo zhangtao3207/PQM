@@ -1,10 +1,3 @@
-# Vivado generated project artifacts
-FPGA/prj/PQM.cache/
-FPGA/prj/PQM.hw/
-FPGA/prj/PQM.ip_user_files/
-FPGA/prj/PQM.runs/
-FPGA/prj/PQM.sim/
-
 # Common tool logs / temp files
 *.jou
 *.log
