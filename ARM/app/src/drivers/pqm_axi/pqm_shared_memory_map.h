@@ -44,6 +44,11 @@
 #define PQM_SHM_COMMAND_RESPONSE_WORD        0x00000083u
 #define PQM_SHM_COMMAND_RESPONSE_SEQ_WORD    0x00000084u
 
+/* Command codes and arguments. */
+#define PQM_SHM_COMMAND_SET_RANGE            0x00000001u
+#define PQM_SHM_RANGE_HIGH                   0x00000000u
+#define PQM_SHM_RANGE_LOW                    0x00000001u
+
 /* Runtime counter word offsets. */
 #define PQM_SHM_COUNTER_BASE_WORD            0x000000A0u
 #define PQM_SHM_COUNTER_SAMPLE_DROP_WORD     0x000000A0u

@@ -11,8 +11,14 @@ typedef struct {
     uint32_t words[MOCK_WORD_COUNT];
     bool mutate_snapshot;
     bool auto_respond;
+    bool corrupt_range_response;
     uint32_t scalar_reads;
 } mock_memory_t;
+
+#define EXPECTED_SET_RANGE_COMMAND 0x00000001u
+
+extern bool pqm_axi_set_range(pqm_axi_t *axi, bool low_range,
+                              uint32_t timeout_polls);
 
 static int failures;
 
@@ -54,7 +60,15 @@ static void mock_write_word(void *context, uint32_t word_offset, uint32_t value)
 
     memory->words[word_offset] = value;
     if (memory->auto_respond && word_offset == PQM_SHM_COMMAND_SEQUENCE_WORD) {
-        memory->words[PQM_SHM_COMMAND_RESPONSE_WORD] = 0xA55A1234u;
+        if (memory->words[PQM_SHM_COMMAND_REQUEST_WORD] ==
+            EXPECTED_SET_RANGE_COMMAND) {
+            memory->words[PQM_SHM_COMMAND_RESPONSE_WORD] =
+                memory->corrupt_range_response
+                    ? 2u
+                    : memory->words[PQM_SHM_COMMAND_ARGUMENT_WORD];
+        } else {
+            memory->words[PQM_SHM_COMMAND_RESPONSE_WORD] = 0xA55A1234u;
+        }
         memory->words[PQM_SHM_COMMAND_RESPONSE_SEQ_WORD] = value;
     }
 }
@@ -197,6 +211,27 @@ static void test_harmonic_bank_snapshot(void)
     CHECK(!pqm_axi_read_harmonics(&axi, &harmonics));
 }
 
+static void test_set_range_requires_matching_pl_acknowledgement(void)
+{
+    mock_memory_t memory;
+    pqm_axi_t axi;
+
+    initialize_valid_memory(&memory);
+    memory.auto_respond = true;
+    axi = make_axi(&memory);
+
+    CHECK(pqm_axi_set_range(&axi, true, 3u));
+    CHECK(memory.words[PQM_SHM_COMMAND_REQUEST_WORD] ==
+          EXPECTED_SET_RANGE_COMMAND);
+    CHECK(memory.words[PQM_SHM_COMMAND_ARGUMENT_WORD] == 1u);
+
+    CHECK(pqm_axi_set_range(&axi, false, 3u));
+    CHECK(memory.words[PQM_SHM_COMMAND_ARGUMENT_WORD] == 0u);
+
+    memory.corrupt_range_response = true;
+    CHECK(!pqm_axi_set_range(&axi, true, 3u));
+}
+
 int main(void)
 {
     test_validate_identity();
@@ -204,6 +239,7 @@ int main(void)
     test_snapshot_retries_changed_sequence();
     test_command_response_and_timeout();
     test_harmonic_bank_snapshot();
+    test_set_range_requires_matching_pl_acknowledgement();
 
     if (failures != 0) {
         printf("FAIL: pqm_axi (%d failures)\n", failures);

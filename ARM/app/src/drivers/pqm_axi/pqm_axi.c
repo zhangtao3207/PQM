@@ -230,3 +230,16 @@ bool pqm_axi_send_command(pqm_axi_t *axi, uint32_t command, uint32_t argument,
 
     return false;
 }
+
+bool pqm_axi_set_range(pqm_axi_t *axi, bool low_range,
+                       uint32_t timeout_polls)
+{
+    uint32_t requested_range = low_range
+                                   ? PQM_SHM_RANGE_LOW
+                                   : PQM_SHM_RANGE_HIGH;
+    uint32_t response = UINT32_MAX;
+
+    return pqm_axi_send_command(axi, PQM_SHM_COMMAND_SET_RANGE,
+                                requested_range, timeout_polls, &response) &&
+           response == requested_range;
+}

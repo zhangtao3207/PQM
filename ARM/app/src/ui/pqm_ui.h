@@ -13,6 +13,8 @@
 #define PQM_UI_WAVE_COLUMNS 400u
 #define PQM_UI_HARMONIC_POINTS 26u
 
+typedef bool (*pqm_ui_range_request_fn)(void *context, bool low_range);
+
 typedef struct {
     lv_style_t screen;
     lv_style_t header;
@@ -56,9 +58,16 @@ typedef struct pqm_ui {
     bool frequency_active;
     bool frozen;
     bool low_range;
+    bool range_pending;
+    bool range_error;
+    pqm_ui_range_request_fn range_request;
+    void *range_request_context;
 } pqm_ui_t;
 
-bool pqm_ui_initialize(pqm_ui_t *ui);
+bool pqm_ui_initialize(pqm_ui_t *ui,
+                       pqm_ui_range_request_fn range_request,
+                       void *range_request_context);
+void pqm_ui_set_range_result(pqm_ui_t *ui, bool success, bool low_range);
 void pqm_ui_update_measurement(pqm_ui_t *ui,
                                const pqm_measurement_t *measurement);
 void pqm_ui_update_waveform(pqm_ui_t *ui,

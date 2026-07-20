@@ -64,6 +64,8 @@ bool pqm_axi_read_harmonics(pqm_axi_t *axi,
                             pqm_harmonic_raw_snapshot_t *out);
 bool pqm_axi_send_command(pqm_axi_t *axi, uint32_t command, uint32_t argument,
                           uint32_t timeout_polls, uint32_t *response);
+bool pqm_axi_set_range(pqm_axi_t *axi, bool low_range,
+                       uint32_t timeout_polls);
 
 #ifdef __cplusplus
 }

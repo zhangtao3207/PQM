@@ -179,11 +179,11 @@ wire [31:0] command_sequence;
 wire        command_response_ready;
 wire        command_response_valid;
 wire [31:0] command_response;
+wire        ps_low_range_active;
 wire        harmonic_frame_start;
 wire        snapshot_commit;
 reg         snapshot_commit_d1;
 reg         snapshot_pending;
-reg         command_response_pending;
 
 wire [15:0] ps_rgb565_data;
 wire [1:0]  ps_rgb565_keep;
@@ -222,8 +222,11 @@ reg  [31:0] snapshot_sequence_d1;
 reg  [31:0] harmonic_generation_d1;
 
 // 旧 PL 核心继续负责 ADC、测量、FFT、告警和回退显示。
-pqm_legacy_core u_pqm_legacy_core (
+pqm_legacy_core #(
+    .LEGACY_PL_DISPLAY(LEGACY_PL_DISPLAY)
+) u_pqm_legacy_core (
     .sys_clk(sys_clk), .sys_rst_n(sys_rst_n), .key0(legacy_key0),
+    .ps_low_range_active(ps_low_range_active),
     .uart_rxd(uart_rxd), .uart_txd(uart_txd), .led(led), .buzzer(buzzer),
     .touch_sda(legacy_touch_sda), .touch_scl(legacy_touch_scl),
     .touch_int(legacy_touch_int), .touch_rst_n(legacy_touch_rst_n),
@@ -270,17 +273,6 @@ always @(posedge pl_measure_clk) begin
     end
 end
 
-// 共享内存桥命令当前返回通用成功响应，后续由 PS 管理服务扩展命令语义。
-always @(posedge pl_measure_clk) begin
-    if (!pl_measure_resetn) begin
-        command_response_pending <= 1'b0;
-    end else if (command_valid) begin
-        command_response_pending <= 1'b1;
-    end else if (command_response_pending && command_response_ready) begin
-        command_response_pending <= 1'b0;
-    end
-end
-
 // 记录已发布代数，生成送入 PS GIC 的单拍事件。
 always @(posedge pl_measure_clk) begin
     if (!pl_measure_resetn) begin
@@ -302,12 +294,6 @@ assign harmonic_frame_start = legacy_harmonic_valid
 
 // 旧 FFT 流仅在共享内存桥允许时完成握手。
 assign legacy_harmonic_ready = harmonic_bridge_ready;
-
-// 当前过渡命令统一返回成功码 0。
-assign command_response = 32'd0;
-
-// 命令响应 pending 直接作为 valid，并由 ready 清除。
-assign command_response_valid = command_response_pending;
 
 // 标量序号变化生成快照中断脉冲。
 assign snapshot_irq = (snapshot_sequence != snapshot_sequence_d1);
@@ -333,6 +319,19 @@ pqm_shared_memory_bridge u_pqm_shared_memory_bridge (
     .active_harmonic_bank(active_harmonic_bank),
     .bram_addr(bram_addr), .bram_wrdata(bram_wrdata), .bram_we(bram_we),
     .bram_en(bram_en), .bram_rddata(bram_rddata)
+);
+
+// 解析 PS 量程命令，并把已确认的档位直接送入纯测量核心。
+pqm_range_command_controller u_pqm_range_command_controller (
+    .clk(pl_measure_clk),
+    .rst_n(pl_measure_resetn),
+    .command_valid(command_valid),
+    .command_code(command_code),
+    .command_argument(command_argument),
+    .response_valid(command_response_valid),
+    .response_ready(command_response_ready),
+    .response(command_response),
+    .low_range_active(ps_low_range_active)
 );
 
 // VDMA RGB565 输出扩展为 AXI4-Stream Video RGB888。

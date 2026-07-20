@@ -15,6 +15,7 @@ if (-not (Test-Path -LiteralPath $Script)) {
 }
 
 $resolvedScript = (Resolve-Path -LiteralPath $Script).Path
+$env:PQM_REPO_ROOT = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $output = & $xsct $resolvedScript 2>&1
 $exitCode = $LASTEXITCODE
 $output | ForEach-Object { Write-Host $_ }

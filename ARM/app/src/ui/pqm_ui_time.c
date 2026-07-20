@@ -24,10 +24,20 @@ static const char *const time_names[10] = {
 static void range_event(lv_event_t *event)
 {
     pqm_ui_t *ui = (pqm_ui_t *)lv_event_get_user_data(event);
+    bool requested_low_range;
 
-    ui->low_range = !ui->low_range;
-    lv_label_set_text(ui->range_button_label,
-                      ui->low_range ? "10 V / 3 A" : "350 V / 30 A");
+    if (ui->range_pending) {
+        return;
+    }
+    requested_low_range = !ui->low_range;
+    if (ui->range_request != NULL &&
+        ui->range_request(ui->range_request_context, requested_low_range)) {
+        ui->range_pending = true;
+        ui->range_error = false;
+        lv_label_set_text(ui->range_button_label, "Switching...");
+    } else {
+        pqm_ui_set_range_result(ui, false, ui->low_range);
+    }
 }
 
 static lv_obj_t *create_text(pqm_ui_t *ui, lv_obj_t *parent,

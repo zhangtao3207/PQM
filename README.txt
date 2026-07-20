@@ -1,35 +1,31 @@
-基于FPGA的电能质量监测仪硬件系统设计与实现
-Power Quality Monitor based on FPGA - ZYNQ 7020
+PQM - Zynq-7020 Power Quality Monitor
 
-ARM: 单片机部分
-型号: STM32F1（暂定，未使用）
-后续使用，现在暂不考虑
+Target:
+  - XC7Z020-CLG400-2
+  - 7-inch 800x480 RGB LCD
+  - AD7606 parallel ADC
 
+Final ownership:
+  - PL: ADC acquisition, time/frequency measurement, FFT, harmonic statistics,
+    alarms, AXI sample stream, and shared-memory publication.
+  - PS: FreeRTOS 10, LVGL 8.3.11, waveform resampling, LCD composition,
+    touch input, range commands, and runtime supervision.
 
-FPGA: 信号处理部分
-型号: ZYNQ 7020
-监测电能质量(单相220V 50Hz家庭用电)，包括
-        电压            √
-        电流            √
-        频率            √
-        有功功率        √
-        无功功率        √
-        视在功率        √
-        功率因数        √
-        电能
-        电压 THD
-        电流 THD
-        各次谐波
-        过压/欠压
-        暂降/暂升/中断
-        事件时间记录
-        闪变
-        瞬态尖峰
-        波形录波
+The default build uses LEGACY_PL_DISPLAY=0. Set it to 1 only when the old
+PL-rendered LCD path is required for recovery.
 
+Main entry points:
+  FPGA/scripts/build_pqm_soc.tcl
+  FPGA/scripts/check_pqm_soc_reports.ps1
+  ARM/scripts/create_workspace.tcl
+  ARM/scripts/build_boot_image.ps1
 
+Generated deliverables:
+  FPGA/export/pqm_soc.bit
+  FPGA/export/pqm_soc.hdf
+  ARM/sdk_workspace/pqm_freertos/Release/pqm_freertos.elf
+  FPGA/ZYNQ固化脚本/BOOT.bin
 
-HARDWARE: 硬件部分
-ADC模块
-FPGA模块
-STM模块
+See FPGA/doc/ps_pl_interface.md and ARM/README.md for interface and build
+details. Physical LCD, touch and long-duration recovery tests still require
+the target board.

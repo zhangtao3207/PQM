@@ -33,11 +33,21 @@
 #define PQM_UI_PERIOD_MS           5u
 #define PQM_MEASUREMENT_PERIOD_MS 50u
 #define PQM_TOUCH_POLL_MS         20u
+#define PQM_RANGE_COMMAND_TIMEOUT_POLLS 100000u
 
 typedef struct {
     uint32_t generation;
     pqm_wave_column_t columns[PQM_UI_WAVE_COLUMNS];
 } pqm_waveform_message_t;
+
+typedef struct {
+    bool low_range;
+} pqm_range_request_t;
+
+typedef struct {
+    bool success;
+    bool low_range;
+} pqm_range_result_t;
 
 extern XScuGic xInterruptController;
 
@@ -66,15 +76,23 @@ static StackType_t timer_task_stack[configTIMER_TASK_STACK_DEPTH];
 static StaticQueue_t measurement_queue_control;
 static StaticQueue_t waveform_queue_control;
 static StaticQueue_t harmonic_queue_control;
+static StaticQueue_t range_request_queue_control;
+static StaticQueue_t range_result_queue_control;
 static uint8_t measurement_queue_storage[sizeof(pqm_measurement_t)]
     __attribute__((aligned(8)));
 static uint8_t waveform_queue_storage[sizeof(pqm_waveform_message_t)]
     __attribute__((aligned(8)));
 static uint8_t harmonic_queue_storage[sizeof(pqm_harmonic_raw_snapshot_t)]
     __attribute__((aligned(8)));
+static uint8_t range_request_queue_storage[sizeof(pqm_range_request_t)]
+    __attribute__((aligned(8)));
+static uint8_t range_result_queue_storage[sizeof(pqm_range_result_t)]
+    __attribute__((aligned(8)));
 static QueueHandle_t measurement_queue;
 static QueueHandle_t waveform_queue;
 static QueueHandle_t harmonic_queue;
+static QueueHandle_t range_request_queue;
+static QueueHandle_t range_result_queue;
 
 static pqm_waveform_message_t dma_waveform_message;
 static pqm_waveform_message_t ui_waveform_message;
@@ -82,7 +100,18 @@ static pqm_measurement_t measurement_message;
 static pqm_measurement_t ui_measurement_message;
 static pqm_harmonic_raw_snapshot_t harmonic_message;
 static pqm_harmonic_raw_snapshot_t ui_harmonic_message;
+static pqm_range_request_t range_request_message;
+static pqm_range_result_t range_result_message;
 static volatile bool touch_ready;
+
+static bool queue_range_request(void *context, bool low_range)
+{
+    pqm_range_request_t request;
+
+    (void)context;
+    request.low_range = low_range;
+    return xQueueOverwrite(range_request_queue, &request) == pdPASS;
+}
 
 static void dma_rx_task(void *argument)
 {
@@ -145,6 +174,15 @@ static void measurement_task(void *argument)
         uint32_t harmonic_generation;
         uint32_t harmonic_status;
 
+        if (xQueueReceive(range_request_queue, &range_request_message, 0u) ==
+            pdPASS) {
+            range_result_message.low_range = range_request_message.low_range;
+            range_result_message.success = pqm_axi_set_range(
+                axi, range_request_message.low_range,
+                PQM_RANGE_COMMAND_TIMEOUT_POLLS);
+            (void)xQueueOverwrite(range_result_queue, &range_result_message);
+        }
+
         if (pqm_axi_read_snapshot(axi, &raw)) {
             pqm_measurement_from_raw(&measurement_message, &raw);
             (void)xQueueOverwrite(measurement_queue, &measurement_message);
@@ -174,7 +212,7 @@ static void ui_task(void *argument)
         pqm_video_connect_interrupt(&video_driver, &xInterruptController) !=
             XST_SUCCESS ||
         !pqm_lvgl_port_initialize(&lvgl_port, &video_driver) ||
-        !pqm_ui_initialize(&ui)) {
+        !pqm_ui_initialize(&ui, queue_range_request, NULL)) {
         pqm_platform_fatal("LVGL/video initialization failed");
     }
 
@@ -194,6 +232,11 @@ static void ui_task(void *argument)
         }
         if (xQueueReceive(harmonic_queue, &ui_harmonic_message, 0u) == pdPASS) {
             pqm_ui_update_harmonics(&ui, &ui_harmonic_message);
+        }
+        if (xQueueReceive(range_result_queue, &range_result_message, 0u) ==
+            pdPASS) {
+            pqm_ui_set_range_result(&ui, range_result_message.success,
+                                    range_result_message.low_range);
         }
         lv_tick_inc(PQM_UI_PERIOD_MS);
         (void)lv_timer_handler();
@@ -225,8 +268,15 @@ static void create_queues(void)
     harmonic_queue = xQueueCreateStatic(
         1u, sizeof(pqm_harmonic_raw_snapshot_t), harmonic_queue_storage,
         &harmonic_queue_control);
+    range_request_queue = xQueueCreateStatic(
+        1u, sizeof(pqm_range_request_t), range_request_queue_storage,
+        &range_request_queue_control);
+    range_result_queue = xQueueCreateStatic(
+        1u, sizeof(pqm_range_result_t), range_result_queue_storage,
+        &range_result_queue_control);
     if (measurement_queue == NULL || waveform_queue == NULL ||
-        harmonic_queue == NULL) {
+        harmonic_queue == NULL || range_request_queue == NULL ||
+        range_result_queue == NULL) {
         pqm_platform_fatal("static queue creation failed");
     }
 }

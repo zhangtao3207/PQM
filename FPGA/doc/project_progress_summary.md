@@ -62,13 +62,15 @@ UART 输出方面，当前 UART 已经改回 ASCII 文本协议，不再发送�
 
 2026-07-19：完成 PS 触摸驱动基线。PS I2C0 经 EMIO 支持 FT `0x38` 与 GT `0x14` 控制器，GPIO54/55 分别用于复位和中断；驱动保留旧 FT 横屏坐标交换规则，坐标统一限制在 800x480 范围。连续三次 I2C 失败后关闭触摸中断并每 500 ms 重试，恢复期间向 LVGL 发布释放状态。协议、边界和故障测试通过，实际面板四角仍待上板校准。
 
-2026-07-19：完成现有时域页和频域页的 PS/LVGL 移植。ARM 侧新增逐字段有效位检查、x100 定点格式化、双 bank 谐波一致性读取、400 列波形 min/max 显示、`0..500` 次谐波窗口、冻结和页面切换。FreeRTOS 现使用静态 `dma_rx/touch/ui/measurement/system` 五任务及长度为 1 的最新值队列，只有 UI 任务访问 LVGL；实际 SDK 已生成并链接 `pqm_freertos.elf`。MATLAB Q15 对比夹具在仓库中未找到，页面像素、触摸和量程控制仍需随 Task 12/上板验收确认。
+2026-07-19：完成现有时域页和频域页的 PS/LVGL 移植。ARM 侧新增逐字段有效位检查、x100 定点格式化、双 bank 谐波一致性读取、400 列波形 min/max 显示、`0..500` 次谐波窗口、冻结和页面切换。FreeRTOS 现使用静态 `dma_rx/touch/ui/measurement/system` 五任务及长度为 1 的最新值队列，只有 UI 任务访问 LVGL；实际 SDK 已生成并链接 `pqm_freertos.elf`。
+
+2026-07-20：默认 PS 模式已改用独立 `pqm_measurement_core`，旧字体、背景、波形像素、PL 触摸和显示 UART 仅在 `LEGACY_PL_DISPLAY=1` 时实例化。量程切换改为 PS 共享内存命令并等待 PL 回显。功率归一化乘法链增加寄存流水后，完整 routed 实现达到 WNS `+0.929 ns`、LUT `19166/53200 (36.03%)`、寄存器 `21735 (20.43%)`、BRAM `41 (29.29%)`、DSP `94 (42.73%)`，所有用户时序约束满足。
+
+2026-07-20：基于最新 HDF 重建 FreeRTOS BSP 与 `pqm_freertos.elf`，并新增非交互 FSBL/Bootgen 脚本，成功生成包含 FSBL、`pqm_soc.bit` 和 FreeRTOS ELF 的 `BOOT.bin`。
 
 ## 当前已知问题
 
-当前过渡顶层在 PS 模式下仍会实例化旧 LCD/触摸/波形渲染层，以复用其中尚未拆出的测量与 FFT 结果。后续需把纯测量链从 `lcd_display` 中独立出来，才能真正释放 PL 字库、背景、波形像素和触摸协议资源。
-
-完整 SoC 已生成 bitstream，FreeRTOS 启动 ELF 已构建；DMA/VDMA、触摸、LVGL 页面、旧 PL 渲染移除、最终时序收敛和上板验证仍待完成。
+自动构建、时序、资源、PS 接口仿真、ARM 主机测试、FreeRTOS ELF 和 BOOT.bin 已完成。LCD 色序与撕裂、触摸四角、DMA/VDMA 故障恢复以及 30 分钟稳定性仍需在目标板上验收。
 
 当前 UART ASCII 整包大约 `11610` 字节，在线发送时间约 `1.01 s`，发送周期明显长于旧二进制版本。
 

@@ -1,6 +1,6 @@
 # RTL 文件总览
 
-更新时间：2026-07-19
+更新时间：2026-07-20
 
 ## 文档职责
 
@@ -26,6 +26,7 @@ main
 |---|---|---|
 | `rtl/main.v` | `main` | SoC 顶层，连接旧测量核心、Zynq PS、AXI DMA/VDMA、共享 BRAM、LCD 与触摸 EMIO，并提供编译期旧显示回退开关。 |
 | `rtl/pqm_legacy_core.v` | `pqm_legacy_core` | 保留原 AD7606、时域/频域测量、FFT、告警和回退显示链路，并向 PS 接口导出样本、标量与谐波结果。 |
+| `rtl/DataProcessor/pqm_measurement_core.v` | `pqm_measurement_core` | 默认 PS 模式的纯测量核心，保留时域、FFT、谐波和告警计算，不实例化 PL 字体、像素合成、触摸协议或显示 UART。 |
 
 ## ADC_PARALLEL
 
@@ -126,6 +127,7 @@ main
 |---|---|---|
 | `rtl/PSInterface/pqm_axis_sample_stream.v` | `pqm_axis_sample_stream` | 将 U/I 原始样本和源序号封装为 64 位 AXI4-Stream；DMA 反压时记录并丢弃新样本，避免阻塞 ADC 与测量链路。 |
 | `rtl/PSInterface/pqm_axis_rgb565_to_rgb888.v` | `pqm_axis_rgb565_to_rgb888` | 将 VDMA 的 RGB565 像素扩展为 RGB888，并在视频反压期间保持像素、帧首和行末标志稳定。 |
+| `rtl/PSInterface/pqm_range_command_controller.v` | `pqm_range_command_controller` | 接收共享内存量程命令，原子切换 PL 工程量换算档位并返回确认状态。 |
 | `rtl/PSInterface/pqm_shared_memory_bridge.v` | `pqm_shared_memory_bridge` | 通过 BRAM 串行发布一致性标量快照、双 bank 谐波和带序号命令响应，保证 PS 只读取已提交代数。 |
 | `rtl/PSInterface/pqm_touch_iobuf.v` | `pqm_touch_iobuf` | 为 PS I2C EMIO 的实际 SCL/SDA 引脚实例化 IOBUF，并映射触摸复位、中断与物理按键 GPIO。 |
 

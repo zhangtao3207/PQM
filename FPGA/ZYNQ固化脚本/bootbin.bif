@@ -1,5 +1,6 @@
 the_ROM_image:
 {
  [bootloader] zynq_fsbl.elf
- ..\prj\PQM.runs\impl_1\main.bit
+ ..\export\pqm_soc.bit
+ ..\..\ARM\sdk_workspace\pqm_freertos\Release\pqm_freertos.elf
 }

@@ -1,7 +1,11 @@
 # Synthesize the frequency raw-metrics block and reject inferred timing loops.
 
 set script_dir [file dirname [file normalize [info script]]]
-set fpga_dir [file normalize [file join $script_dir ..]]
+if {[info exists ::env(PQM_REPO_ROOT)]} {
+    set fpga_dir [file join $::env(PQM_REPO_ROOT) FPGA]
+} else {
+    set fpga_dir [file normalize [file join $script_dir ..]]
+}
 set basic_math_dir [file join $fpga_dir rtl DataProcessor BasicMath]
 set raw_calc_dir [file join $fpga_dir rtl DataProcessor SignalProcessing FreqAnalysis RawDataCal]
 

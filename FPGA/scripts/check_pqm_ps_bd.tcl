@@ -1,6 +1,10 @@
 # PQM PS block-design contract check. Run only after creating FPGA/prj_soc.
 set script_dir [file dirname [file normalize [info script]]]
-set fpga_dir [file normalize [file join $script_dir ..]]
+if {[info exists ::env(PQM_REPO_ROOT)]} {
+    set fpga_dir [file join $::env(PQM_REPO_ROOT) FPGA]
+} else {
+    set fpga_dir [file normalize [file join $script_dir ..]]
+}
 set project_file [file join $fpga_dir prj_soc PQM_SOC.xpr]
 
 if {![file exists $project_file]} {

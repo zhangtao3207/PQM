@@ -1,6 +1,10 @@
 # Recreate the PQM SoC project from repository sources.
 set script_dir [file dirname [file normalize [info script]]]
-set fpga_dir [file normalize [file join $script_dir ..]]
+if {[info exists ::env(PQM_REPO_ROOT)]} {
+    set fpga_dir [file join $::env(PQM_REPO_ROOT) FPGA]
+} else {
+    set fpga_dir [file normalize [file join $script_dir ..]]
+}
 set project_dir [file join $fpga_dir prj_soc]
 
 proc collect_files {directory extension} {

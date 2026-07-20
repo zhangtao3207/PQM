@@ -5,6 +5,7 @@
  *   sys_clk：板级 50 MHz 输入时钟，仅送入 MMCM。
  *   sys_rst_n：低有效系统复位。
  *   key0：兼容模式量程切换按键。
+ *   ps_low_range_active：PS 显示模式下由共享内存命令确认的量程状态。
  *   uart_rxd：旧 PL UART 接收输入。
  *   Busy：AD7606 忙状态输入。
  *   Frstdata：AD7606 首数据标志输入。
@@ -65,10 +66,13 @@
  *   touch_int：旧 PL 触摸中断线。
  *   lcd_rgb：旧 PL LCD RGB888 数据总线。
  */
-module pqm_legacy_core(
+module pqm_legacy_core #(
+    parameter integer LEGACY_PL_DISPLAY = 0
+)(
     input            sys_clk,
     input            sys_rst_n,
     input            key0,
+    input            ps_low_range_active,
 
     input            uart_rxd,
     output           uart_txd,
@@ -208,7 +212,8 @@ reg          key0_sync1;
 reg          key0_sync2;
 reg          key0_stable;
 reg          key0_pressed_level_d1;
-reg          full_scale_low_range_active;
+reg          key_low_range_active;
+wire         full_scale_low_range_active;
 reg  [15:0]  adc_startup_wait_cnt;
 reg  [15:0]  adc_u_wave_sample_code;
 reg  [15:0]  adc_i_wave_sample_code;
@@ -235,6 +240,11 @@ assign led      = display_alarm_active ? led_blink_state : 1'b0;
 assign buzzer   = display_alarm_active;
 assign key0_pressed_level = (key0_stable == KEY0_ACTIVE_LEVEL);
 assign key0_pressed_pulse = key0_pressed_level && !key0_pressed_level_d1;
+
+// 兼容模式使用物理按键档位，PS 模式使用 ARM 命令确认后的档位。
+assign full_scale_low_range_active = (LEGACY_PL_DISPLAY != 0)
+                                       ? key_low_range_active
+                                       : ps_low_range_active;
 
 // 向 SoC 顶层导出 AD7606 通道 1 原始样本。
 assign ps_adc_u_sample = AD_DATA_1;
@@ -267,9 +277,9 @@ function [7:0] sanitize_char;
     end
 endfunction
 
-//==========================================================================
-// UART instance
-//==========================================================================
+generate
+if (LEGACY_PL_DISPLAY != 0) begin : g_legacy_interfaces
+// 兼容模式保留 PL UART 收发器，继续承载旧文本串流和接收行缓冲。
 uart u_uart (
     .clk      (clk_50m),
     .rst_n    (sys_rst_n),
@@ -282,9 +292,7 @@ uart u_uart (
     .rx_done  (uart_rx_done)
 );
 
-//==========================================================================
-// Touch instance
-//==========================================================================
+// 兼容模式保留 PL 触摸协议栈，为旧 LCD 页面提供坐标和手势状态。
 touch_top u_touch_top (
     .clk               (clk_50m),
     .rst_n             (sys_rst_n),
@@ -308,7 +316,34 @@ touch_top u_touch_top (
     .touch_end_y       (touch_end_y),
     .touch_press_time_ms(touch_press_time_ms)
 );
+end else begin : g_ps_interfaces
+    // PS 模式停用旧 UART 和触摸接口，空闲常量使其后级逻辑可被综合裁剪。
+    assign uart_txd = 1'b1;
+    assign uart_rx_data = 8'd0;
+    assign uart_rx_done = 1'b0;
+    assign uart_tx_busy = 1'b0;
+    assign data = 32'd0;
+    assign touch_pressed = 1'b0;
+    assign touch_unpressed = 1'b0;
+    assign touch_click = 1'b0;
+    assign touch_long_press = 1'b0;
+    assign touch_drag = 1'b0;
+    assign touch_click_state = 1'b0;
+    assign touch_long_state = 1'b0;
+    assign touch_drag_state = 1'b0;
+    assign touch_start_x = 16'd0;
+    assign touch_start_y = 16'd0;
+    assign touch_end_x = 16'd0;
+    assign touch_end_y = 16'd0;
+    assign touch_press_time_ms = 16'd0;
+    assign touch_sda = 1'bz;
+    assign touch_scl = 1'b1;
+    assign touch_int = 1'bz;
+    assign touch_rst_n = 1'b1;
+end
+endgenerate
 
+// 把兼容触摸状态统一打包；PS 模式下该总线保持为零并被综合裁剪。
 assign touch_state_bits = {
     touch_pressed,
     touch_unpressed,
@@ -324,7 +359,7 @@ always @(posedge clk_50m or negedge sys_rst_n) begin
         key0_sync2                <= ~KEY0_ACTIVE_LEVEL;
         key0_stable               <= ~KEY0_ACTIVE_LEVEL;
         key0_pressed_level_d1     <= 1'b0;
-        full_scale_low_range_active <= 1'b0;
+        key_low_range_active        <= 1'b0;
         key0_debounce_cnt         <= 20'd0;
     end else begin
         key0_sync1            <= key0;
@@ -341,7 +376,7 @@ always @(posedge clk_50m or negedge sys_rst_n) begin
         end
 
         if (key0_pressed_pulse)
-            full_scale_low_range_active <= ~full_scale_low_range_active;
+            key_low_range_active <= ~key_low_range_active;
     end
 end
 
@@ -489,9 +524,9 @@ time_zero_code_tracker #(
     .zero_valid    (adc_i_zero_valid)
 );
 
-//==========================================================================
-// LCD display
-//==========================================================================
+generate
+if (LEGACY_PL_DISPLAY != 0) begin : g_legacy_measurement_display
+// 兼容模式继续复用旧 LCD 封装，其中同时包含旧测量、FFT 和文本渲染链路。
 lcd_rgb_char u_lcd_rgb_char (
     .sys_clk            (clk_50m),
     .sys_rst_n          (sys_rst_n),
@@ -534,10 +569,48 @@ lcd_rgb_char u_lcd_rgb_char (
     .lcd_rst_n          (lcd_rst_n),
     .lcd_clk            (lcd_clk)
 );
+end else begin : g_ps_measurement
+    // PS 模式只保留确定性测量与 FFT，直接向共享内存桥发布标量和谐波。
+    pqm_measurement_core u_pqm_measurement_core (
+        .clk(clk_50m),
+        .rst_n(rst_n),
+        .full_scale_low_range_active(full_scale_low_range_active),
+        .u_sample_valid(adc_u_wave_sample_valid),
+        .u_sample_code(adc_u_wave_sample_code),
+        .u_zero_code(adc_u_zero_code),
+        .u_zero_valid(adc_u_zero_valid),
+        .i_sample_valid(adc_i_wave_sample_valid),
+        .i_sample_code(adc_i_wave_sample_code),
+        .i_zero_code(adc_i_zero_code),
+        .i_zero_valid(adc_i_zero_valid),
+        .ps_harmonic_ready(ps_harmonic_ready),
+        .alarm_active(display_alarm_active),
+        .ps_snapshot_words(ps_snapshot_words),
+        .ps_snapshot_commit_toggle(ps_snapshot_commit_toggle),
+        .ps_harmonic_valid(ps_harmonic_valid),
+        .ps_harmonic_last(ps_harmonic_last),
+        .ps_harmonic_index(ps_harmonic_index),
+        .ps_harmonic_u_ratio(ps_harmonic_u_ratio),
+        .ps_harmonic_i_ratio(ps_harmonic_i_ratio),
+        .ps_harmonic_phase(ps_harmonic_phase),
+        .ps_harmonic_flags(ps_harmonic_flags)
+    );
 
-//==========================================================================
-// PLL
-//==========================================================================
+    // PS 模式不再驱动旧 LCD 和文本 UART 数据路径，所有兼容输出保持空闲。
+    assign uart_tx_en = 1'b0;
+    assign uart_tx_data = 8'd0;
+    assign lcd_id = 16'd0;
+    assign lcd_de = 1'b0;
+    assign lcd_hs = 1'b0;
+    assign lcd_vs = 1'b0;
+    assign lcd_bl = 1'b0;
+    assign lcd_clk = 1'b0;
+    assign lcd_rst_n = 1'b0;
+    assign lcd_rgb = {24{1'bz}};
+end
+endgenerate
+
+// MMCM 继续为 ADC、测量和兼容显示提供统一缓冲时钟。
 clk_wiz_0 u_clk_wiz_0 (
     .clk_out1 (clk_50m),
     .clk_out2 (clk_25m),

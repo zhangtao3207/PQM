@@ -15,5 +15,11 @@ if (-not (Test-Path -LiteralPath $Script)) {
 }
 
 $resolvedScript = (Resolve-Path -LiteralPath $Script).Path
+if (-not $env:PQM_REPO_ROOT) {
+    $env:PQM_REPO_ROOT = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+}
+if (-not $env:HOME) {
+    $env:HOME = $env:USERPROFILE
+}
 & $vivado -mode batch -nojournal -nolog -source $resolvedScript
 exit $LASTEXITCODE

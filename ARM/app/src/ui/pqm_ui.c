@@ -61,7 +61,11 @@ static void update_alarm(pqm_ui_t *ui)
     const char *channel = (code == 3u || code == 4u) ? "I" : "U";
     const char *direction = (code == 2u || code == 4u) ? "DROP" : "RISE";
 
-    if ((ui->latest_measurement.alarm & 1u) != 0u && code != 0u) {
+    if (ui->range_error) {
+        lv_label_set_text(ui->status_label, "RANGE ERROR");
+        lv_obj_set_style_text_color(ui->status_label,
+                                    lv_color_hex(0xFF5A5F), LV_PART_MAIN);
+    } else if ((ui->latest_measurement.alarm & 1u) != 0u && code != 0u) {
         lv_label_set_text_fmt(ui->status_label, "ALARM %s %s",
                               channel, direction);
         lv_obj_set_style_text_color(ui->status_label,
@@ -73,7 +77,9 @@ static void update_alarm(pqm_ui_t *ui)
     }
 }
 
-bool pqm_ui_initialize(pqm_ui_t *ui)
+bool pqm_ui_initialize(pqm_ui_t *ui,
+                       pqm_ui_range_request_fn range_request,
+                       void *range_request_context)
 {
     lv_obj_t *header;
     lv_obj_t *button;
@@ -82,6 +88,8 @@ bool pqm_ui_initialize(pqm_ui_t *ui)
         return false;
     }
     memset(ui, 0, sizeof(*ui));
+    ui->range_request = range_request;
+    ui->range_request_context = range_request_context;
     pqm_ui_style_initialize(&ui->styles);
     ui->screen = lv_scr_act();
     if (ui->screen == NULL) {
@@ -119,6 +127,21 @@ bool pqm_ui_initialize(pqm_ui_t *ui)
     ui->harmonic_window_start = 1u;
     set_page_visible(ui);
     return true;
+}
+
+void pqm_ui_set_range_result(pqm_ui_t *ui, bool success, bool low_range)
+{
+    if (ui == NULL) {
+        return;
+    }
+    ui->range_pending = false;
+    ui->range_error = !success;
+    if (success) {
+        ui->low_range = low_range;
+    }
+    lv_label_set_text(ui->range_button_label,
+                      ui->low_range ? "10 V / 3 A" : "350 V / 30 A");
+    update_alarm(ui);
 }
 
 void pqm_ui_update_measurement(pqm_ui_t *ui,

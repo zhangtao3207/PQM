@@ -29,6 +29,15 @@ Run an XSCT script through the fixed SDK 2018.3 installation:
 powershell -ExecutionPolicy Bypass -File ARM/scripts/run_xsct.ps1 -Script ARM/scripts/create_workspace.tcl
 ```
 
+Generate a fresh FSBL and package `FSBL + bitstream + FreeRTOS ELF`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ARM/scripts/build_boot_image.ps1
+```
+
+The resulting image is written to `FPGA/ZYNQ固化脚本/BOOT.bin`. The script
+only builds the image; it does not program QSPI or start a board session.
+
 The hardware handoff is generated under `FPGA/export` by the Vivado build scripts. Do not edit generated BSP or workspace files by hand.
 
 `create_workspace.tcl` recreates the FreeRTOS BSP and application, imports the

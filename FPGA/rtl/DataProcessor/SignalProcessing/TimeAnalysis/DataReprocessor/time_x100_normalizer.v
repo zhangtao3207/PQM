@@ -96,6 +96,8 @@ localparam [3:0] ST_PHASE_ROM_WAIT   = 4'd10;
 localparam [3:0] ST_POWER_X100_START = 4'd11;
 localparam [3:0] ST_POWER_X100_WAIT  = 4'd12;
 localparam [3:0] ST_COMMIT           = 4'd13;
+localparam [3:0] ST_POWER_PRODUCT_LATCH = 4'd14;
+localparam [3:0] ST_POWER_DIV_START     = 4'd15;
 
 localparam [31:0] HALF_SCALE_CODE    = 32'd1 << (CODE_WIDTH - 1);
 localparam [31:0] ROUND_BIAS         = HALF_SCALE_CODE >> 1;
@@ -190,9 +192,13 @@ wire                     reactive_q_raw_neg;
 wire                     power_factor_raw_neg;
 
 wire signed [63:0]       full_scale_prod_signed;
+reg  signed [63:0]       full_scale_prod_work;
 wire signed [95:0]       active_p_scale_product_signed;
 wire signed [95:0]       reactive_q_scale_product_signed;
 wire signed [95:0]       apparent_s_scale_product_signed;
+reg  [95:0]              active_p_scale_product_work;
+reg  [95:0]              reactive_q_scale_product_work;
+reg  [95:0]              apparent_s_scale_product_work;
 wire [95:0]              active_p_scale_product_unsigned;
 wire [95:0]              reactive_q_scale_product_unsigned;
 wire [95:0]              apparent_s_scale_product_unsigned;
@@ -373,7 +379,7 @@ multiplier_signed #(
     .A_WIDTH(64),
     .B_WIDTH(32)
 ) u_active_p_scale_multiplier (
-    .multiplicand(full_scale_prod_signed),
+    .multiplicand(full_scale_prod_work),
     .multiplier  ({1'b0, active_p_raw_abs[30:0]}),
     .product     (active_p_scale_product_signed)
 );
@@ -383,7 +389,7 @@ multiplier_signed #(
     .A_WIDTH(64),
     .B_WIDTH(32)
 ) u_reactive_q_scale_multiplier (
-    .multiplicand(full_scale_prod_signed),
+    .multiplicand(full_scale_prod_work),
     .multiplier  ({1'b0, reactive_q_raw_abs[30:0]}),
     .product     (reactive_q_scale_product_signed)
 );
@@ -393,15 +399,15 @@ multiplier_signed #(
     .A_WIDTH(64),
     .B_WIDTH(32)
 ) u_apparent_s_scale_multiplier (
-    .multiplicand(full_scale_prod_signed),
+    .multiplicand(full_scale_prod_work),
     .multiplier  ({1'b0, apparent_s_raw_abs[30:0]}),
     .product     (apparent_s_scale_product_signed)
 );
 
 // 将功率缩放乘积整理成无符号除法器输入。
-assign active_p_scale_product_unsigned   = active_p_scale_product_signed[95] ? 96'd0 : active_p_scale_product_signed[95:0];
-assign reactive_q_scale_product_unsigned = reactive_q_scale_product_signed[95] ? 96'd0 : reactive_q_scale_product_signed[95:0];
-assign apparent_s_scale_product_unsigned = apparent_s_scale_product_signed[95] ? 96'd0 : apparent_s_scale_product_signed[95:0];
+assign active_p_scale_product_unsigned   = active_p_scale_product_work;
+assign reactive_q_scale_product_unsigned = reactive_q_scale_product_work;
+assign apparent_s_scale_product_unsigned = apparent_s_scale_product_work;
 
 // 对有功功率 raw 执行满量程比例换算，得到有功功率 x100。
 divider_unsigned #(
@@ -499,6 +505,10 @@ always @(posedge clk or negedge rst_n) begin
         apparent_s_raw_work    <= 32'sd0;
         power_factor_raw_work  <= 32'sd0;
         work_power_metrics_valid <= 1'b0;
+        full_scale_prod_work      <= 64'sd0;
+        active_p_scale_product_work   <= 96'd0;
+        reactive_q_scale_product_work <= 96'd0;
+        apparent_s_scale_product_work <= 96'd0;
         done                   <= 1'b0;
         u_rms_x100             <= 32'sd0;
         i_rms_x100             <= 32'sd0;
@@ -688,8 +698,8 @@ always @(posedge clk or negedge rst_n) begin
                     reactive_q_x100_done_seen <= 1'b0;
                     apparent_s_x100_done_seen <= 1'b0;
                     power_factor_x100_done_seen <= 1'b0;
-                    power_scale_start_pulse <= 1'b1;
-                    state                   <= ST_POWER_X100_WAIT;
+                    full_scale_prod_work <= full_scale_prod_signed;
+                    state <= ST_POWER_PRODUCT_LATCH;
                 end else begin
                     active_p_x100     <= 32'sd0;
                     reactive_q_x100   <= 32'sd0;
@@ -697,6 +707,26 @@ always @(posedge clk or negedge rst_n) begin
                     power_factor_x100 <= 32'sd0;
                     state             <= ST_COMMIT;
                 end
+            end
+
+            // 第二级只计算 raw 与满量程乘积，并将结果锁存后再送入除法器。
+            ST_POWER_PRODUCT_LATCH: begin
+                active_p_scale_product_work <=
+                    active_p_scale_product_signed[95]
+                        ? 96'd0 : active_p_scale_product_signed;
+                reactive_q_scale_product_work <=
+                    reactive_q_scale_product_signed[95]
+                        ? 96'd0 : reactive_q_scale_product_signed;
+                apparent_s_scale_product_work <=
+                    apparent_s_scale_product_signed[95]
+                        ? 96'd0 : apparent_s_scale_product_signed;
+                state <= ST_POWER_DIV_START;
+            end
+
+            // 第三级启动现有串行除法器，避免乘法级联与 96 位加法落在同一周期。
+            ST_POWER_DIV_START: begin
+                power_scale_start_pulse <= 1'b1;
+                state <= ST_POWER_X100_WAIT;
             end
 
             ST_POWER_X100_WAIT: begin
