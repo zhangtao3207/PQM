@@ -1,3 +1,4 @@
+/* PQM界面公开接口：定义UI状态并接收测量、波形、谐波和量程反馈。 */
 #ifndef PQM_UI_H
 #define PQM_UI_H
 
@@ -64,14 +65,19 @@ typedef struct pqm_ui {
     void *range_request_context;
 } pqm_ui_t;
 
+/* 创建PQM顶层界面、公共按钮以及时域/频域两个页面。 */
 bool pqm_ui_initialize(pqm_ui_t *ui,
                        pqm_ui_range_request_fn range_request,
                        void *range_request_context);
+/* 接收PL量程命令结果并更新按钮或错误状态。 */
 void pqm_ui_set_range_result(pqm_ui_t *ui, bool success, bool low_range);
+/* 更新最新测量值，并在未冻结时刷新当前页面。 */
 void pqm_ui_update_measurement(pqm_ui_t *ui,
                                const pqm_measurement_t *measurement);
+/* 更新时域波形包络。 */
 void pqm_ui_update_waveform(pqm_ui_t *ui,
                             const pqm_wave_column_t columns[PQM_UI_WAVE_COLUMNS]);
+/* 更新谐波快照和当前谐波窗口。 */
 void pqm_ui_update_harmonics(pqm_ui_t *ui,
                              const pqm_harmonic_raw_snapshot_t *harmonics);
 

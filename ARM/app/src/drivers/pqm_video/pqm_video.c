@@ -1,3 +1,9 @@
+/*
+ * AXI VDMA视频输出驱动。
+ *
+ * 本模块配置800x480 RGB565双帧缓存，通过park模式在帧边界切换前后台缓冲区，
+ * 统计完成/错误中断，并向LVGL端提供切换确认和异常重启能力。
+ */
 #include "pqm_video.h"
 
 #include <stddef.h>

@@ -1,3 +1,7 @@
+/*
+ * 触摸协议主机测试。
+ * 验证FT/GT数据包解析、屏幕边界裁剪和连续通信失败恢复状态机。
+ */
 #include <stdint.h>
 #include <stdio.h>
 

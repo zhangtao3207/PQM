@@ -1,3 +1,9 @@
+/*
+ * PQM频域页面。
+ *
+ * 显示功率、功率因数、THD和谐波柱状图，并支持在多个谐波窗口间切换。
+ * 页面只负责LVGL对象创建和刷新，不直接读取PL共享内存。
+ */
 #include "pqm_ui_internal.h"
 
 #include <stdio.h>

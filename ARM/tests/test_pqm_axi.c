@@ -1,3 +1,7 @@
+/*
+ * AXI共享内存驱动主机测试。
+ * 使用模拟字数组验证ABI校验、一致性快照、谐波双缓冲和命令应答逻辑。
+ */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

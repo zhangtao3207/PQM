@@ -1,3 +1,9 @@
+/*
+ * LVGL到PQM硬件显示/触摸驱动的适配层。
+ *
+ * 将LVGL绘制目标绑定到VDMA双帧缓存，在刷新完成时请求换帧，并把触摸驱动
+ * 发布的最新触点转换为LVGL输入事件。所有接口由UI任务调用。
+ */
 #include "pqm_lvgl_port.h"
 
 #include <stddef.h>

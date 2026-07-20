@@ -1,3 +1,9 @@
+/*
+ * PQM使用的LVGL裁剪配置。
+ *
+ * 配置16位RGB565颜色、内部内存池、刷新周期、断言级别以及工程实际使用的
+ * 字体和控件，未启用的LVGL功能不会进入最终ARM程序。
+ */
 #ifndef LV_CONF_H
 #define LV_CONF_H
 

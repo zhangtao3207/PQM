@@ -1,3 +1,10 @@
+/*
+ * PQM PS端应用入口。
+ *
+ * 本文件负责创建FreeRTOS静态任务和单元素消息队列，并协调DMA采样、触摸、
+ * 测量数据、LVGL界面及系统状态输出。各任务通过队列传递最新数据，UI任务是
+ * 唯一允许直接调用LVGL接口的任务，从而避免跨任务访问图形对象。
+ */
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
@@ -104,6 +111,7 @@ static pqm_range_request_t range_request_message;
 static pqm_range_result_t range_result_message;
 static volatile bool touch_ready;
 
+/* 把量程请求写入单元素队列，新请求会覆盖尚未处理的旧请求。 */
 static bool queue_range_request(void *context, bool low_range)
 {
     pqm_range_request_t request;
@@ -113,6 +121,9 @@ static bool queue_range_request(void *context, bool low_range)
     return xQueueOverwrite(range_request_queue, &request) == pdPASS;
 }
 
+/*
+ * DMA接收任务：等待DMA中断，处理完整采样帧，并把重采样后的最新波形发送给UI。
+ */
 static void dma_rx_task(void *argument)
 {
     (void)argument;
@@ -142,6 +153,7 @@ static void dma_rx_task(void *argument)
     }
 }
 
+/* 触摸任务：初始化触摸硬件，并按中断通知或20 ms超时执行一次协议服务。 */
 static void touch_task(void *argument)
 {
     (void)argument;
@@ -162,6 +174,9 @@ static void touch_task(void *argument)
     }
 }
 
+/*
+ * 测量任务：每50 ms读取一致性标量快照和新谐波缓冲区，同时串行处理量程命令。
+ */
 static void measurement_task(void *argument)
 {
     pqm_axi_t *axi = pqm_platform_axi();
@@ -201,6 +216,9 @@ static void measurement_task(void *argument)
     }
 }
 
+/*
+ * UI任务：独占LVGL对象，消费各数据队列，并驱动VDMA双缓冲刷新。
+ */
 static void ui_task(void *argument)
 {
     TickType_t last_wake = xTaskGetTickCount();
@@ -244,6 +262,7 @@ static void ui_task(void *argument)
     }
 }
 
+/* 系统任务：每秒输出DMA、VDMA和触摸运行计数，供串口诊断。 */
 static void system_task(void *argument)
 {
     (void)argument;
@@ -257,6 +276,7 @@ static void system_task(void *argument)
     }
 }
 
+/* 创建长度为1的静态队列；这里只保留各类数据的最新状态。 */
 static void create_queues(void)
 {
     measurement_queue = xQueueCreateStatic(
@@ -281,6 +301,7 @@ static void create_queues(void)
     }
 }
 
+/* 按实时性从高到低创建DMA、触摸、UI、测量和系统任务。 */
 static void create_tasks(void)
 {
     if (xTaskCreateStatic(dma_rx_task, "dma_rx", PQM_DMA_TASK_STACK_WORDS,
@@ -304,6 +325,7 @@ static void create_tasks(void)
     }
 }
 
+/* 完成平台校验和RTOS对象创建后启动调度器。 */
 int main(void)
 {
     if (!pqm_platform_initialize()) {
@@ -319,11 +341,13 @@ int main(void)
     pqm_platform_fatal("scheduler returned");
 }
 
+/* FreeRTOS动态分配失败钩子；正常设计主要使用静态对象。 */
 void vApplicationMallocFailedHook(void)
 {
     pqm_platform_fatal("FreeRTOS allocation failed");
 }
 
+/* 任一任务栈溢出时输出任务名并通过看门狗复位。 */
 void vApplicationStackOverflowHook(TaskHandle_t task, char *task_name)
 {
     (void)task;
@@ -332,6 +356,7 @@ void vApplicationStackOverflowHook(TaskHandle_t task, char *task_name)
     pqm_platform_fatal("FreeRTOS stack overflow");
 }
 
+/* 向FreeRTOS提供静态Idle任务控制块和栈。 */
 void vApplicationGetIdleTaskMemory(StaticTask_t **task_control,
                                    StackType_t **task_stack,
                                    uint32_t *stack_words)
@@ -341,6 +366,7 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **task_control,
     *stack_words = configMINIMAL_STACK_SIZE;
 }
 
+/* 向FreeRTOS提供静态软件定时器任务控制块和栈。 */
 void vApplicationGetTimerTaskMemory(StaticTask_t **task_control,
                                     StackType_t **task_stack,
                                     uint32_t *stack_words)

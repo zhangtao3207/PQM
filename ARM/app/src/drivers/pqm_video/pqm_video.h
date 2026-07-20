@@ -1,3 +1,4 @@
+/* PQM视频驱动接口：定义RGB565帧缓存布局及VDMA双缓冲控制方法。 */
 #ifndef PQM_VIDEO_H
 #define PQM_VIDEO_H
 
@@ -42,15 +43,22 @@ typedef struct {
     volatile bool switch_completed;
 } pqm_video_t;
 
+/* 初始化VDMA读通道并启动第一个帧缓存输出。 */
 int pqm_video_initialize(pqm_video_t *video, TaskHandle_t notify_task);
+/* 将VDMA完成/错误中断连接到GIC。 */
 int pqm_video_connect_interrupt(pqm_video_t *video,
                                 XScuGic *interrupt_controller);
+/* 返回指定帧缓存的CPU可访问地址。 */
 uint16_t *pqm_video_framebuffer(uint8_t index);
+/* 填充整帧或清理指定矩形区域的CPU缓存。 */
 void pqm_video_fill(uint8_t index, pqm_video_color_t color);
 void pqm_video_clean_area(uint8_t index, uint16_t x1, uint16_t y1,
                           uint16_t x2, uint16_t y2);
+/* 请求VDMA在帧边界切换到指定缓冲区。 */
 int pqm_video_request_frame(pqm_video_t *video, uint8_t index);
+/* 获取并清除一次已经完成的换帧事件。 */
 bool pqm_video_take_switch_complete(pqm_video_t *video, uint8_t *front_index);
+/* 停止并重新配置VDMA，用于刷新超时或硬件错误后的恢复。 */
 int pqm_video_restart(pqm_video_t *video);
 
 #endif

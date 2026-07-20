@@ -1,3 +1,7 @@
+/*
+ * 波形服务主机测试。
+ * 验证2048点帧序号连续性、丢帧后的重新同步以及400列包络重采样。
+ */
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>

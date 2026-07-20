@@ -1,3 +1,4 @@
+/* PQM界面内部接口：连接公共样式、时域页面和频域页面实现。 */
 #ifndef PQM_UI_INTERNAL_H
 #define PQM_UI_INTERNAL_H
 

@@ -28,14 +28,14 @@ main
 | `rtl/pqm_legacy_core.v` | `pqm_legacy_core` | 保留原 AD7606、时域/频域测量、FFT、告警和回退显示链路，并向 PS 接口导出样本、标量与谐波结果。 |
 | `rtl/DataProcessor/pqm_measurement_core.v` | `pqm_measurement_core` | 默认 PS 模式的纯测量核心，保留时域、FFT、谐波和告警计算，不实例化 PL 字体、像素合成、触摸协议或显示 UART。 |
 
-## ADC_PARALLEL
+## ADC并行采集（ADC_PARALLEL）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
 | `rtl/ADC_PARALLEL/ad7606_parallel_ctrl.v` | `ad7606_parallel_ctrl` | AD7606 并行接口底层控制模块，负责转换启动、忙信号处理和并行读数时序。 |
 | `rtl/ADC_PARALLEL/AD7606_Parallel_DRIVER.v` | `AD7606_Parallel_DRIVER` | AD7606 并行驱动封装，向上层提供多通道采样值、有效脉冲和状态信号。 |
 
-## DataProcessor/BasicMath
+## 基础数学模块（DataProcessor/BasicMath）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -48,7 +48,7 @@ main
 | `rtl/DataProcessor/BasicMath/sqrt_unsigned.v` | `sqrt_unsigned` | 无符号开方模块，供 RMS 和幅值类计算复用。 |
 | `rtl/DataProcessor/BasicMath/value_x100_to_digits.v` | `value_x100_to_digits` | 将 `x100` 数值拆成整数位和小数位，供显示链路使用。 |
 
-## DataProcessor/SignalProcessing/TimeAnalysis/RawDataCal
+## 时域原始测量（DataProcessor/SignalProcessing/TimeAnalysis/RawDataCal）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -59,7 +59,7 @@ main
 | `rtl/DataProcessor/SignalProcessing/TimeAnalysis/RawDataCal/power_metrics_calc.v` | `power_metrics_calc` | 根据 RMS、平均瞬时功率和相位信息计算 `P/Q/S/PF`。 |
 | `rtl/DataProcessor/SignalProcessing/TimeAnalysis/RawDataCal/ui_rms_measure.v` | `ui_rms_measure` | 在统一采样窗口内累计 `u^2`、`i^2` 和 `ui`，输出真实时域 RMS 和平均有功 raw 值。 |
 
-## DataProcessor/SignalProcessing/TimeAnalysis/DataReprocessor
+## 时域数据整理（DataProcessor/SignalProcessing/TimeAnalysis/DataReprocessor）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -68,7 +68,7 @@ main
 | `rtl/DataProcessor/SignalProcessing/TimeAnalysis/DataReprocessor/time_x100_normalizer.v` | `time_x100_normalizer` | 将时域 raw 测量值换算到 `x100` 显示量纲；当前已支持运行时量程输入。 |
 | `rtl/DataProcessor/SignalProcessing/TimeAnalysis/DataReprocessor/time_zero_code_tracker.v` | `time_zero_code_tracker` | 跟踪电压/电流采样零点，供去直流与测量链路复用。 |
 
-## DataProcessor/SignalProcessing/FreqAnalysis/BasicFunctions
+## 频域基础处理（DataProcessor/SignalProcessing/FreqAnalysis/BasicFunctions）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -81,7 +81,7 @@ main
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/BasicFunctions/freq_analysis_top.v` | `freq_analysis_top` | 频域分析顶层，串接 FFT 输入、结果接收、谐波统计、相位计算和统一滤波输出。 |
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/BasicFunctions/phase_deg_lut_calc.v` | `phase_deg_lut_calc` | 通过查表把 `dot/cross` 结果转换为相位差角度。 |
 
-## DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal
+## 频域原始测量（DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -90,20 +90,20 @@ main
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal/freq_metrics_raw_calc.v` | `freq_metrics_raw_calc` | 从滤波后的谐波结果中提取 `THD`、基波幅值/相位、`DC` 等 raw 指标；平方和累加器固定使用逻辑加法链，避免 DSP48 反馈时序环。 |
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/RawDataCal/freq_thd_raw_calc.v` | `freq_thd_raw_calc` | 计算电压/电流总谐波畸变率 raw 值。 |
 
-## DataProcessor/SignalProcessing/FreqAnalysis/DataReprocessor
+## 频域数据整理（DataProcessor/SignalProcessing/FreqAnalysis/DataReprocessor）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/DataReprocessor/freq_text_data_separator.v` | `freq_text_data_separator` | 将频域 `x100` 指标拆成 LCD 文本显示所需的数字位与符号位。 |
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/DataReprocessor/freq_text_x100_normalizer.v` | `freq_text_x100_normalizer` | 将频域 raw 指标规整到文本显示使用的 `x100` 范围。 |
 
-## DataProcessor/SignalProcessing/FreqAnalysis
+## 频域分析缓存（DataProcessor/SignalProcessing/FreqAnalysis）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
 | `rtl/DataProcessor/SignalProcessing/FreqAnalysis/fft_harmonic_result_buffer.v` | `fft_harmonic_result_buffer` | 缓存 `0..500` 次谐波结果，支持按阶次读取。 |
 
-## DataProcessor/GraphicsLoad/TimeDomain
+## 时域显示数据（DataProcessor/GraphicsLoad/TimeDomain）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -114,14 +114,14 @@ main
 | `rtl/DataProcessor/GraphicsLoad/TimeDomain/time_wave_history_buffer.v` | `time_wave_history_buffer` | 缓存时域采样历史，为触发显示提供前后样本。 |
 | `rtl/DataProcessor/GraphicsLoad/TimeDomain/time_wave_trigger_core.v` | `time_wave_trigger_core` | 时域波形触发核心，检测触发点并给出显示快照位置。 |
 
-## DataProcessor/GraphicsLoad/FreqDomain
+## 频域显示数据（DataProcessor/GraphicsLoad/FreqDomain）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
 | `rtl/DataProcessor/GraphicsLoad/FreqDomain/freq_display_adapter.v` | `freq_display_adapter` | 将滤波后的谐波幅值占比和相位角转换为 LCD 频谱/相位柱图高度。 |
 | `rtl/DataProcessor/GraphicsLoad/FreqDomain/freq_text_display_preprocess.v` | `freq_text_display_preprocess` | 组织频域文本指标的规整、拆位和 LCD 文本提交。 |
 
-## PSInterface
+## PS接口（PSInterface）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -131,7 +131,7 @@ main
 | `rtl/PSInterface/pqm_shared_memory_bridge.v` | `pqm_shared_memory_bridge` | 通过 BRAM 串行发布一致性标量快照、双 bank 谐波和带序号命令响应，保证 PS 只读取已提交代数。 |
 | `rtl/PSInterface/pqm_touch_iobuf.v` | `pqm_touch_iobuf` | 为 PS I2C EMIO 的实际 SCL/SDA 引脚实例化 IOBUF，并映射触摸复位、中断与物理按键 GPIO。 |
 
-## lcd/display
+## LCD显示（lcd/display）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -146,7 +146,7 @@ main
 | `rtl/lcd/display/text_packet_double_buffer.v` | `text_packet_double_buffer` | 跨时钟域文本数据双缓冲，支持 LCD 前台稳定显示和冻结锁存。 |
 | `rtl/lcd/display/wave_pixel_detector.v` | `wave_pixel_detector` | 根据波形 RAM 数据判断当前像素是否落在波形线上。 |
 
-## lcd/touch
+## LCD触摸（lcd/touch）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|
@@ -155,7 +155,7 @@ main
 | `rtl/lcd/touch/touch_state.v` | `touch_state` | 将触控坐标转换成页面按钮、冻结和谐波切换等事件。 |
 | `rtl/lcd/touch/touch_top.v` | `touch_top` | 触控模块顶层，封装 I2C、触摸读取和状态输出。 |
 
-## uart
+## 串口输出（uart）
 
 | 路径 | 模块 | 简要说明 |
 |---|---|---|

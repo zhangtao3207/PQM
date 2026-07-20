@@ -1,3 +1,9 @@
+/*
+ * 测量数据转换服务。
+ *
+ * 将PL共享内存中的定点原始量转换为UI可用的数据结构，完成量程约束、告警位
+ * 映射和显示格式准备。该层不访问硬件，也不创建LVGL对象。
+ */
 #include "pqm_measurement.h"
 
 #include <stdio.h>
@@ -10,7 +16,7 @@ typedef struct {
     bool force_sign;
 } pqm_measurement_spec_t;
 
-/* All shared scalar values are engineering units scaled by 100. */
+/* 共享内存中的标量均为工程量乘以100后的定点整数。 */
 static const pqm_measurement_spec_t field_specs[PQM_MEAS_FIELD_COUNT] = {
     {PQM_VALID_U_RMS,         0,       99999, "V",   false},
     {PQM_VALID_I_RMS,         0,       99999, "A",   false},

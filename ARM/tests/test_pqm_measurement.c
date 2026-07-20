@@ -1,3 +1,7 @@
+/*
+ * 测量转换服务主机测试。
+ * 验证定点原始值、字段有效位、范围约束和界面字符串格式化。
+ */
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>

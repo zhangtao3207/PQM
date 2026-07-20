@@ -1,3 +1,4 @@
+/* PQM测量服务接口：定义UI测量模型、显示规格以及PL原始量到显示量的转换。 */
 #ifndef PQM_MEASUREMENT_H
 #define PQM_MEASUREMENT_H
 
@@ -54,10 +55,13 @@ typedef struct {
     pqm_measurement_value_t values[PQM_MEAS_FIELD_COUNT];
 } pqm_measurement_t;
 
+/* 将PL定点原始快照转换为带有效标志的UI测量模型。 */
 void pqm_measurement_from_raw(pqm_measurement_t *measurement,
                               const pqm_measurement_raw_t *raw);
+/* 按字段编号读取一个测量值。 */
 const pqm_measurement_value_t *pqm_measurement_get(
     const pqm_measurement_t *measurement, pqm_measurement_field_t field);
+/* 按字段单位和小数位格式化显示字符串；无效值显示为占位符。 */
 bool pqm_measurement_format(const pqm_measurement_t *measurement,
                             pqm_measurement_field_t field,
                             char *buffer, size_t buffer_size);

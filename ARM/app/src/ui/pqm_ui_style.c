@@ -1,3 +1,9 @@
+/*
+ * PQM界面公共样式。
+ *
+ * 集中初始化页面背景、信息面板、标题和值文本等LVGL样式，保证时域页和频域页
+ * 使用一致的颜色、边框和字号。
+ */
 #include "pqm_ui_internal.h"
 
 void pqm_ui_style_initialize(pqm_ui_styles_t *styles)

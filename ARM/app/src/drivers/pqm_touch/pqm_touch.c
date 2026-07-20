@@ -1,3 +1,9 @@
+/*
+ * 800x480电容触摸硬件驱动。
+ *
+ * 通过PS I2C0和MIO/EMIO GPIO访问触摸控制器，自动探测FT与GT两类协议，
+ * 使用GPIO下降沿中断唤醒触摸任务，并在连续通信失败后执行延时复位恢复。
+ */
 #include "pqm_touch.h"
 
 #include <stddef.h>

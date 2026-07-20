@@ -1,229 +1,138 @@
-# PQM PS FreeRTOS Display Migration Design
+# PQM PS端FreeRTOS显示迁移设计
 
-## 1. Objective
+设计日期：2026-07-18
+当前状态：代码迁移与自动构建已完成，等待开发板验收。
 
-Migrate the presentation and interaction workload from programmable logic (PL) to the Zynq-7020 processing system (PS), while preserving the deterministic ADC and power-quality measurement pipeline in PL.
+## 1. 设计目标
 
-The first migration milestone shall:
+将原来由PL完成的LCD像素合成、波形显示、触摸交互和页面控制迁移到Zynq
+内部PS，降低FPGA逻辑资源占用，同时保留PL在采集和测量方面的确定性。
 
-- run FreeRTOS and LVGL on Cortex-A9 core 0;
-- render the 7-inch 800x480 RGB LCD from a DDR-backed RGB565 double framebuffer;
-- move page composition, text formatting, waveform and spectrum drawing, touch handling, and system management to PS software;
-- keep AD7606 acquisition, time-domain measurement, FFT, harmonic statistics, and alarms in PL;
-- replace the external PL UART measurement stream as the internal data path with AXI interfaces;
-- preserve the existing PL display path behind a build-time fallback until the new path passes integration testing.
+目标平台为`XC7Z020-CLG400-2`，PS运行FreeRTOS 10和LVGL 8.3.11，
+驱动7英寸800x480 LCD。
 
-## 2. Hardware Baseline
+## 2. 软硬件职责
 
-The active target is the Linghangzhe ZYNQ carrier and ZYNQ-CORE module:
+PL继续负责：
 
-- device: `XC7Z020-CLG400-2`;
-- PS reference clock: 33.333333 MHz;
-- DDR3: two `NT5CC256M16` devices on a 32-bit bus, 1 GB total;
-- nonvolatile storage: `W25Q256FV` QSPI and 8 GB `KLM8G1GETF` eMMC;
-- removable storage: SD card on MIO40 through MIO45;
-- PS UART: MIO14 and MIO15;
-- display: 800x480 RGB888 physical interface with touch I2C on PL pins;
-- current Vivado project: 2018.3, top module `main`, part `xc7z020clg400-2`.
+- AD7606并行采样和零点跟踪。
+- RMS、峰峰值、频率、相位及P/Q/S/PF计算。
+- FFT、0至500次谐波统计、THD、直流分量和骤变告警。
+- 通过AXI4-Stream发布原始电压/电流样本。
+- 通过AXI BRAM发布一致性标量和谐波快照。
+- 接收PS量程命令并返回实际生效档位。
 
-The placed baseline consumes 34,546 LUTs (64.94%), 25,820 registers (24.27%), 26.5 BRAM tiles (18.93%), 101 DSPs (45.91%), and 11,661 slices (87.68%).
+PS负责：
 
-## 3. Ownership Boundary
+- FreeRTOS任务调度及运行状态监控。
+- AXI DMA SG接收、采样序号检查和波形重采样。
+- LVGL时域页、频域页及公共状态栏。
+- DDR双帧缓存和AXI VDMA显示输出。
+- I2C/GPIO EMIO触摸读取及故障恢复。
+- 量程请求、应答检查和界面状态更新。
 
-### 3.1 PL Responsibilities
+旧PL显示链通过`LEGACY_PL_DISPLAY=1`保留为兼容路径，默认值为`0`。
 
-PL retains:
+## 3. 数据通路
 
-- AD7606 conversion control and parallel read timing;
-- voltage and current sample capture;
-- zero tracking, RMS, peak-to-peak, frequency, phase, P/Q/S/PF, THD, FFT, and harmonic calculations;
-- measurement and alarm state generation;
-- coherent AXI measurement snapshots;
-- raw U/I AXI-Stream generation;
-- harmonic result double buffering;
-- AXI VDMA stream conversion, pixel timing, RGB565-to-RGB888 expansion, and LCD pin drive.
+```text
+AD7606 -> PL测量/FFT -> AXI BRAM -> measurement任务 -> LVGL
+       -> AXI4-Stream -> AXI DMA -> dma_rx任务 -> 波形重采样 -> LVGL
+PS DDR RGB565双帧缓存 -> AXI VDMA -> RGB888转换 -> LCD
+PS I2C/GPIO EMIO -> 触摸控制器 -> touch任务 -> LVGL输入设备
+```
 
-PL shall not retain page layout, character rasterization, numeric-to-text conversion, graph coordinate scaling, touch gestures, or application navigation after the migration fallback is removed.
+### 3.1 原始采样流
 
-### 3.2 PS Responsibilities
+每个AXI4-Stream数据项为64位：
 
-PS software owns:
-
-- FreeRTOS task scheduling and watchdog supervision;
-- LVGL page and widget construction;
-- fixed-point unit conversion and text formatting;
-- waveform resampling and plotting;
-- harmonic spectrum and phase plotting;
-- touch-controller I2C transactions and gesture mapping;
-- framebuffer lifecycle and synchronized VDMA buffer switching;
-- configuration, logs, storage, and external communication;
-- fault presentation and recovery commands.
-
-FreeRTOS runs on Cortex-A9 core 0. Core 1 remains disabled in the first milestone.
-
-## 4. PS-PL Architecture
-
-### 4.1 AXI Ports
-
-- `M_AXI_GP0`: PS master for AXI-Lite control, status, and measurement registers.
-- `S_AXI_HP0`: VDMA memory reader access to DDR framebuffers.
-- `S_AXI_HP1`: AXI DMA S2MM access to DDR sample buffers.
-- `IRQ_F2P`: DMA, measurement snapshot, harmonic commit, and PL fault interrupts.
-
-FCLK0 supplies the AXI/control clock. The existing 50 MHz PL sampling clock remains the acquisition timing reference. The 800x480 LCD keeps a 25 MHz pixel clock.
-
-### 4.2 Video Path
-
-LVGL uses `LV_COLOR_DEPTH=16` and two full-screen RGB565 framebuffers. Each framebuffer is 768,000 bytes and begins on a 64-byte boundary. AXI VDMA reads the active framebuffer through HP0. The PL video path expands RGB565 to RGB888 and drives the existing LCD timing and pins.
-
-Buffer ownership is explicit:
-
-1. VDMA scans the front buffer.
-2. LVGL renders only into the back buffer.
-3. PS cleans the modified DCache range.
-4. PS requests a frame-store change.
-5. VDMA applies the change at a frame boundary.
-6. Front and back ownership swaps only after completion is acknowledged.
-
-### 4.3 Sample Stream
-
-Each accepted AXI-Stream item is 64 bits:
-
-| Bits | Meaning |
+| 位范围 | 含义 |
 |---|---|
-| 15:0 | signed raw voltage sample from AD7606 channel 1 |
-| 31:16 | signed raw current sample from AD7606 channel 3 |
-| 63:32 | monotonic sample sequence number |
+| `15:0` | AD7606电压通道有符号原始码 |
+| `31:16` | AD7606电流通道有符号原始码 |
+| `63:32` | 单调递增的源采样序号 |
 
-`TLAST` is asserted every 2,048 accepted items. One DMA frame is therefore 16 KiB. The display stream may apply backpressure, but it must never stall ADC acquisition or the PL measurement pipeline. When no stream buffer space is available, the stream adapter drops display samples, advances the source sequence counter, and increments a saturating drop counter. PS detects gaps from the sequence field.
+每2048个有效样本产生一次`TLAST`。DMA反压时允许丢弃显示样本，但不得
+阻塞ADC和PL测量链；丢弃次数写入共享内存运行计数器。
 
-AXI DMA uses a descriptor ring so that at least four receive buffers remain available. DMA completion ISRs only acknowledge hardware and notify the service task; cache maintenance and parsing run in task context.
+### 3.2 标量快照
 
-### 4.4 Measurement Snapshot
+PL先写所有测量负载，最后更新快照序号。PS在读取前后比较序号，只有两次序号
+一致且有效位已置位时才接受数据。所有工程量使用乘以100的有符号定点整数。
 
-Scalar measurements use a versioned AXI-Lite register block containing:
+### 3.3 谐波快照
 
-- protocol magic, ABI version, and capability bits;
-- control, status, interrupt status, and interrupt acknowledge;
-- snapshot sequence and validity flags;
-- ADC timeout and sample timing counters;
-- RMS, peak-to-peak, frequency, phase, P/Q/S/PF, THD, DC, and alarm results;
-- DMA frame, drop, overflow, and recovery counters;
-- command request, argument, sequence, response, and response sequence.
+谐波数据采用两个BRAM缓冲区。PL只写非活动缓冲区，501项全部完成后再切换
+活动缓冲区并更新代数。PS读取前后检查缓冲区编号、有效位和代数，避免读到半帧。
 
-PL publishes a complete snapshot and increments `snapshot_seq` only after all fields are stable. PS reads the sequence before and after the payload and retries when the values differ.
+### 3.4 命令通道
 
-### 4.5 Harmonic Window
+PS写入命令码、参数和请求序号，PL执行后写响应和响应序号。量程命令参数：
 
-Harmonics 0 through 500 use a dual-bank BRAM window. PL writes the inactive bank, commits its generation number after a complete FFT result set, then swaps banks atomically. PS reads only the committed bank and verifies the generation before and after copying the requested range.
+- `0`：350 V / 30 A高量程。
+- `1`：10 V / 3 A低量程。
 
-## 5. FreeRTOS Software Structure
+UI只有在响应序号匹配且PL回显实际档位后才改变标签。
 
-### 5.1 Tasks
+## 4. FreeRTOS结构
 
-| Task | Responsibility | Activation |
-|---|---|---|
-| `dma_rx_task` | recycle descriptors, invalidate cache, check sample continuity, publish latest waveform | DMA interrupt notification |
-| `measurement_task` | copy scalar snapshot and committed harmonics into the application model | PL interrupt or 10 Hz timeout |
-| `touch_task` | service touch interrupt, read the controller over PS I2C EMIO, publish LVGL input events | GPIO interrupt and recovery timer |
-| `ui_task` | own all LVGL calls, update widgets, render and request buffer swaps | periodic, target 30 FPS |
-| `system_task` | task heartbeat, watchdog, counters, PS UART logging, recovery policy | periodic, low priority |
+| 任务 | 相对优先级 | 作用 |
+|---|---:|---|
+| `dma_rx` | 最高 | 回收DMA描述符、检查采样连续性、生成400列波形 |
+| `touch` | 次高 | 读取触摸控制器并处理I2C恢复 |
+| `ui` | 中 | 独占全部LVGL调用并处理VDMA换帧 |
+| `measurement` | 次低 | 读取测量/谐波快照并执行量程事务 |
+| `system` | 最低 | 输出运行计数和诊断信息 |
 
-No task other than `ui_task` may call LVGL. Inter-task transfer uses fixed-size queues, direct task notifications, or lock-free latest-value mailboxes. Runtime paths shall not allocate from the heap after initialization.
+任务、任务栈和队列均静态分配。测量、波形、谐波和量程队列长度为1，覆盖写
+保证消费者获得最新状态，而不会积压已经过时的界面数据。
 
-### 5.2 Software Modules
+## 5. 显示设计
 
-- `platform/`: BSP, cache, interrupt, timer, watchdog, and PS peripheral adapters.
-- `drivers/pqm_axi/`: register ABI, snapshot reads, commands, and fault counters.
-- `drivers/pqm_dma/`: descriptor ring and sample-frame ownership.
-- `drivers/pqm_video/`: VDMA setup, framebuffer ownership, cache cleaning, and frame swaps.
-- `drivers/pqm_touch/`: touch-controller I2C protocol and coordinate mapping.
-- `services/measurement/`: fixed-point conversions and application data model.
-- `services/waveform/`: discontinuity handling, min/max resampling, trigger view, and display scaling.
-- `ui/`: LVGL screens, styles, widgets, and event bindings.
+- 分辨率固定为800x480。
+- LVGL颜色深度为16位RGB565。
+- 两个帧缓存位于`0x3E000000`和`0x3E0BB800`。
+- VDMA使用park模式在帧边界切换缓冲区。
+- LVGL使用完整刷新，UI任务是唯一图形所有者。
+- 超过100 ms未收到换帧完成事件时重新初始化VDMA。
 
-## 6. Startup and Recovery
+时域页显示RMS、峰峰值、频率、相位和电压/电流波形。频域页显示P/Q/S/PF、
+THD以及分窗口谐波幅值和相位。冻结状态只停止界面内容更新，不停止后台采集。
 
-Startup order is deterministic:
+## 6. 触摸设计
 
-1. FSBL initializes PS clocks and DDR and loads the bitstream.
-2. FreeRTOS initializes PS UART, GIC, timers, cache policy, and shared memory.
-3. Software validates PL magic, ABI version, and capabilities.
-4. VDMA starts on a cleared black framebuffer.
-5. LVGL and touch initialize.
-6. Sample DMA and measurement interrupts start.
-7. The UI enters normal operation only after one valid measurement snapshot.
+PS I2C0经EMIO访问控制器，支持FT地址`0x38`和GT地址`0x14`。
+GPIO54用于复位，GPIO55用于中断。连续三次通信失败后发布“触点释放”，关闭
+中断并每500 ms尝试复位和重新探测。
 
-Recovery behavior:
+## 7. 启动与恢复
 
-- ADC timeout triggers a PL soft-reset command. Three consecutive failures latch an ADC fault while keeping the UI and communications alive.
-- DMA overflow or sample gaps invalidate only the affected waveform. Scalar PL measurements remain valid.
-- VDMA faults retain the last displayed buffer and restart only the video channel.
-- Snapshot contention retries three times and otherwise preserves the last valid application model.
-- Touch failures disable input temporarily and retry initialization without stopping display updates.
-- FreeRTOS stack overflow and allocation failure hooks record the fault and force a watchdog reset.
-- A protocol ABI mismatch prevents DMA startup and shows a diagnostic screen.
+启动顺序为：
 
-## 7. Migration Sequence
+1. FSBL配置PS并加载Bitstream。
+2. FreeRTOS应用开启缓存并校验共享内存魔数、ABI和能力位。
+3. 创建静态队列及五个任务。
+4. DMA、触摸和VDMA分别在所属任务中初始化。
+5. 任一关键初始化失败时输出原因并启动看门狗复位。
 
-1. Add the PS block design, DDR/MIO configuration, AXI fabric, interrupts, VDMA, DMA, and a legacy-display build switch.
-2. Add the AXI register ABI, sample stream adapter, and harmonic bank interface while leaving legacy LCD output active.
-3. Create the FreeRTOS BSP/application and validate PS boot, AXI identity, scalar snapshots, and sample DMA through PS UART logs.
-4. Add the RGB565 VDMA scanout and framebuffer test patterns.
-5. Port touch I2C to PS and integrate LVGL input.
-6. Port current time-domain and frequency-domain pages to LVGL and compare values against the legacy display/UART.
-7. Make the PS framebuffer path the default and run extended integration tests.
-8. Remove obsolete PL page composition, font ROM, display preprocessing, waveform pixel detection, and UART text formatting after fallback acceptance.
-9. Regenerate bitstream, FSBL, FreeRTOS image, and boot artifacts; update project documentation and resource reports.
+## 8. 验证要求
 
-## 8. Verification
+自动验证包括：
 
-### 8.1 RTL Tests
+- AXI采样流、RGB转换、共享内存和量程控制RTL仿真。
+- AXI驱动、波形、测量和触摸主机单元测试。
+- Vivado综合、实现、时序和资源门限检查。
+- FreeRTOS ELF、FSBL及BOOT.bin生成。
 
-- AXI sample words contain the correct signed U/I channels and sequence numbers.
-- `TLAST` occurs after exactly 2,048 accepted samples.
-- backpressure produces observable sequence gaps without stalling ADC-valid handling.
-- scalar snapshots never expose mixed generations.
-- harmonic bank commits are atomic.
-- RGB565 expansion maps endpoint and representative colors correctly.
-- reset and command handshakes recover from injected timeouts.
+开发板验收包括：
 
-### 8.2 C Host Tests
+- LCD色序、完整画面和撕裂检查。
+- 触摸四角和页面按钮检查。
+- 高低量程实际换算检查。
+- DMA、VDMA和触摸故障恢复检查。
+- 不少于30分钟的稳定运行检查。
 
-- register decoding and fixed-point conversions;
-- snapshot retry and ABI rejection;
-- DMA sequence-gap detection;
-- waveform min/max resampling and clipping;
-- touch coordinate transforms;
-- UI model formatting for positive, negative, zero, overflow, and invalid values.
+## 9. 非目标
 
-### 8.3 Hardware Acceptance
-
-- boots FreeRTOS reliably from the selected development boot path;
-- displays 800x480 at a stable target of 30 FPS with no visible tearing;
-- touch coordinates and page actions are correct across the panel;
-- displayed measurements match the legacy implementation for identical ADC input;
-- normal operation has no DMA errors or unexplained sample discontinuities;
-- injected ADC, DMA, VDMA, and touch faults recover according to this design;
-- 30-minute continuous operation shows no framebuffer corruption, task starvation, or watchdog reset;
-- routed timing has no negative slack;
-- final placed LUT utilization is below 55%, with the obsolete PL display hierarchy absent.
-
-## 9. RTL Project Rules
-
-All new or changed PQM RTL follows the project rules:
-
-- one module per Verilog file;
-- no direct `/`, `*`, or `%` operators in handwritten Verilog;
-- reuse the existing `DataProcessor/BasicMath` modules for arithmetic;
-- add concise Chinese module, port, always-block, assign, function, and instantiation comments;
-- keep `FPGA/doc/rtl_file_overview.md` and `FPGA/doc/project_progress_summary.md` synchronized with major changes.
-
-## 10. Out of Scope for the First Milestone
-
-- moving RMS, power, FFT, or harmonic arithmetic from PL to PS;
-- using Cortex-A9 core 1;
-- Linux, Qt, or DRM/KMS;
-- remote firmware update or QSPI multiboot;
-- changing the ADC analog front end or channel mapping;
-- redesigning the visual language beyond faithfully porting the existing pages.
+本阶段不修改原有测量算法精度，不重写FFT核心，不处理早期MATLAB测试脚本，
+也不自动烧写QSPI。第三方LVGL源码保持固定版本，不纳入中文化改写范围。
