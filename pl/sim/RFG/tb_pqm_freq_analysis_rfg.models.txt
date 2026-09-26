@@ -1,0 +1,3 @@
+# 顶层用例：激励向量 + 复用的 DataProcessor 后级模块
+pl/sim/RFG/front_end_vectors
+pl/rtl/DataProcessor
