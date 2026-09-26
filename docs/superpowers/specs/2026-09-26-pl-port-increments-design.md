@@ -26,7 +26,7 @@
 | # | 功能 | 产物 | 验证判据 | 状态 |
 | --- | --- | --- | --- | --- |
 | 1 | 搭 xsim 环境，跑通已有的 `PSInterface` 三个 testbench | `pl/rtl/PSInterface/`、`pl/sim/PSInterface/`、`scripts/run_xsim.ps1` | 三个用例打印 `PASS: <模块>` | ✅ 已完成 |
-| 2 | AD7606 并行驱动 | `pl/rtl/ADC_PARALLEL/` + 新写 testbench | 模拟 ADC 时序，回读数据与激励一致 | 待做 |
+| 2 | AD7606 并行驱动 | `pl/rtl/ADC_PARALLEL/` + `pl/sim/ADC_PARALLEL/tb_AD7606_Parallel_DRIVER.v` | 芯片行为模型只经引脚交互；三个场景：正常一帧（8 通道数据与整帧拼接正确、通道顺序 1~8、无超时）、FRSTDATA 缺失报超时、BUSY 始终不拉高报超时 | ✅ 已完成（7.5 秒） |
 | 3 | 时域测量：RMS / P2P / 功率 / 相位差 | `pl/rtl/DataProcessor/`（时域部分）+ testbench | 喂已知正弦，数值与解析值在允许误差内 | 待做 |
 | 4 | 频率测量与零点跟踪 | 同上（频域部分） | 喂工频与非工频，频率读数正确 | 待做 |
 | 5 | FFT + 谐波 + THD + 直流分量 | 同上 + `ip/xfft_0`、`ip/rom_atan_lut_1024` | 喂已知谐波成分，谱线位置与幅值正确 | 待做 |

@@ -94,11 +94,27 @@ foreach ($t in $tests) {
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
     Push-Location $buildDir
     try {
-        Invoke-Tool 'xvlog' @('-work', 'xil_defaultlib', '-i', $incDir, $dut, $testbench) $logPath
+        # 整组的 RTL 一起编：被测模块可能有子模块（AD7606_Parallel_DRIVER 内嵌 ad7606_parallel_ctrl）
+        $groupRtl = Get-ChildItem -Path (Join-Path $rtlRoot $group) -Filter '*.v' -File |
+            ForEach-Object { $_.FullName }
+        if (-not $groupRtl) { throw "组内没有 RTL 文件：$(Join-Path $rtlRoot $group)" }
+        Invoke-Tool 'xvlog' (@('-work', 'xil_defaultlib', '-i', $incDir) + $groupRtl + @($testbench)) $logPath
         $elabArgs = @("xil_defaultlib.tb_$name", '-s', "sim_$name")
         if ($Debug) { $elabArgs += @('--debug', 'typical') }
         Invoke-Tool 'xelab' $elabArgs $logPath
         Invoke-Tool 'xsim' @("sim_$name", '-runall') $logPath
+
+        # xsim -runall 即使碰到 $fatal 也返回退出码 0，不能只看退出码。
+        # 必须自己看日志：既要没有 FAIL/Fatal，也要确实打印了 PASS: <模块>。
+        $logText = Get-Content -LiteralPath $logPath -Raw
+        if ($logText -match [regex]::Escape('FAIL:') -or
+            $logText -match [regex]::Escape('Fatal:') -or
+            $logText -match [regex]::Escape('ERROR:')) {
+            throw "日志里出现 FAIL/Fatal/ERROR（xsim 退出码不可靠，故不信它）；详见 $logPath"
+        }
+        if ($logText -notmatch [regex]::Escape("PASS: $name")) {
+            throw "日志里找不到 'PASS: $name'，无法判定通过；详见 $logPath"
+        }
         $watch.Stop()
         Write-Host ("PASS  {0:N1} 秒   日志 {1}" -f $watch.Elapsed.TotalSeconds, $logPath)
     } catch {

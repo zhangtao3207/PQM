@@ -18,9 +18,10 @@ pl/
 
 ## 来源
 
-`pl/rtl/PSInterface/` 与 `pl/sim/PSInterface/` 下的文件取自旧工程：
+`pl/rtl/` 与 `pl/sim/` 下的文件取自旧工程：
 
 - 源：`../PQM/FPGA/rtl/PSInterface/`、`../PQM/FPGA/sim/PSInterface/`
+- `pl/rtl/ADC_PARALLEL/` + `pl/sim/ADC_PARALLEL/`：AD7606 并行采集通路（`AD7606_Parallel_DRIVER` 与它内嵌的 `ad7606_parallel_ctrl`）及其测试平台。
 - 只搬了 PQM2 需要的部分，以下两个模块**有意不搬**：
   - `pqm_touch_iobuf.v`：旧设计里触摸经 PL 转发；PQM2 的触摸是 PS EMIO IIC 直连，已验证可用。
   - `pqm_axis_rgb565_to_rgb888.v`：旧 VDMA 是 16 位 RGB565 才需要它；官方 VDMA 是 24 位。
@@ -35,6 +36,10 @@ powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -Test pqm_shared_m
 用例通过时打印 `PASS: <模块>`；日志写到 `export/xsim_<模块>.log`，并在结尾报告耗时。
 
 **注意**：`.ps1` 必须带 UTF-8 BOM。Windows PowerShell 5.1 对无 BOM 的脚本按 ANSI（本机 GBK）解码，中文注释里的多字节字符会吃掉换行符，导致脚本报 `Unexpected token` 之类的语法错误。
+
+**另一个坑**：`xsim -runall` **即使碰到 `$fatal` 也返回退出码 0**。只看退出码会把失败的用例报成通过（已实际发生一次）。`run_xsim.ps1` 因此改为检查日志内容：既要求没有 `FAIL:` / `Fatal:`，也要求确实打印了 `PASS: <模块>`。
+
+**写激励时避开竞争**：testbench 里驱动 `start` 这类单拍脉冲，要在**时钟低电平期间**翻转（`@(negedge clk)` 之后赋值），否则脉冲和 posedge 采样撞在同一个时间步里会被采到 0。第一次写 AD7606 用例时就踩了这个，表现为控制器一直停在空闲。
 
 ## 实测耗时（用于决定"这事儿值不值得编译一次"）
 
