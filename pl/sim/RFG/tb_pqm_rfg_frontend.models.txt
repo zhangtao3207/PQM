@@ -1,0 +1,2 @@
+# 本用例的激励向量（平铺复制进 build 目录）
+pl/sim/RFG/front_end_vectors
