@@ -27,9 +27,9 @@
 | --- | --- | --- | --- | --- |
 | 1 | 搭 xsim 环境，跑通已有的 `PSInterface` 三个 testbench | `pl/rtl/PSInterface/`、`pl/sim/PSInterface/`、`scripts/run_xsim.ps1` | 三个用例打印 `PASS: <模块>` | ✅ 已完成 |
 | 2 | AD7606 并行驱动 | `pl/rtl/ADC_PARALLEL/` + `pl/sim/ADC_PARALLEL/tb_AD7606_Parallel_DRIVER.v` | 芯片行为模型只经引脚交互；三个场景：正常一帧（8 通道数据与整帧拼接正确、通道顺序 1~8、无超时）、FRSTDATA 缺失报超时、BUSY 始终不拉高报超时 | ✅ 已完成（7.5 秒） |
-| 3 | 时域测量（按模块逐个验证，不再一次搬完） | `pl/rtl/DataProcessor/` 时域部分 + 逐个 testbench | 每个模块喂已知波形，与手算值比对 | ✅ 基本完成：`p2p_measure`（修得一个缺陷）、`ui_rms_measure`（含 4 个基础数学模块）、`power_metrics_calc`、`phase_diff_calc` 均已验证 |
+| 3 | 时域测量（按模块逐个验证，不再一次搬完） | `pl/rtl/DataProcessor/` 时域部分 + 逐个 testbench | 每个模块喂已知波形，与手算值比对 | ✅ 已完成：`p2p_measure`（修得一个缺陷）、`ui_rms_measure`（含 4 个基础数学模块）、`power_metrics_calc`、`phase_diff_calc`、`time_x100_normalizer`（含 atan ROM 行为级模型）、`time_parameters_initiator`（集成与调度）均已验证 |
 | 4 | 频率测量与零点跟踪 | `frequency_measure`、`time_zero_code_tracker` + testbench | 峰值间隔与动态零点收敛值均与离线算出的定点期望值一致 | ✅ 已完成（均一次通过） |
-| 5 | FFT + 谐波 + THD + 直流分量 | 同上 + `ip/xfft_0`、`ip/rom_atan_lut_1024` | 喂已知谐波成分，谱线位置与幅值正确 | 🔄 进行中：已过仿真 `fft_magnitude_calc`、`fft_harmonic_stats`；待写用例 `fft_result_receiver`、`fft_phase_vector_calc`、`freq_harmonic_iir_filter`、`freq_thd_raw_calc`、`freq_metrics_raw_calc`；依赖 IP 仿真模型的 `fft_stream_adapter`、`fft_fundamental_freq_tracker`、`phase_deg_lut_calc`、`data_fifo`、`freq_analysis_top` |
+| 5 | FFT + 谐波 + THD + 直流分量 | 同上 + `ip/xfft_0`、`ip/rom_atan_lut_1024` | 喂已知谐波成分，谱线位置与幅值正确 | ✅ 不依赖 xfft 的部分已完成：`fft_magnitude_calc`、`fft_harmonic_stats`、`fft_result_receiver`、`fft_phase_vector_calc`、`freq_harmonic_iir_filter`、`freq_thd_raw_calc`、`freq_metrics_raw_calc`。仍缺 `fft_stream_adapter`（xfft_0）、`data_fifo`（blk_mem_gen_fft_fifo_ram）、`fft_fundamental_freq_tracker`、`phase_deg_lut_calc`、`freq_analysis_top`——它们要么直接包 xfft，要么靠 xfft 才能产生有意义的结果，等增量 6 的 Vivado 工程用真实 IP 仿真源来验 |
 | 6 | 集成进 Vivado 工程：官方视频段（参数逐条照抄官方 `.bd`，之后冻结）+ PQM 测量段 | `pl/scripts/`、`pl/data/PQM2.xdc`、比特流 | 上板：共享内存 magic/ABI 可读、标量快照在更新 | 待做 |
 | 7 | PS 端从假数据切到真数据，删除 `app/demo/` | `app/pqm/…`（新写 PS 侧共享内存读取） | 上板：界面显示真实测量值，量程命令可用 | 待做 |
 

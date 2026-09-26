@@ -8,10 +8,12 @@ PL 端以官方例程 `37_zynq_lvgl` 的显示通路为基线，把旧工程 PQM
 pl/
 ├─ rtl/<组>/<模块>.v        # 自研 RTL，组名与 sim 侧一致
 ├─ sim/<组>/tb_<模块>.v     # 单元测试平台
+├─ sim/models/              # 行为级 IP 仿真模型 + 它们要读的数据文件
 ├─ sim/build/               # 仿真生成物（已 gitignore）
 ├─ data/                    # 约束与查找表
 ├─ ip/                      # 用到的 IP（xci）
-└─ scripts/                 # Vivado 工程与构建脚本
+├─ scripts/                 # Vivado 工程与构建脚本
+└─ scripts/coe_to_mem.ps1   # COE -> $readmemh 用的 .mem
 ```
 
 `scripts/run_xsim.ps1` 按这个约定自动配对：给定用例名 `<模块>`，它去 `pl/sim/*/tb_<模块>.v` 找测试平台、去同组名的 `pl/rtl/<组>/<模块>.v` 找被测模块。**所以新增模块时，两边的组名必须一致。**
@@ -35,14 +37,32 @@ pl/
 powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -All
 powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -Test pqm_shared_memory_bridge
 ```
-
 用例通过时打印 `PASS: <模块>`；日志写到 `export/xsim_<模块>.log`，并在结尾报告耗时。
+
+`run_xsim.ps1` 会把 `pl/sim/models/*.v` 一并编译（只是编译，不强制实例化，`xelab` 只拉真正用到的层次），并把该目录下的非 `.v` 文件（如 `.mem`）复制到每个用例的 build 目录，供 `$readmemh` 读取。
+
+### 行为级 IP 仿真模型
+
+Vivado 生成的 IP 在纯 xsim 命令行流程里没有可用的仿真源，因此对**参数已冻结**的 IP 写行为级等价模型放在 `pl/sim/models/`：
+
+| 模型 | 对齐的真实 IP | 数据来源 |
+| --- | --- | --- |
+| `rom_atan_lut_1024.v` | 1025x14 单端口 ROM、读延迟 1 拍（取自旧工程 `ip/rom_atan_lut_1024/*.xci`） | `atan_lut_1024.mem`，由旧工程 `data/atan_lut_1024.coe` 经 `pl/scripts/coe_to_mem.ps1` 机械转换 |
+
+模型只用于仿真，**不得加进综合源集**；用它们跑出来的结论只能说到“接口与时序对齐、IP 外围的数字逻辑正确”，不能代替对 IP 自身功能的验证。`fft_stream_adapter`（xfft_0）与 `data_fifo`（blk_mem_gen_fft_fifo_ram）还没有模型，相关模块得等增量 6 的 Vivado 工程里用真实 IP 仿真源来验。
+
 
 **注意**：`.ps1` 必须带 UTF-8 BOM。Windows PowerShell 5.1 对无 BOM 的脚本按 ANSI（本机 GBK）解码，中文注释里的多字节字符会吃掉换行符，导致脚本报 `Unexpected token` 之类的语法错误。
 
 **另一个坑**：`xsim -runall` **即使碰到 `$fatal` 也返回退出码 0**。只看退出码会把失败的用例报成通过（已实际发生一次）。`run_xsim.ps1` 因此改为检查日志内容：既要求没有 `FAIL:` / `Fatal:`，也要求确实打印了 `PASS: <模块>`。
 
 **写激励时避开竞争**：testbench 里驱动 `start` 这类单拍脉冲，要在**时钟低电平期间**翻转（`@(negedge clk)` 之后赋值），否则脉冲和 posedge 采样撞在同一个时间步里会被采到 0。第一次写 AD7606 用例时就踩了这个，表现为控制器一直停在空闲。
+
+**`fork` 里的两个并发任务不能共用循环变量**：驱动任务和消费任务在 `fork ... join` 里并行，如果都用同一个 `integer k` 做下标，两边会互相踩，现象是检查项整体错位（`fft_phase_vector_calc` 用例踩过一次）。驱动用 `m`、消费用 `k`。
+
+**给初始清 RAM 的模块留足等待窗口**：`fft_harmonic_stats`、`freq_harmonic_iir_filter` 复位后要 501 拍把状态 RAM 清零才拉高 ready。若消费侧或驱动侧的等待循环只等 400 拍，第一帧就会整帧错位一项（两个用例各踩过一次）。现在这些用例先等 ready 拉高再开帧，等待上限也放到 800~1200 拍。
+
+**9 bit 字段的越界激励会被截断**：`s_harmonic_order` 只有 9 bit，本想用 600 当“超范围”输入，实际被截成 88（反而在范围内）。要越界就用 501。
 
 ## 实测耗时（用于决定"这事儿值不值得编译一次"）
 
