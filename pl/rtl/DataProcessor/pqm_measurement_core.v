@@ -209,8 +209,7 @@ assign i_full_scale_x100 = full_scale_low_range_active
 assign freq_sample_valid = u_sample_valid && i_sample_valid;
 
 // FFT 周期结果有效且非零时优先作为时域频率归一化输入。
-assign fft_freq_use = fft_fund_freq_valid && !fft_fund_freq_period_raw[31]
-                      && (fft_fund_freq_period_raw != 32'sd0);
+assign fft_freq_use = 1'b0;   // RFG 版没有 FFT 基波跟踪器，频率一律用时域测量结果
 
 // 使用 FFT 相位符号修正无功功率方向，同时保持其绝对值不变。
 assign reactive_q_raw_abs_wire = reactive_q_raw_wire[31]
@@ -358,51 +357,26 @@ time_x100_normalizer #(
 );
 
 // 复用 FFT 顶层，持续输出基波周期以及 0 到 500 次谐波幅值和相位流。
-freq_analysis_top u_freq_analysis_top (
-    .sample_clk(clk), .fft_clk(clk), .rst_n(rst_n),
-    .analysis_enable(1'b1), .sample_valid(freq_sample_valid),
-    .sample_frame_marker(freq_sample_valid),
-    .u_sample_code(u_sample_code), .u_zero_code(u_zero_code),
-    .u_zero_valid(u_zero_valid), .i_sample_code(i_sample_code),
-    .i_zero_code(i_zero_code), .i_zero_valid(i_zero_valid),
-    .m_mag_ready(1'b1), .m_harmonic_ready(ps_harmonic_ready),
-    .sample_accepted(), .sample_dropped(), .fifo_full(), .fifo_prog_full(),
-    .fifo_empty(), .fifo_prog_empty(), .fifo_overflow_warn(), .fifo_overflow(),
-    .fifo_underflow_warn(), .fifo_underflow(), .fifo_fft_frame_ready(),
-    .fifo_wr_data_count(), .fifo_rd_data_count(), .fifo_wr_marker_count(),
-    .fifo_rd_marker_count(), .fifo_wr_fft_frame_count(),
-    .fifo_rd_fft_frame_count(), .fft_config_done(), .fft_input_busy(),
-    .fft_input_tvalid(), .fft_input_tready(), .fft_input_tlast(),
-    .fft_output_valid(), .fft_output_last(), .fft_bin_index(),
-    .fft_status_tdata(), .fft_status_valid(), .event_frame_started(),
-    .event_tlast_unexpected(), .event_tlast_missing(), .event_fft_overflow(),
-    .event_status_channel_halt(), .event_data_in_channel_halt(),
-    .event_data_out_channel_halt(), .selected_raw_frame_active(),
-    .selected_raw_frame_done(), .selected_frame_done(),
-    .selected_raw_bin_count(), .selected_bin_count(),
-    .selected_last_raw_bin_count(), .selected_last_bin_count(),
-    .selected_frame_count(), .m_mag_valid(), .m_mag_last(), .m_bin_index(),
-    .m_u_real(), .m_u_imag(), .m_i_real(), .m_i_imag(), .m_u_mag_sq(),
-    .m_u_mag(), .m_i_mag_sq(), .m_i_mag(), .mag_calc_busy(),
-    .mag_frame_done(), .mag_frame_count(),
-    .fund_freq_period_raw(fft_fund_freq_period_raw),
-    .fund_freq_valid(fft_fund_freq_valid),
+// RFG 版频域链：替掉 freq_analysis_top（无 xfft IP、无流适配器、无 FFT 基波跟踪器）
+pqm_freq_analysis_rfg u_freq_analysis (
+    .clk(clk), .rst_n(rst_n), .enable(1'b1),
+    .i_sample_valid(freq_sample_valid),
+    .i_sample_u(u_sample_code), .i_sample_i(i_sample_code),
+    .i_u_zero_code(u_zero_code), .i_u_zero_valid(u_zero_valid),
+    .i_i_zero_code(i_zero_code), .i_i_zero_valid(i_zero_valid),
+    .o_sample_ready(),
+    .i_harmonic_ready(ps_harmonic_ready),
     .m_harmonic_valid(freq_harmonic_valid),
     .m_harmonic_last(freq_harmonic_last),
     .m_harmonic_order(freq_harmonic_order),
     .m_harmonic_present(freq_harmonic_present),
-    .m_harmonic_u_real(), .m_harmonic_u_imag(), .m_harmonic_i_real(),
-    .m_harmonic_i_imag(), .m_harmonic_u_mag(freq_harmonic_u_mag),
-    .m_harmonic_i_mag(freq_harmonic_i_mag),
-    .m_harmonic_u_pct_x100(freq_harmonic_u_pct_x100),
-    .m_harmonic_i_pct_x100(freq_harmonic_i_pct_x100),
+    .m_u_real(), .m_u_imag(), .m_i_real(), .m_i_imag(),
+    .m_u_mag(freq_harmonic_u_mag), .m_i_mag(freq_harmonic_i_mag),
+    .m_u_pct_x100(freq_harmonic_u_pct_x100), .m_i_pct_x100(freq_harmonic_i_pct_x100),
     .m_phase_vector_valid(), .m_phase_dot(), .m_phase_cross(),
     .m_phase_diff_valid(freq_phase_diff_valid),
     .m_phase_diff_deg_x100(freq_phase_diff_deg_x100),
-    .harmonic_stats_busy(), .harmonic_capture_frame_done(),
-    .harmonic_frame_done(), .harmonic_frame_count(), .harmonic_u_total_mag(),
-    .harmonic_i_total_mag(), .phase_deg_busy(), .phase_deg_frame_done(),
-    .phase_deg_frame_count()
+    .filtered_frame_count()
 );
 
 // 聚合已完成握手的谐波条目，生成 THD、基波相位和直流分量等标量。

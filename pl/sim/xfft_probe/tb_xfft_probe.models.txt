@@ -1,4 +1,0 @@
-# 本用例需要额外编译的 IP 仿真模型目录（仓库相对路径，每行一个）。
-# 由 pl/scripts/gen_xfft_sim_model.tcl 生成，不含在本仓库里（属生成物）。
-pl/ip/xfft_0/sim
-pl/ip/xfft_0/hdl

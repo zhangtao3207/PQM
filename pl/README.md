@@ -98,3 +98,35 @@ pl/ip/xfft_0/hdl
 | 改 PS 端 + 编译 + 上板 | 约 2 分钟 | `build_app.ps1` + `flash_and_run.tcl` |
 | 改顶层 RTL + 综合 + 增量实现 + 上板 | 10~12 分钟 | 顶层综合 5 分 04 秒、实现约 8 分钟 |
 | 动 IP 或 BD 后全量构建 | 20~25 分钟 | 26 个 IP/BD 的 OOC 综合约 12 分钟是固定开销 |
+
+## 频域链改用 RFG（xfft 已移除，2026-09-27）
+
+频域链现在是**全自研、无厂商 IP**：
+
+```
+ADC 采样流 -> pqm_sample_fifo(每通道 64 深) -> pqm_rfg_frontend(2x RFG + 2x 直流累加器)
+           -> pqm_rfg_scale(>>10，变成 16 位频点流) -> fft_magnitude_calc
+           -> fft_harmonic_stats -> fft_phase_vector_calc -> phase_deg_lut_calc
+           -> freq_harmonic_iir_filter
+```
+
+取代了原来的 `freq_analysis_top`（其内部是 `fft_stream_adapter`(xfft_0 + data_fifo/
+blk_mem_gen_fft_fifo_ram) -> `fft_result_receiver` -> ...）。已删除：`fft_stream_adapter`、
+`fft_result_receiver`、`data_fifo`、`fft_fundamental_freq_tracker`、`freq_analysis_top`、
+`pl/ip/xfft_0/`（含 12 MB 生成物）、`pl/scripts/gen_xfft_sim_model.tcl`，以及两个探针用例
+`tb_xfft_probe`、`tb_fft_frame_end_binrev`。后级五个模块**一个字节都没改**，直接复用。
+
+本站的取点：**N=512、K=64**（一帧 = 一个 50 Hz 周期 = 25.6 kHz 采样），只算 1~64 次谐波。
+`pqm_rfg_scale` 的 >>10 是唯一的标度适配，依据是两条链的输出都只用于**比值与角度**
+（占比 = mag*10000/total、THD = sqrt(Σ|X_h|²)/|X_1|、相位 = atan2），尺度无关。
+
+**为什么前面必须有 FIFO**（本轮实测踩出来的）：RFG 只认**样本序列**、不认时间，它算的是
+"连续 N 个采样点的 DFT"。若上游在它未就绪时把采样丢掉（计算期 `o_sample_ready` 为低），
+一帧的 N 个点就不再连续、会跨多个周期，谱随之泄漏——实测自由跑激励下 1 次 u 占比从
+7142 掉到 2508，并冒出 5 次 873 的假谱线；加了 FIFO 之后同一激励精确通过（7153 / 2846 /
+10000 / 相位差 9006）。深度依据：25.6 kSPS 下 L4/D1 的计算期 83840 拍 ≈ 43 个采样；
+若改用 L16/D8（3464 拍）只需几级。
+
+历史说明：上面"IP 仿真源怎么来"与"xfft 实测结论"两节记录的是 xfft 路线在移除前查实的
+结论（XK_INDEX 报自然频点号、位反转输出序会让原帧尾判定提前拉高等），保留作溯源；
+对应的代码与 IP 已不在仓库里。
