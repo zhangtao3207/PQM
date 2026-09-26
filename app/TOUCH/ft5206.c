@@ -135,6 +135,8 @@ u8 FT5206_Scan(u8 mode)
     u8 res=0;
     u8 temp;
     u16 tempsta;
+    u16 x_limit;
+    u16 y_limit;
     static u8 t=0;//控制查询间隔,从而降低CPU占用率
     t++;
 
@@ -198,7 +200,11 @@ u8 FT5206_Scan(u8 mode)
                 }
             }
             res=1;
-            if(tp_dev.x[0] > vd_mode.height || tp_dev.y[0] > vd_mode.width)  //非法数据(坐标超出了)
+            /* 横屏下 x 对应面板宽度、y 对应面板高度。原代码把两者对调，导致 x>480 的
+             * 触摸（例如右上角两个按钮）被判为非法数据丢弃。 */
+            if(tp_dev.touchtype&0X01) { x_limit = vd_mode.width;  y_limit = vd_mode.height; }
+            else                      { x_limit = vd_mode.height; y_limit = vd_mode.width;  }
+            if(tp_dev.x[0] > x_limit || tp_dev.y[0] > y_limit)  //非法数据(坐标超出了)
             {
                 if((mode&0XF)>1)   // 有其他点有数据,则复第二个触点的数据到第一个触点.
                 {

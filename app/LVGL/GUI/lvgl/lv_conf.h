@@ -242,8 +242,8 @@
  * Others
  *-----------*/
 
-/*1: Show CPU usage and FPS count*/
-#define LV_USE_PERF_MONITOR 1
+/*1: Show CPU usage and FPS count. 本工程界面要求与旧 PQM 严格等价，故关闭。*/
+#define LV_USE_PERF_MONITOR 0
 #if LV_USE_PERF_MONITOR
     #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
 #endif

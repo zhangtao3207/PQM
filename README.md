@@ -37,6 +37,13 @@ PQM 的重建工程：以正点原子官方例程 `37_zynq_lvgl` 为基线，只
 2. **官方源文件多为 GBK 编码**（中文注释）。本工程需要修改的文件（`app/main.c`、`app/port/`）已重写为 UTF-8，逻辑保持一致，只改 include 路径、界面入口和命名风格；`app/` 下的官方驱动保持原文件、原编码，一字未动。
 3. **`app/main.c`** 的初始化顺序与官方一致；界面入口由 `lv_demo_music()` 换成 `PQMUI_Init()`，主循环里追加一次 `PQMUI_DemoPoll()`；示例中未被引用的绘图辅助函数声明与配色表已删除。
 4. **界面入口换了**：官方用 LVGL 自带的 music demo，本工程用 `app/pqmui/`，因此不需要 `LVGL/GUI_APP/` 那几十 MB 的示例图片数组。
+5. **`app/LVGL/GUI/lvgl/lv_conf.h` 里 `LV_USE_PERF_MONITOR` 由 1 改为 0**：官方开着它，会在屏幕右下角画一条 FPS/CPU 监视条（实测 50 FPS / 79% CPU）。旧 PQM 的 `lv_conf.h` 没有开，为了画面严格等价必须关掉。
+6. **修了官方触摸驱动的一个 bug**（`app/TOUCH/ft5206.c`）：`FT5206_Scan` 里判断坐标越界时把宽高写反了——
+   `if(tp_dev.x[0] > vd_mode.height || tp_dev.y[0] > vd_mode.width)`。横屏下 x 的范围是 0~799，
+   而 `vd_mode.height` 是 480，于是**任何 x>480 的触摸都被当成非法数据丢掉**，右上角两个按钮
+   （x=560~780）完全点不动；左半屏（如量程按钮 x=145~341）正常。已按横屏/竖屏分别取正确的限值。
+   实测证据：按左半边时 `tp_dev.sta=0xFF01` 且坐标正常；按右上角时 `sta` 显示按下但 `x=y=0xFFFF`
+   （被丢弃后恢复成上一次的值）。
 
 ## 构建与烧录
 
