@@ -19,3 +19,6 @@ pl/ip/xfft_0/*.veo
 pl/ip/xfft_0/*.vho
 pl/ip/xfft_0/*.xml
 pl/sim/ipgen/
+
+# 临时提交信息文件
+commit_msg.txt

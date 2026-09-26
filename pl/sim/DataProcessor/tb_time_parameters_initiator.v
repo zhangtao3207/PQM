@@ -132,7 +132,10 @@ module tb_time_parameters_initiator;
         input signed [31:0] hi;
         input [255:0] tag;
         begin
-            if (actual < lo || actual > hi) begin
+            if (^actual === 1'bx) begin
+                $display("FAIL: %0s = X（未初始化/未驱动）", tag);
+                errors = errors + 1;
+            end else if (actual < lo || actual > hi) begin
                 $display("FAIL: %0s = %0d，期望落在 [%0d, %0d]", tag, actual, lo, hi);
                 errors = errors + 1;
             end

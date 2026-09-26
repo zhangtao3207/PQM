@@ -178,7 +178,10 @@ module tb_pqm_rfg_frontend;
         input integer tol;
         input [255:0] tag;
         begin
-            if (actual < expected - tol || actual > expected + tol) begin
+            if (^actual === 1'bx) begin
+                $display("FAIL: %0s = X（未初始化/未驱动）", tag);
+                errors = errors + 1;
+            end else if (actual < expected - tol || actual > expected + tol) begin
                 $display("FAIL: %0s = %0d，期望 %0d ± %0d", tag, actual, expected, tol);
                 errors = errors + 1;
             end
