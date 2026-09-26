@@ -1,4 +1,4 @@
-# 调用 XSCT 生成并编译 PQM2 应用。
+﻿# 调用 XSCT 生成并编译 PQM2 应用。
 #
 # 用法（在仓库根目录）：
 #   powershell -ExecutionPolicy Bypass -File scripts\build_app.ps1
