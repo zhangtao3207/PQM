@@ -1,0 +1,13 @@
+# 构建产物与临时文件
+export/
+build/
+generated/
+sdk_workspace/
+*.jou
+*.log
+*.str
+*.pb
+*.wdb
+*.vcd
+*.bit
+*.bin
