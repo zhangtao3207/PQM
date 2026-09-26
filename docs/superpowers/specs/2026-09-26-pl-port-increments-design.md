@@ -27,7 +27,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | 搭 xsim 环境，跑通已有的 `PSInterface` 三个 testbench | `pl/rtl/PSInterface/`、`pl/sim/PSInterface/`、`scripts/run_xsim.ps1` | 三个用例打印 `PASS: <模块>` | ✅ 已完成 |
 | 2 | AD7606 并行驱动 | `pl/rtl/ADC_PARALLEL/` + `pl/sim/ADC_PARALLEL/tb_AD7606_Parallel_DRIVER.v` | 芯片行为模型只经引脚交互；三个场景：正常一帧（8 通道数据与整帧拼接正确、通道顺序 1~8、无超时）、FRSTDATA 缺失报超时、BUSY 始终不拉高报超时 | ✅ 已完成（7.5 秒） |
-| 3 | 时域测量（按模块逐个验证，不再一次搬完） | `pl/rtl/DataProcessor/` 时域部分 + 逐个 testbench | 每个模块喂已知波形，与手算值比对 | 进行中：`p2p_measure` ✅（已修一个缺陷）、`ui_rms_measure` ✅（连同它依赖的 4 个基础数学模块）；`power_metrics_calc`、`phase_diff_calc` 待做 |
+| 3 | 时域测量（按模块逐个验证，不再一次搬完） | `pl/rtl/DataProcessor/` 时域部分 + 逐个 testbench | 每个模块喂已知波形，与手算值比对 | ✅ 基本完成：`p2p_measure`（修得一个缺陷）、`ui_rms_measure`（含 4 个基础数学模块）、`power_metrics_calc`、`phase_diff_calc` 均已验证 |
 | 4 | 频率测量与零点跟踪 | 同上（频域部分） | 喂工频与非工频，频率读数正确 | 待做 |
 | 5 | FFT + 谐波 + THD + 直流分量 | 同上 + `ip/xfft_0`、`ip/rom_atan_lut_1024` | 喂已知谐波成分，谱线位置与幅值正确 | 待做 |
 | 6 | 集成进 Vivado 工程：官方视频段（参数逐条照抄官方 `.bd`，之后冻结）+ PQM 测量段 | `pl/scripts/`、`pl/data/PQM2.xdc`、比特流 | 上板：共享内存 magic/ABI 可读、标量快照在更新 | 待做 |
