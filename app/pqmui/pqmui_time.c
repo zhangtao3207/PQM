@@ -32,6 +32,20 @@ static const char *const TimeNames[10] = {
     "Phase", "Active P", "Reactive Q", "Apparent S", "Power factor"
 };
 
+/* 参数行的文字颜色：按通道着色，0 表示沿用默认正文色。 */
+static const u32 TimeRowColors[10] = {
+    0u,                    /* Frequency */
+    PQMUI_COLOR_U_WAVE,    /* U RMS */
+    PQMUI_COLOR_I_WAVE,    /* I RMS */
+    PQMUI_COLOR_U_WAVE,    /* U P-P */
+    PQMUI_COLOR_I_WAVE,    /* I P-P */
+    PQMUI_COLOR_PHASE,     /* Phase */
+    0u,                    /* Active P */
+    0u,                    /* Reactive Q */
+    0u,                    /* Apparent S */
+    0u                     /* Power factor */
+};
+
 static lv_obj_t *TimeChart;
 static lv_chart_series_t *TimeSeries[4];
 static lv_coord_t TimePoints[4][PQMUI_WAVE_COLUMNS];
@@ -132,6 +146,11 @@ void PQMUI_TimeCreate(void)
     for (index = 0u; index < 10u; ++index) {
         TimeValueLabels[index] = PQMUI_CreateText(
             right, 18, (lv_coord_t)(48 + (index * 32u)), "--", 0u);
+        if (TimeRowColors[index] != 0u) {
+            lv_obj_set_style_text_color(TimeValueLabels[index],
+                                        lv_color_hex(TimeRowColors[index]),
+                                        LV_PART_MAIN);
+        }
     }
 }
 

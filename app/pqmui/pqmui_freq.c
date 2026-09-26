@@ -22,6 +22,22 @@ static const char *const FreqNames[5] = {
     "Fundamental", "THD-U", "THD-I", "DC-U", "DC-I"
 };
 
+/* 参数行的文字颜色：按通道着色，0 表示沿用默认正文色。 */
+static const u32 FreqRowColors[5] = {
+    0u,                    /* Fundamental */
+    PQMUI_COLOR_U_WAVE,    /* THD-U */
+    PQMUI_COLOR_I_WAVE,    /* THD-I */
+    PQMUI_COLOR_U_WAVE,    /* DC-U */
+    PQMUI_COLOR_I_WAVE     /* DC-I */
+};
+
+/* 谐波详情三行的颜色：U 级、I 级、相位。 */
+static const u32 FreqHarmonicColors[3] = {
+    PQMUI_COLOR_U_WAVE,
+    PQMUI_COLOR_I_WAVE,
+    PQMUI_COLOR_PHASE
+};
+
 static lv_obj_t *MagnitudeChart;
 static lv_obj_t *PhaseChart;
 static lv_chart_series_t *MagnitudeSeries[2];
@@ -80,7 +96,8 @@ void PQMUI_FreqCreate(void)
     lv_obj_set_pos(MagnitudeChart, 48, 38);
     lv_obj_set_size(MagnitudeChart, 414, 205);
     lv_obj_clear_flag(MagnitudeChart, LV_OBJ_FLAG_SCROLLABLE);
-    lv_chart_set_type(MagnitudeChart, LV_CHART_TYPE_LINE);
+    /* 谐波占比按“每个谐波一根”的方式展示，故用条形图；相位图仍为折线。 */
+    lv_chart_set_type(MagnitudeChart, LV_CHART_TYPE_BAR);
     lv_chart_set_point_count(MagnitudeChart, PQMUI_HARMONIC_POINTS);
     lv_chart_set_range(MagnitudeChart, LV_CHART_AXIS_PRIMARY_Y, 0, 10000);
     lv_chart_set_div_line_count(MagnitudeChart, 5, 6);
@@ -131,10 +148,18 @@ void PQMUI_FreqCreate(void)
     for (index = 0u; index < 5u; ++index) {
         FreqValueLabels[index] = PQMUI_CreateText(
             right, 18, (lv_coord_t)(50 + (index * 38u)), "--", 0u);
+        if (FreqRowColors[index] != 0u) {
+            lv_obj_set_style_text_color(FreqValueLabels[index],
+                                        lv_color_hex(FreqRowColors[index]),
+                                        LV_PART_MAIN);
+        }
     }
     for (index = 0u; index < 3u; ++index) {
         FreqHarmonicLabels[index] = PQMUI_CreateText(
             right, 18, (lv_coord_t)(50 + ((index + 5u) * 38u)), "--", 0u);
+        lv_obj_set_style_text_color(FreqHarmonicLabels[index],
+                                    lv_color_hex(FreqHarmonicColors[index]),
+                                    LV_PART_MAIN);
     }
 }
 
