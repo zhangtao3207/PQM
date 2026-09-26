@@ -130,3 +130,27 @@ blk_mem_gen_fft_fifo_ram) -> `fft_result_receiver` -> ...）。已删除：`fft_
 历史说明：上面"IP 仿真源怎么来"与"xfft 实测结论"两节记录的是 xfft 路线在移除前查实的
 结论（XK_INDEX 报自然频点号、位反转输出序会让原帧尾判定提前拉高等），保留作溯源；
 对应的代码与 IP 已不在仓库里。
+
+## rom_atan_lut_1024：从旧工程照搬（2026-09-27）
+
+频域链里唯一剩下的厂商 IP 是 `rom_atan_lut_1024`（相位查表，被 `phase_deg_lut_calc`
+用于频域、被 `time_x100_normalizer` 用于时域）。已按 xfft 那次的同一套路从旧工程照搬：
+
+- 源：旧工程 `FPGA/ip/rom_atan_lut_1024/rom_atan_lut_1024.xci` + `FPGA/data/atan_lut_1024.coe`
+- 落到 `pl/ip/rom_atan_lut_1024/`（xci + COE 提交，生成物忽略）
+- **两个坑都要处理**（与 xfft 相同）：
+  1. 旧 xci 是 Vivado 2018.3 定制的，在 2022.2 下 `IS_LOCKED=1`，必须先 `upgrade_ip`
+     （实测 Block Memory Generator 8.4，revision 2 → 5，升级后 `IS_LOCKED=0`）；
+  2. xci 里的 `Coe_File` 是相对旧工程目录的路径，照搬时必须同时拷 COE 并改写成
+     同目录下的 `atan_lut_1024.coe`，否则生成时找不到初始化文件。
+- 重新生成：`vivado -mode batch -source pl/scripts/gen_rom_sim_model.tcl`
+  （产物 `sim/rom_atan_lut_1024.v`，**普通 Verilog**，不像 xfft 是加密 VHDL；
+   它运行时读 `rom_atan_lut_1024.mif`）
+
+**仿真仍用行为级模型 `pl/sim/models/rom_atan_lut_1024.v`**，理由：接口逐位一致
+（`clka/ena/addra[10:0]/douta[13:0]`，1025×14、读延迟 1 拍，参数取自 xci），数据取自
+同一份 COE，且不需要先跑 Vivado 生成。真 xci 放在仓库里是**为综合准备**的。
+
+注意：行为级模型与生成的 `sim/rom_atan_lut_1024.v` **同名模块，不能同时编译**。
+harness 只编 `pl/sim/models/` 根目录与各用例清单列出的目录、不会碰 `pl/ip/**`，
+所以结构上不会撞；若要改用真模型，必须把 `pl/sim/models/rom_atan_lut_1024.v` 移出。

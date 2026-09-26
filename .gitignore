@@ -16,3 +16,12 @@ sdk_workspace/
 
 # 临时提交信息文件
 commit_msg.txt
+
+# ROM IP 的 Vivado 生成物（xci 与 coe 是源，要提交）
+pl/ip/rom_atan_lut_1024/sim/
+pl/ip/rom_atan_lut_1024/simulation/
+pl/ip/rom_atan_lut_1024/*.mif
+pl/ip/rom_atan_lut_1024/*.veo
+pl/ip/rom_atan_lut_1024/*.vho
+pl/ip/rom_atan_lut_1024/*.xml
+pl/sim/ipgen/
