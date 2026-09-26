@@ -11,3 +11,11 @@ sdk_workspace/
 *.vcd
 *.bit
 *.bin
+
+# Vivado 生成物：IP 的仿真源与生成工程（xci 本身是源，要提交）
+pl/ip/xfft_0/sim/
+pl/ip/xfft_0/hdl/
+pl/ip/xfft_0/*.veo
+pl/ip/xfft_0/*.vho
+pl/ip/xfft_0/*.xml
+pl/sim/ipgen/

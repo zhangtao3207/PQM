@@ -39,17 +39,27 @@ powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -Test pqm_shared_m
 ```
 用例通过时打印 `PASS: <模块>`；日志写到 `export/xsim_<模块>.log`，并在结尾报告耗时。
 
-`run_xsim.ps1` 会把 `pl/sim/models/*.v` 一并编译（只是编译，不强制实例化，`xelab` 只拉真正用到的层次），并把该目录下的非 `.v` 文件（如 `.mem`）复制到每个用例的 build 目录，供 `$readmemh` 读取。
+`run_xsim.ps1` 默认把 `pl/sim/models/` **根目录**下的模型编给所有用例（只编译、不强制实例化，`xelab` 只拉真正用到的层次），并把同一目录下的非源码文件（如 `.mem`）复制到每个用例的 build 目录，供 `$readmemh` 读取。
 
-### 行为级 IP 仿真模型
+更重的 IP 仿真源由用例按需引入：在 `pl/sim/<组>/tb_<用例>.models.txt` 里逐行写仓库相对目录（递归收集），例如
 
-Vivado 生成的 IP 在纯 xsim 命令行流程里没有可用的仿真源，因此对**参数已冻结**的 IP 写行为级等价模型放在 `pl/sim/models/`：
+```
+pl/ip/xfft_0/sim
+pl/ip/xfft_0/hdl
+```
 
-| 模型 | 对齐的真实 IP | 数据来源 |
-| --- | --- | --- |
-| `rom_atan_lut_1024.v` | 1025x14 单端口 ROM、读延迟 1 拍（取自旧工程 `ip/rom_atan_lut_1024/*.xci`） | `atan_lut_1024.mem`，由旧工程 `data/atan_lut_1024.coe` 经 `pl/scripts/coe_to_mem.ps1` 机械转换 |
+这样 12 MB 的加密 VHDL 只会进到真正需要它的用例（实测 `tb_xfft_probe` 编译+运行约 63 秒，其余用例仍为 8~10 秒）。
 
-模型只用于仿真，**不得加进综合源集**；用它们跑出来的结论只能说到“接口与时序对齐、IP 外围的数字逻辑正确”，不能代替对 IP 自身功能的验证。`fft_stream_adapter`（xfft_0）与 `data_fifo`（blk_mem_gen_fft_fifo_ram）还没有模型，相关模块得等增量 6 的 Vivado 工程里用真实 IP 仿真源来验。
+### IP 仿真源怎么来
+
+| 来源 | 做法 |
+| --- | --- |
+| `rom_atan_lut_1024` | 写行为级等价模型 `pl/sim/models/rom_atan_lut_1024.v`（1025x14、读延迟 1 拍），数据由 `pl/scripts/coe_to_mem.ps1` 从旧工程 COE 机械转换 |
+| `xfft_0` | **用真实仿真源**：`pl/scripts/gen_xfft_sim_model.tcl` 只生成 simulation target，产物落 `pl/ip/xfft_0/{sim,hdl}/`（已 gitignore，xci 本身提交） |
+
+`pl/ip/xfft_0/xfft_0.xci` 是从旧工程拷来的副本（旧工程定制于 **Vivado 2018.3**，在 2022.2 下是 locked 状态，必须先 `upgrade_ip`）。升级只动版本元数据：升级前后的 26 条用户参数已逐行比对，**零差异**（脚本会把快照存到 `export/xfft_params_before/after.txt`）。
+
+行为级模型只用于仿真，**不得加进综合源集**；用它们跑出来的结论只能说到“接口与时序对齐、IP 外围的数字逻辑正确”。用真实仿真源跑的结论可以说到 IP 自己的行为（例如 `tb_xfft_probe` 就是在测 xfft 输出的语义）。
 
 
 **注意**：`.ps1` 必须带 UTF-8 BOM。Windows PowerShell 5.1 对无 BOM 的脚本按 ANSI（本机 GBK）解码，中文注释里的多字节字符会吃掉换行符，导致脚本报 `Unexpected token` 之类的语法错误。
@@ -63,6 +73,22 @@ Vivado 生成的 IP 在纯 xsim 命令行流程里没有可用的仿真源，因
 **给初始清 RAM 的模块留足等待窗口**：`fft_harmonic_stats`、`freq_harmonic_iir_filter` 复位后要 501 拍把状态 RAM 清零才拉高 ready。若消费侧或驱动侧的等待循环只等 400 拍，第一帧就会整帧错位一项（两个用例各踩过一次）。现在这些用例先等 ready 拉高再开帧，等待上限也放到 800~1200 拍。
 
 **9 bit 字段的越界激励会被截断**：`s_harmonic_order` 只有 9 bit，本想用 600 当“超范围”输入，实际被截成 88（反而在范围内）。要越界就用 501。
+## xfft 实测结论（2026-09-27）
+
+用真实仿真源（`pl/sim/xfft_probe/`，配置与设计用的常量完全一致）测出来的事实：
+
+| 事项 | 实测结果 |
+| --- | --- |
+| 输出序 | 流位置 p 上放的是**自然频点 bitrev11(p)**（bin 8 出现在位置 128、bin 16 出现在位置 64）⇒ 确实是 `bit_reversed_order` |
+| `m_axis_data_tuser[10:0]` | 报的是**自然频点号**（bin 8 那项 tuser=8、bin 16 那项 tuser=16，范围 0..2047） ⇒ `fft_stream_adapter` 的 `fft_bin_index = tuser[10:0]` **假设成立，不是缺陷** |
+| 缩放调度 `22'h155555` | 每级 1 bit、共 11 级 = 总缩放 1/2048，正好抵消 2048 点 FFT 的增长；实测方波基波幅度与理论值吻合（通道 0 峰值 |-5095| ≈ (4A/π)·1024/2048 = 5093），且无 OVFLO |
+| 自检 | 幅度±8000/±4000 的两路方波共 192 条谱线，实测非零频点数正好 192 |
+
+**由此暴露的一个真实缺陷**（已用 `tb_fft_frame_end_binrev` 复现）：`fft_result_receiver` 用
+`selected_last_input = selected_input && (s_bin_index == LAST_BIN)` 判定正半谱帧尾，而 `freq_analysis_top` 给的 `LAST_ANALYSIS_BIN = 1024`。在位反转输出序下位置 1 上就是 bin 1024，于是**帧尾标志在第 2 个（共 1025 个）选中频点上就拉高**（已复现：首次拉高那一项 bin=1024，`m_bin_last` 只拉高 1 次），下游 `fft_harmonic_stats` 会在 `ST_CAPTURE` 提前退出，该帧剩下的 1023 个频点不会被统计。
+
+该用例当前带 `EXPECT_DEFECT = 1`（以 DEFECT-CONFIRMED 通过，保证全量回归可运行）；**修好 RTL 后要把它改成 0**，它就变成正式回归用例。
+
 
 ## 实测耗时（用于决定"这事儿值不值得编译一次"）
 

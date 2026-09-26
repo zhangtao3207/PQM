@@ -60,6 +60,10 @@
 ## 7 风险
 
 1. **测量链从未验证过**：旧工程 `FPGA/sim/` 下只有 `PSInterface` 的 4 个 testbench，`DataProcessor/`（约 7000 行）与 `ADC_PARALLEL/` 一个仿真都没有。因此增量 2~5 的 testbench 不是"补文档"，而是**首次验证**。
-   **已经应验**：增量 3 的 `p2p_measure` 就查出一个真实缺陷——窗口的最后一个采样若刷新了极值，`p2p_raw` 用的是刷新前的 `min_code`/`max_code`（寄存器），窗口长度为 1 时结果完全错（实测 65537）。已修并留下回归用例。
+   **已经应验两次**：
+   - 增量 3 的 `p2p_measure`：窗口的最后一个采样若刷新了极值，`p2p_raw` 用的是刷新前的 `min_code`/`max_code`（寄存器），窗口长度为 1 时结果完全错（实测 65537）。已修并留下回归用例。
+   - **增量 5（2026-09-27，未修）：正半谱帧尾判定依赖输出序。** 用真实 xfft 仿真源实测确认 xfft_0 是 `bit_reversed_order`（流位置 p 上放自然频点 bitrev11(p)），而 `fft_result_receiver` 用 `s_bin_index == LAST_BIN(1024)` 判帧尾，`freq_analysis_top` 给的就是 1024；位反转序下 bin 1024 出现在第 2 个选中频点，于是帧尾标志提前拉高，下游 `fft_harmonic_stats` 提前退出 `ST_CAPTURE`，一帧 1025 个正半谱频点里只有前 2 个被统计。已由 `pl/sim/xfft_probe/tb_fft_frame_end_binrev` 复现（带 `EXPECT_DEFECT=1` 先保证回归可运行）。
+     可选修法：① 帧尾改为与顺序无关的计数判定（局部改动，不动 IP，推荐）；② 把 xfft 改成 `natural_order`（要动已冻结的 IP，且会多出重排 BRAM）。
+   附带确认：`fft_bin_index = fft_output_tuser[10:0]` 的假设**成立**（XK_INDEX 报的就是自然频点号），不是缺陷。
 2. **硬件前提**：AD7606 模块需实际插在扩展口上才能做增量 6/7 的上板验证。
 3. **顶层 RTL 变大后综合时间会涨**：测量链并入顶层后，顶层综合可能明显超过 5 分钟。若确实如此，再考虑把测量链做成自研 OOC 模块——但要清楚代价是**切断跨边界优化**，时序可能变差。
