@@ -1,0 +1,3 @@
+# 整链用例：激励向量 + 复用的 DataProcessor 下游模块（幅值/谐波统计）
+pl/sim/RFG/front_end_vectors
+pl/rtl/DataProcessor

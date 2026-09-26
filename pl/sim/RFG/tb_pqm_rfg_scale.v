@@ -226,10 +226,11 @@ module tb_pqm_rfg_scale;
         // 数值（注意算术右移对负数是向下取整）
         check_val(ur[0], 0,   1, "0 次 u_re");
         check_val(ir[0], 0,   1, "0 次 i_re");
+        // 改为四舍五入后： (511947+512)>>10=500、(-29+512)>>10=0、(-104+512)>>10=0、(-409632+512)>>10=-400
         check_val(ur[1], 500, 2, "1 次 u_re");
-        check_val(ui[1], -1,  2, "1 次 u_im");
-        check_val(ir[1], -1,  2, "1 次 i_re");
-        check_val(ii[1], -401, 2, "1 次 i_im");
+        check_val(ui[1], 0,   2, "1 次 u_im");
+        check_val(ir[1], 0,   2, "1 次 i_re");
+        check_val(ii[1], -400, 2, "1 次 i_im");
         check_val(ur[3], 200, 2, "3 次 u_re");
         check_val(ui[3], 0,   1, "3 次 u_im");
         for (i = 2; i <= C_K; i = i + 1) begin

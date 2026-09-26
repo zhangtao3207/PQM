@@ -62,11 +62,14 @@ module pqm_rfg_scale #(
     assign m_bin_last   = i_item_last;
     assign m_bin_index  = {2'b00, i_order};
 
-    // 算术右移保持符号；取低 16 位（溢出边界见文件头）
-    assign m_u_real = (i_u_real >>> SHIFT);
-    assign m_u_imag = (i_u_imag >>> SHIFT);
-    assign m_i_real = (i_i_real >>> SHIFT);
-    assign m_i_imag = (i_i_imag >>> SHIFT);
+    // 四舍五入（加半个 LSB 再算术右移）：直接截断会让噪声产生固定负偏置
+    // （每个静默次的负残差都朝 -inf 舍），而静默次噪声会抬高"总幅值"、
+    // 从而把所有占比整体压低。四舍五入把该偏置大致砍半。
+    localparam signed [31:0] ROUND_BIAS = 32'sd1 <<< (SHIFT - 1);
+    assign m_u_real = (i_u_real + ROUND_BIAS) >>> SHIFT;
+    assign m_u_imag = (i_u_imag + ROUND_BIAS) >>> SHIFT;
+    assign m_i_real = (i_i_real + ROUND_BIAS) >>> SHIFT;
+    assign m_i_imag = (i_i_imag + ROUND_BIAS) >>> SHIFT;
 
     // 末项握手完成即一帧结束
     reg frame_done_reg;
