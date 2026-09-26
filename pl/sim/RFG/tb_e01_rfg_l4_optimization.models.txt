@@ -1,0 +1,2 @@
+# 本用例的额外源与数据目录：RTL 由 pl/rtl/RFG 组自动收集，这里只补向量文件
+pl/sim/RFG/vectors

@@ -57,11 +57,12 @@ Write-Host "xsim : $vivadoBin"
 
 # 收集要跑的用例：tb_<模块>.v 的 <模块> 就是用例名，并在同名的 rtl 组目录下找被测模块。
 if ($All) {
-    $tests = Get-ChildItem -Path $simRoot -Recurse -Filter 'tb_*.v' -File |
+    $tests = Get-ChildItem -Path $simRoot -Recurse -File -Include 'tb_*.v', 'tb_*.sv' |
         ForEach-Object { [pscustomobject]@{ Name = $_.BaseName.Substring(3); Group = $_.Directory.Name } }
 } elseif ($Test) {
-    $tb = Get-ChildItem -Path $simRoot -Recurse -Filter "tb_$Test.v" -File | Select-Object -First 1
-    if (-not $tb) { throw "Testbench not found: pl/sim/**/tb_$Test.v" }
+    $tb = Get-ChildItem -Path $simRoot -Recurse -File -Include "tb_$Test.v", "tb_$Test.sv" |
+        Select-Object -First 1
+    if (-not $tb) { throw "Testbench not found: pl/sim/**/tb_$Test.v|.sv" }
     $tests = @([pscustomobject]@{ Name = $Test; Group = $tb.Directory.Name })
 } else {
     throw 'Specify -Test <module> or -All'
@@ -75,7 +76,11 @@ $failures = 0
 foreach ($t in $tests) {
     $name = $t.Name
     $group = $t.Group
+    # testbench 允许是 .v 或 SystemVerilog 的 .sv
     $testbench = Join-Path $simRoot (Join-Path $group "tb_$name.v")
+    if (-not (Test-Path -LiteralPath $testbench)) {
+        $testbench = Join-Path $simRoot (Join-Path $group "tb_$name.sv")
+    }
     # 被测模块允许放在组目录的任意子目录下（DataProcessor 保留了旧工程的分层）
     $groupRoot = Join-Path $rtlRoot $group
     $dut = Get-ChildItem -Path $groupRoot -Recurse -Filter "$name.v" -File -ErrorAction SilentlyContinue |
@@ -89,10 +94,6 @@ foreach ($t in $tests) {
     # 允许只有 testbench、没有自研 RTL 的用例（例如直接对 IP 仿真模型做的探针用例）：
     # 组名在 pl/rtl 下不存在时，只编模型 + testbench。
     $hasGroupRtl = Test-Path -LiteralPath $groupRoot
-    if ($hasGroupRtl -and -not $dut) {
-        Write-Host "SKIP: 组 $group 下找不到被测模块 $name.v"
-        continue
-    }
 
     New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
     Set-Content -LiteralPath $logPath -Value "=== xsim $name ===" -Encoding UTF8
@@ -118,7 +119,7 @@ foreach ($t in $tests) {
     $modelSrcVhd = @()
     $modelData   = @()
     foreach ($d in $modelDirs) {
-        $modelSrcV   += @(Get-ChildItem -Path $d -Recurse -Filter '*.v' -File | ForEach-Object { $_.FullName })
+        $modelSrcV   += @(Get-ChildItem -Path (Join-Path $d '*') -Recurse -Include '*.v', '*.sv' -File | ForEach-Object { $_.FullName })
         $modelSrcVhd += @(Get-ChildItem -Path (Join-Path $d '*') -Recurse -Include '*.vhd', '*.vhdl' -File | ForEach-Object { $_.FullName })
         $modelData   += @(Get-ChildItem -Path $d -Recurse -File |
             Where-Object { $_.Extension -notin @('.v', '.vhd', '.vhdl', '.sv') } | ForEach-Object { $_.FullName })
@@ -133,7 +134,7 @@ foreach ($t in $tests) {
         # 依赖 IP 的模块（xfft / rom_atan_lut 等）只做语法分析，不会进到 xelab 的层次里。
         $groupRtl = @()
         if ($hasGroupRtl) {
-            $groupRtl = @(Get-ChildItem -Path $groupRoot -Recurse -Filter '*.v' -File |
+            $groupRtl = @(Get-ChildItem -Path (Join-Path $groupRoot '*') -Recurse -Include '*.v', '*.sv' -File |
                 ForEach-Object { $_.FullName })
             if (-not $groupRtl) { throw "组内没有 RTL 文件：$groupRoot" }
         }
@@ -147,7 +148,7 @@ foreach ($t in $tests) {
         if ($modelSrcVhd.Count -gt 0) {
             Invoke-Tool 'xvhdl' (@('-work', 'xil_defaultlib') + $modelSrcVhd) $logPath
         }
-        Invoke-Tool 'xvlog' (@('-work', 'xil_defaultlib') + $incArgs + $groupRtl + $modelSrcV + @($testbench)) $logPath
+        Invoke-Tool 'xvlog' (@('-sv', '-work', 'xil_defaultlib') + $incArgs + $groupRtl + $modelSrcV + @($testbench)) $logPath
         $elabArgs = @("xil_defaultlib.tb_$name", '-s', "sim_$name", '-L', 'xil_defaultlib')
         if ($Debug) { $elabArgs += @('--debug', 'typical') }
         Invoke-Tool 'xelab' $elabArgs $logPath

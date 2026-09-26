@@ -70,6 +70,9 @@ module fft_result_receiver #(
     output reg  [15:0]        frame_count
 );
 
+// 一帧原始 FFT 结果里落在 [FIRST_BIN, LAST_BIN] 内的频点总数
+localparam [11:0] SELECTED_BIN_TOTAL = LAST_BIN - FIRST_BIN + 1;
+
 reg                m_bin_valid_reg;
 reg                m_bin_last_reg;
 reg [10:0]         m_bin_index_reg;
@@ -98,7 +101,12 @@ assign s_fft_ready       = !selected_input || output_can_accept;
 assign input_fire        = s_fft_valid && s_fft_ready;
 assign selected_fire     = input_fire && selected_input;
 assign output_fire       = m_bin_valid_reg && m_bin_ready;
-assign selected_last_input = selected_input && (s_bin_index == LAST_BIN);
+// 帧尾判定必须与输出顺序无关：xfft_0 固定为 bit_reversed_order，流位置 p 上是自然频点
+// bitrev(p)，于是 bin == LAST_BIN 并不在帧尾（2048 点时 bin 1024 出现在第 2 个输出，
+// 用它的原始写法会让帧尾标志提前拉高，下游 fft_harmonic_stats 只统计到 2 个频点）。
+// 改用“本帧已输出的选中频点数”判定：FFT 一帧必然给出 0..N-1 每个频点各一次，
+// 所以一帧里的选中频点数就是 LAST_BIN - FIRST_BIN + 1。
+assign selected_last_input = selected_input && (selected_bin_count_next == SELECTED_BIN_TOTAL);
 
 // 组合生成当前帧计数的下一个状态，供帧尾统计锁存使用。
 assign raw_bin_count_next =

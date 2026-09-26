@@ -30,7 +30,7 @@ module tb_fft_frame_end_binrev;
     localparam integer FIRST_BIN      = 0;
     localparam integer LAST_BIN       = 1024;   // freq_analysis_top 的 LAST_ANALYSIS_BIN
     localparam integer EXPECT_SELECTED = LAST_BIN - FIRST_BIN + 1;  // 1025
-    localparam integer EXPECT_DEFECT  = 1;
+    localparam integer EXPECT_DEFECT  = 0;   // 缺陷已修（帧尾改为计数判定）
 
     reg clk = 1'b0;
     reg rst_n = 1'b0;
