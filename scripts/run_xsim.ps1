@@ -19,6 +19,7 @@ param(
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $simRoot  = Join-Path $repoRoot 'pl\sim'
+$modelRoot = Join-Path $simRoot 'models'
 $rtlRoot  = Join-Path $repoRoot 'pl\rtl'
 $buildRoot = Join-Path $simRoot 'build'
 $logRoot  = Join-Path $repoRoot 'export'
@@ -93,6 +94,17 @@ foreach ($t in $tests) {
     New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
     Set-Content -LiteralPath $logPath -Value "=== xsim $name ===" -Encoding UTF8
 
+    # 行为级 IP 仿真模型（如 rom_atan_lut_1024）与它们需要的数据文件（$readmemh 用）。
+    # 只编译、不强制实例化；xelab 只把真正用到的层次拉进来。
+    $modelSrc = @()
+    $modelData = @()
+    if (Test-Path -LiteralPath $modelRoot) {
+        $modelSrc  = @(Get-ChildItem -Path $modelRoot -Filter '*.v'   -File | ForEach-Object { $_.FullName })
+        $modelData = @(Get-ChildItem -Path $modelRoot -File | Where-Object { $_.Extension -ne '.v' } | ForEach-Object { $_.FullName })
+    }
+    foreach ($f in $modelData) { Copy-Item -LiteralPath $f -Destination $buildDir -Force }
+
+
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
     Push-Location $buildDir
     try {
@@ -105,7 +117,7 @@ foreach ($t in $tests) {
         foreach ($d in @($groupRoot) + (Get-ChildItem -Path $groupRoot -Recurse -Directory | ForEach-Object { $_.FullName })) {
             $incArgs += @('-i', $d)
         }
-        Invoke-Tool 'xvlog' (@('-work', 'xil_defaultlib') + $incArgs + $groupRtl + @($testbench)) $logPath
+        Invoke-Tool 'xvlog' (@('-work', 'xil_defaultlib') + $incArgs + $groupRtl + $modelSrc + @($testbench)) $logPath
         $elabArgs = @("xil_defaultlib.tb_$name", '-s', "sim_$name")
         if ($Debug) { $elabArgs += @('--debug', 'typical') }
         Invoke-Tool 'xelab' $elabArgs $logPath
