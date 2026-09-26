@@ -75,16 +75,18 @@ foreach ($t in $tests) {
     $name = $t.Name
     $group = $t.Group
     $testbench = Join-Path $simRoot (Join-Path $group "tb_$name.v")
-    $dut = Join-Path $rtlRoot (Join-Path $group "$name.v")
-    $incDir = Join-Path $rtlRoot $group
+    # 被测模块允许放在组目录的任意子目录下（DataProcessor 保留了旧工程的分层）
+    $groupRoot = Join-Path $rtlRoot $group
+    $dut = Get-ChildItem -Path $groupRoot -Recurse -Filter "$name.v" -File -ErrorAction SilentlyContinue |
+        Select-Object -First 1
     $buildDir = Join-Path $buildRoot $name
     $logPath = Join-Path $logRoot "xsim_$name.log"
 
     Write-Host ""
     Write-Host "=== $name ($group) ==="
 
-    if (-not (Test-Path -LiteralPath $dut)) {
-        Write-Host "SKIP: 被测模块不存在 $dut"
+    if (-not $dut) {
+        Write-Host "SKIP: 组 $group 下找不到被测模块 $name.v"
         continue
     }
 
@@ -94,11 +96,16 @@ foreach ($t in $tests) {
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
     Push-Location $buildDir
     try {
-        # 整组的 RTL 一起编：被测模块可能有子模块（AD7606_Parallel_DRIVER 内嵌 ad7606_parallel_ctrl）
-        $groupRtl = Get-ChildItem -Path (Join-Path $rtlRoot $group) -Filter '*.v' -File |
+        # 整组 RTL 一起编（递归）：被测模块可能有子模块，旧工程还保留了分层目录。
+        # 依赖 IP 的模块（xfft / rom_atan_lut 等）只做语法分析，不会进到 xelab 的层次里。
+        $groupRtl = Get-ChildItem -Path $groupRoot -Recurse -Filter '*.v' -File |
             ForEach-Object { $_.FullName }
-        if (-not $groupRtl) { throw "组内没有 RTL 文件：$(Join-Path $rtlRoot $group)" }
-        Invoke-Tool 'xvlog' (@('-work', 'xil_defaultlib', '-i', $incDir) + $groupRtl + @($testbench)) $logPath
+        if (-not $groupRtl) { throw "组内没有 RTL 文件：$groupRoot" }
+        $incArgs = @()
+        foreach ($d in @($groupRoot) + (Get-ChildItem -Path $groupRoot -Recurse -Directory | ForEach-Object { $_.FullName })) {
+            $incArgs += @('-i', $d)
+        }
+        Invoke-Tool 'xvlog' (@('-work', 'xil_defaultlib') + $incArgs + $groupRtl + @($testbench)) $logPath
         $elabArgs = @("xil_defaultlib.tb_$name", '-s', "sim_$name")
         if ($Debug) { $elabArgs += @('--debug', 'typical') }
         Invoke-Tool 'xelab' $elabArgs $logPath

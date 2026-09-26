@@ -22,6 +22,9 @@ pl/
 
 - 源：`../PQM/FPGA/rtl/PSInterface/`、`../PQM/FPGA/sim/PSInterface/`
 - `pl/rtl/ADC_PARALLEL/` + `pl/sim/ADC_PARALLEL/`：AD7606 并行采集通路（`AD7606_Parallel_DRIVER` 与它内嵌的 `ad7606_parallel_ctrl`）及其测试平台。
+- `pl/rtl/DataProcessor/` + `pl/sim/DataProcessor/`：测量算法，**保留旧工程的分层目录**（`BasicMath/`、`SignalProcessing/TimeAnalysis/...`），所以运行脚本按递归方式找被测模块并整组编译。
+
+**喂数据的约定**：测量算法用的是**单调码值**。AD7606 输出是二进制补码，`pqm_pl_core` 先把它 XOR `0x8000` 转成偏移二进制（0x8000 为零点）才送进测量核心；`p2p_measure` 这类模块内部用无符号比较求最大/最小，必须按这个前提写激励。
 - 只搬了 PQM2 需要的部分，以下两个模块**有意不搬**：
   - `pqm_touch_iobuf.v`：旧设计里触摸经 PL 转发；PQM2 的触摸是 PS EMIO IIC 直连，已验证可用。
   - `pqm_axis_rgb565_to_rgb888.v`：旧 VDMA 是 16 位 RGB565 才需要它；官方 VDMA 是 24 位。
