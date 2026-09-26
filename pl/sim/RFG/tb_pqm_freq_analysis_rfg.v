@@ -94,7 +94,7 @@ module tb_pqm_freq_analysis_rfg;
     always @(negedge clk) begin
         i_sample_u = u_tab[sample_idx % C_N];
         i_sample_i = i_tab[sample_idx % C_N];
-        if (o_sample_ready) sample_idx = sample_idx + 1;
+        sample_idx = sample_idx + 1;   // 自由跑：ADC 一直在产数据，FIFO 负责不丢连续性
     end
 
     // 收谐波流；第一帧记录关键项
@@ -149,7 +149,7 @@ module tb_pqm_freq_analysis_rfg;
         repeat (20) @(posedge clk);
 
         $display("");
-        $display("========== RFG 频域顶层（按 ready 推进，%0d 帧） ==========", FRAMES);
+        $display("========== RFG 频域顶层（自由跑采样 + 前置 FIFO，%0d 帧） ==========", FRAMES);
         $display("帧数 = %0d（期望 %0d），filtered_frame_count = %0d",
                  frame_no, FRAMES, filtered_frame_count);
         $display("次数 :  u_pct  i_pct");

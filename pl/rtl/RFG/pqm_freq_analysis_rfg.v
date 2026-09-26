@@ -103,8 +103,34 @@ module pqm_freq_analysis_rfg #(
         end
     end
 
-    // ---------------- RFG 前端 + 缩放 ----------------
-    wire        fe_sample_ready;
+    // ---------------- 每通道一级小缓冲 ----------------
+    // 让 RFG 每次都能取到**连续的** N 个采样点：ADC 一直在产数据，
+    // RFG 计算期的采样先存进 FIFO，下一帧再取，不会出现"跨周期的 512 点"。
+    wire [15:0] fifo_u_dout, fifo_i_dout;
+    wire        fifo_u_empty, fifo_i_empty, fifo_u_full, fifo_i_full;
+    wire        fifo_u_ovf, fifo_i_ovf;
+    wire [6:0]  fifo_u_cnt, fifo_i_cnt;
+
+    wire        fifo_sample_valid = !fifo_u_empty && !fifo_i_empty;
+    wire        fifo_sample_pop   = fe_sample_ready && fifo_sample_valid;
+
+    pqm_sample_fifo #(.DEPTH(64), .AW(6)) u_fifo_u (
+        .clk(clk), .rst_n(rst_n),
+        .i_wr_en(i_sample_valid && enable), .i_din(u_centered),
+        .i_rd_en(fifo_sample_pop), .o_dout(fifo_u_dout),
+        .o_empty(fifo_u_empty), .o_full(fifo_u_full),
+        .o_overflow(fifo_u_ovf), .o_count(fifo_u_cnt)
+    );
+
+    pqm_sample_fifo #(.DEPTH(64), .AW(6)) u_fifo_i (
+        .clk(clk), .rst_n(rst_n),
+        .i_wr_en(i_sample_valid && enable), .i_din(i_centered),
+        .i_rd_en(fifo_sample_pop), .o_dout(fifo_i_dout),
+        .o_empty(fifo_i_empty), .o_full(fifo_i_full),
+        .o_overflow(fifo_i_ovf), .o_count(fifo_i_cnt)
+    );
+
+    // ---------------- RFG 前端 + 缩放 ----------------    wire        fe_sample_ready;
     wire        fe_item_valid, fe_item_ready;
     wire [8:0]  fe_order;
     wire signed [31:0] fe_u_real, fe_u_imag, fe_i_real, fe_i_imag;
@@ -114,8 +140,8 @@ module pqm_freq_analysis_rfg #(
         .C_N(C_N), .C_K(C_K), .C_L(C_L), .C_D(C_D)
     ) u_frontend (
         .clk(clk), .rst_n(rst_n),
-        .i_start(start_pulse), .i_sample_valid(i_sample_valid && enable),
-        .i_sample_u(u_centered), .i_sample_i(i_centered),
+        .i_start(start_pulse), .i_sample_valid(fifo_sample_valid),
+        .i_sample_u(fifo_u_dout), .i_sample_i(fifo_i_dout),
         .i_zero_code(16'd0),
         .o_sample_ready(fe_sample_ready),
         .o_item_valid(fe_item_valid), .i_item_ready(fe_item_ready),
@@ -299,6 +325,6 @@ module pqm_freq_analysis_rfg #(
         .filtered_frame_count(filtered_frame_count)
     );
 
-    assign o_sample_ready = fe_sample_ready;
+    assign o_sample_ready = !fifo_u_full && !fifo_i_full;
 
 endmodule
