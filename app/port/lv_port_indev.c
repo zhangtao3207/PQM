@@ -1,8 +1,15 @@
+/*
+ * LVGL 触摸输入接口适配。
+ *
+ * LVGL 周期调用 touchpad_read，这里每次都让触摸驱动扫一次屏，把按下的坐标
+ * 交给图形库。
+ */
+
 #if 1
 
-#include "lv_port_indev_template.h"
-#include "../../lvgl.h"
-#include "../../../../../src/TOUCH/touch.h"
+#include "lv_port_indev.h"
+
+#include "TOUCH/touch.h"
 
 static void touchpad_init(void);
 static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
@@ -16,10 +23,10 @@ void lv_port_indev_init(void)
 
     static lv_indev_drv_t indev_drv;
 
-    /*Initialize your touchpad if you have*/
+    /* 初始化触摸控制器 */
     touchpad_init();
 
-    /*Register a touchpad input device*/
+    /* 注册触摸输入设备 */
     lv_indev_drv_init(&indev_drv);
     indev_drv.type = LV_INDEV_TYPE_POINTER;
     indev_drv.read_cb = touchpad_read;
@@ -29,8 +36,8 @@ void lv_port_indev_init(void)
 /*Initialize your touchpad*/
 static void touchpad_init(void)
 {
-    /*Your code comes here*/
-	tp_dev.init();//������ʼ��
+    /* 触摸控制器初始化 */
+	tp_dev.init();
 }
 
 /*Will be called by the library to read the touchpad*/
@@ -39,7 +46,7 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
     static lv_coord_t last_x = 0;
     static lv_coord_t last_y = 0;
 
-    /*Save the pressed coordinates and the state*/
+    /* 只在按下时更新坐标，松开时沿用最后一次的坐标 */
     if(touchpad_is_pressed()) {
         touchpad_get_xy(&last_x, &last_y);
         data->state = LV_INDEV_STATE_PR;
@@ -55,8 +62,7 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 /*Return true is the touchpad is pressed*/
 static bool touchpad_is_pressed(void)
 {
-    /*Your code comes here*/
-	//ɨ�赱ǰ�������Ĵ���״̬
+    /* 扫描当前触摸屏状态 */
 	tp_dev.scan();
 
 	if (tp_dev.sta & TP_PRES_DOWN)
@@ -70,8 +76,6 @@ static bool touchpad_is_pressed(void)
 /*Get the x and y coordinates if the touchpad is pressed*/
 static void touchpad_get_xy(lv_coord_t * x, lv_coord_t * y)
 {
-    /*Your code comes here*/
-
     (*x) = tp_dev.x[0];
     (*y) = tp_dev.y[0];
 }

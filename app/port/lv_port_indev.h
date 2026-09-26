@@ -1,45 +1,15 @@
-
-/**
- * @file lv_port_indev_templ.h
+/*
+ * LVGL 触摸输入接口适配。
  *
+ * 基于官方 37_zynq_lvgl 例程的 lv_port_indev_template.c/.h 重写：读取逻辑
+ * 保持一致，只把 include 路径与文件名改成本工程的结构。
  */
 
- /*Copy this file as "lv_port_indev.h" and set this value to "1" to enable content*/
-#if 1
+#ifndef __LV_PORT_INDEV_H__
+#define __LV_PORT_INDEV_H__
 
-#ifndef LV_PORT_INDEV_TEMPL_H
-#define LV_PORT_INDEV_TEMPL_H
+#include "lvgl.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*********************
- *      INCLUDES
- *********************/
-#include "lvgl/lvgl.h"
-
-/*********************
- *      DEFINES
- *********************/
-
-/**********************
- *      TYPEDEFS
- **********************/
-
-/**********************
- * GLOBAL PROTOTYPES
- **********************/
 void lv_port_indev_init(void);
 
-/**********************
- *      MACROS
- **********************/
-
-#ifdef __cplusplus
-} /*extern "C"*/
-#endif
-
-#endif /*LV_PORT_INDEV_TEMPL_H*/
-
-#endif /*Disable/Enable content*/
+#endif /* __LV_PORT_INDEV_H__ */

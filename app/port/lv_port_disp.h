@@ -1,44 +1,15 @@
-/**
- * @file lv_port_disp_templ.h
+/*
+ * LVGL 显示接口适配。
  *
+ * 基于官方 37_zynq_lvgl 例程的 lv_port_disp_template.c/.h 重写：绘制与刷屏
+ * 逻辑保持一致，只把 include 路径与文件名改成本工程的结构。
  */
 
- /*Copy this file as "lv_port_disp.h" and set this value to "1" to enable content*/
-#if 1
+#ifndef __LV_PORT_DISP_H__
+#define __LV_PORT_DISP_H__
 
-#ifndef LV_PORT_DISP_TEMPL_H
-#define LV_PORT_DISP_TEMPL_H
+#include "lvgl.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*********************
- *      INCLUDES
- *********************/
-#include "lvgl/lvgl.h"
-
-/*********************
- *      DEFINES
- *********************/
-
-/**********************
- *      TYPEDEFS
- **********************/
-
-/**********************
- * GLOBAL PROTOTYPES
- **********************/
 void lv_port_disp_init(void);
 
-/**********************
- *      MACROS
- **********************/
-
-#ifdef __cplusplus
-} /*extern "C"*/
-#endif
-
-#endif /*LV_PORT_DISP_TEMPL_H*/
-
-#endif /*Disable/Enable content*/
+#endif /* __LV_PORT_DISP_H__ */

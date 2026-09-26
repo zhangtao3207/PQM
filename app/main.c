@@ -1,3 +1,12 @@
+/*
+ * PQM2 åº”ç”¨å…¥å£ã€‚
+ *
+ * åˆå§‹åŒ–é¡ºåºä¸å®˜æ–¹ 37_zynq_lvgl ä¾‹ç¨‹ä¿æŒä¸€è‡´ï¼šé…ç½®æ—¶é’Ÿä¸æ˜¾ç¤ºæ§åˆ¶å™¨ã€å¯åŠ¨
+ * VDMAã€åˆå§‹åŒ– LVGL çš„æ˜¾ç¤ºä¸è§¦æ‘¸æ¥å£ï¼Œç„¶åæŠŠç•Œé¢äº¤ç»™ PQM ç•Œé¢å±‚ã€‚ç›¸å¯¹å®˜æ–¹
+ * ä¾‹ç¨‹åªæ”¹äº†ä¸¤å¤„ï¼šç•Œé¢å…¥å£ç”±ç¤ºä¾‹çš„ lv_demo_music() æ¢æˆ PQMUI_Init()ï¼Œä¸»å¾ªç¯
+ * é‡Œè¿½åŠ ä¸€æ¬¡å‡æ•°æ®æºè½®è¯¢ã€‚ç¤ºä¾‹ä¸­æœªè¢«å¼•ç”¨çš„ç»˜å›¾è¾…åŠ©å‡½æ•°å£°æ˜ä¸é…è‰²è¡¨å·²åˆ é™¤ã€‚
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,85 +28,74 @@
 
 /* LVGL */
 #include "lvgl.h"
-#include "lv_port_indev_template.h"
-#include "lv_port_disp_template.h"
-#include "lv_demo_music.h"
+#include "port/lv_port_indev.h"
+#include "port/lv_port_disp.h"
 
-//ºê¶¨Òå
-#define BYTES_PIXEL        3                          //ÏñËØ×Ö½ÚÊı£¬RGB888Õ¼3¸ö×Ö½Ú
-#define CLK_WIZ_ID         XPAR_CLK_WIZ_0_DEVICE_ID   //Ê±ÖÓIPºËÆ÷¼şID
-#define VDMA_ID            XPAR_AXIVDMA_0_DEVICE_ID   //VDMAÆ÷¼şID
-#define DISP_VTC_ID        XPAR_VTC_0_DEVICE_ID       //VTCÆ÷¼şID
-#define AXI_GPIO_0_ID      XPAR_AXI_GPIO_0_DEVICE_ID  //AXI GPIO 0(lcd_id)Æ÷¼şID
-#define AXI_GPIO_0_CHANEL  1                          //AXI GPIO(lcd_id)Í¨µÀ1
+/* PQM ç•Œé¢ */
+#include "pqmui/pqmui.h"
+#include "demo/pqmui_demo.h"
 
-//º¯ÊıÉùÃ÷
-void gui_draw_hline(u16 x0, u16 y0, u16 len, u16 color); //»­Ë®Æ½Ïß
-void gui_fill_circle(u16 x0, u16 y0, u16 r, u16 color);  //»­ÊµĞÄÔ²
-void ctp_test(void); //µçÈİ´¥ÃşÆÁ²âÊÔº¯Êı
-void lcd_draw_bline(u16 x1, u16 y1, u16 x2, u16 y2, u8 size, u16 color); //»­Ïßº¯Êı
-void frame_data_fill(u8 *frame,  u16 sx,  u16 sy,  u16 ex,  u16 ey,  u16 color,  u32 stride);
-void colorbar(u8 *frame, u32 width, u32 height, u32 stride);
+//å®å®šä¹‰
+#define BYTES_PIXEL        3                          //åƒç´ å­—èŠ‚æ•°ï¼ŒRGB888å 3ä¸ªå­—èŠ‚
+#define CLK_WIZ_ID         XPAR_CLK_WIZ_0_DEVICE_ID   //æ—¶é’ŸIPæ ¸å™¨ä»¶ID
+#define VDMA_ID            XPAR_AXIVDMA_0_DEVICE_ID   //VDMAå™¨ä»¶ID
+#define DISP_VTC_ID        XPAR_VTC_0_DEVICE_ID       //VTCå™¨ä»¶ID
+#define AXI_GPIO_0_ID      XPAR_AXI_GPIO_0_DEVICE_ID  //AXI GPIO 0(lcd_id)å™¨ä»¶ID
+#define AXI_GPIO_0_CHANEL  1                          //AXI GPIO(lcd_id)é€šé“1
 
-
-//10¸ö´¥¿ØµãµÄÑÕÉ«(µçÈİ´¥ÃşÆÁÓÃ)
-const u16 POINT_COLOR_TBL[10] = {
-    MLCD_RED,  MLCD_GREEN, MLCD_BLUE,      MLCD_BROWN, MLCD_GRED,
-    MLCD_BRED, MLCD_GBLUE, MLCD_LIGHTBLUE, MLCD_BRRED, MLCD_GRAY
-};
-
-//È«¾Ö±äÁ¿
+//å…¨å±€å˜é‡
 XAxiVdma     vdma;
 DisplayCtrl  dispCtrl;
-XGpio        axi_gpio_inst;   //PL¶Ë AXI GPIO Çı¶¯ÊµÀı
+XGpio        axi_gpio_inst;   //PLç«¯ AXI GPIO é©±åŠ¨å®ä¾‹
 VideoMode    vd_mode;
-XScuGic      Intc;            //ÖĞ¶Ï¿ØÖÆÆ÷Çı¶¯³ÌĞòÊµÀı
-//frame bufferµÄÆğÊ¼µØÖ·
+XScuGic      Intc;            //ä¸­æ–­æ§åˆ¶å™¨é©±åŠ¨ç¨‹åºå®ä¾‹
+//frame bufferçš„èµ·å§‹åœ°å€
 unsigned int const frame_buffer_addr = (XPAR_PS7_DDR_0_S_AXI_BASEADDR + 0x1000000);
 unsigned int lcd_id=0;        //LCD ID
 
 int main(void)
 {
 	timer_init(&Intc);
-    //»ñÈ¡LCDµÄID
+    //è·å–LCDçš„ID
     XGpio_Initialize(&axi_gpio_inst,AXI_GPIO_0_ID);
-    XGpio_SetDataDirection(&axi_gpio_inst,AXI_GPIO_0_CHANEL,0x07); //ÉèÖÃAXI GPIOÎªÊäÈë
+    XGpio_SetDataDirection(&axi_gpio_inst,AXI_GPIO_0_CHANEL,0x07); //è®¾ç½®AXI GPIOä¸ºè¾“å…¥
     lcd_id = lcd_id_read(&axi_gpio_inst,AXI_GPIO_0_CHANEL);
-    XGpio_SetDataDirection(&axi_gpio_inst,AXI_GPIO_0_CHANEL,0x00); //ÉèÖÃAXI GPIOÎªÊä³ö
+    XGpio_SetDataDirection(&axi_gpio_inst,AXI_GPIO_0_CHANEL,0x00); //è®¾ç½®AXI GPIOä¸ºè¾“å‡º
     xil_printf("LCD ID: %x\r\n",lcd_id);
 
-    //¸ù¾İ»ñÈ¡µÄLCDµÄIDºÅÀ´½øĞĞvideo²ÎÊıµÄÑ¡Ôñ
+    //æ ¹æ®è·å–çš„LCDçš„IDå·æ¥è¿›è¡Œvideoå‚æ•°çš„é€‰æ‹©
     switch(lcd_id){
-        case 0x4342 : vd_mode = VMODE_480x272; break;  //4.3´çÆÁ,480*272·Ö±æÂÊ
-        case 0x4384 : vd_mode = VMODE_800x480; break;  //4.3´çÆÁ,800*480·Ö±æÂÊ
-        case 0x7084 : vd_mode = VMODE_800x480; break;  //7´çÆÁ,800*480·Ö±æÂÊ
-        case 0x7016 : vd_mode = VMODE_1024x600; break; //7´çÆÁ,1024*600·Ö±æÂÊ
-        case 0x1018 : vd_mode = VMODE_1280x800; break; //10.1´çÆÁ,1280*800·Ö±æÂÊ
+        case 0x4342 : vd_mode = VMODE_480x272; break;  //4.3å¯¸å±,480*272åˆ†è¾¨ç‡
+        case 0x4384 : vd_mode = VMODE_800x480; break;  //4.3å¯¸å±,800*480åˆ†è¾¨ç‡
+        case 0x7084 : vd_mode = VMODE_800x480; break;  //7å¯¸å±,800*480åˆ†è¾¨ç‡
+        case 0x7016 : vd_mode = VMODE_1024x600; break; //7å¯¸å±,1024*600åˆ†è¾¨ç‡
+        case 0x1018 : vd_mode = VMODE_1280x800; break; //10.1å¯¸å±,1280*800åˆ†è¾¨ç‡
         default : vd_mode = VMODE_800x480; break;
     }
 
     emio_init();
 
-    //ÅäÖÃVDMA
+    //é…ç½®VDMA
     run_vdma_frame_buffer(&vdma, VDMA_ID, vd_mode.width, vd_mode.height,
                             frame_buffer_addr,0, 0,ONLY_READ);
 
-    //ÉèÖÃÊ±ÖÓIPºËÊä³öµÄÊ±ÖÓÆµÂÊ
+    //è®¾ç½®æ—¶é’ŸIPæ ¸è¾“å‡ºçš„æ—¶é’Ÿé¢‘ç‡
     clk_wiz_cfg(CLK_WIZ_ID,vd_mode.freq);
-    //³õÊ¼»¯Display controller
+    //åˆå§‹åŒ–Display controller
     DisplayInitialize(&dispCtrl, DISP_VTC_ID);
-    //ÉèÖÃVideoMode
+    //è®¾ç½®VideoMode
     DisplaySetMode(&dispCtrl, &vd_mode);
     DisplayStart(&dispCtrl);
 
-    lv_init();                          /* lvglÏµÍ³³õÊ¼»¯ */
-    lv_port_disp_init();                /* lvglÏÔÊ¾½Ó¿Ú³õÊ¼»¯,·ÅÔÚlv_init()µÄºóÃæ */
-    lv_port_indev_init();               /* lvglÊäÈë½Ó¿Ú³õÊ¼»¯,·ÅÔÚlv_init()µÄºóÃæ */
+    lv_init();                          /* lvglç³»ç»Ÿåˆå§‹åŒ– */
+    lv_port_disp_init();                /* lvglæ˜¾ç¤ºæ¥å£åˆå§‹åŒ–,æ”¾åœ¨lv_init()çš„åé¢ */
+    lv_port_indev_init();               /* lvglè¾“å…¥æ¥å£åˆå§‹åŒ–,æ”¾åœ¨lv_init()çš„åé¢ */
 
-    lv_demo_music();                   /* ¹Ù·½Àı³Ì²âÊÔ */
+    PQMUI_Init();                       /* PQMç•Œé¢åˆå§‹åŒ– */
     while(1)
     {
     	lv_task_handler();
+        PQMUI_DemoPoll();               /* é˜¶æ®µ1å‡æ•°æ®æºï¼Œé˜¶æ®µ3æ¥å…¥çœŸå®æ•°æ®ååˆ é™¤ */
     }
 
     return 0;
