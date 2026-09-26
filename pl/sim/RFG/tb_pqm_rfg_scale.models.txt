@@ -1,0 +1,2 @@
+# 本用例的激励向量（清单是按用例独立的，漏了就会让 $readmemh 静默留 X）
+pl/sim/RFG/front_end_vectors
