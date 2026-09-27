@@ -430,10 +430,10 @@ module tb_pqm_pl_top;
             $display("FAIL: 3a 谐波帧数=%0d，期望 >= 2", harm_frames);
             err = err + 1;
         end
-        // 核心每帧固定输出 0..500 共 501 条（harmonic_stats 的 MAX_ORDER=500，
-        // 与 RFG 的 C_K=64 无关）。这里判"帧尾 index = 500"，而不是 64。
-        if (harm_last_index_seen != 500) begin
-            $display("FAIL: 3b 帧尾 index=%0d，期望 500", harm_last_index_seen);
+        // ABI 收敛后核心每帧固定输出 0..64 共 65 条（harmonic_stats 的 MAX_ORDER=64，
+        // 与 RFG 取点 C_K=64 一致）。这里判"帧尾 index = 64"。
+        if (harm_last_index_seen != 64) begin
+            $display("FAIL: 3b 帧尾 index=%0d，期望 64", harm_last_index_seen);
             err = err + 1;
         end
         if (harm_h1_present != 1) begin
@@ -514,7 +514,8 @@ module tb_pqm_pl_top;
             $display("FAIL: 5abi 1 次谐波 present 位=0");
             err = err + 1;
         end
-        // RFG 只算到 C_K=64 次，所以共享内存里\"有值\"的最大频点是 64（65..500 按设计 present=0）。
+        // ABI 条目收敛为 0..64 共 65 条；RFG 取点 C_K=64，所以窗口内有值（present=1）的
+        // 最大 index 恰为 64。这里仍按两家 bank 全窗口扫描，确认没有越窗写入。
         if (rb_max_idx != 64) begin
             $display("FAIL: 5abi 共享内存里最大 present index=%0d，期望 64", rb_max_idx);
             err = err + 1;

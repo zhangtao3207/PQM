@@ -11,7 +11,7 @@
  *   snapshot_words：按 ABI 顺序排列的 16 个 32 位标量 word。
  *   harmonic_frame_start：请求开始向非活动 bank 发布一帧谐波。
  *   harmonic_valid：当前谐波条目有效。
- *   harmonic_index：当前谐波阶次，范围为 0 至 500。
+ *   harmonic_index：当前谐波阶次，范围为 0 至 `PQM_SHM_HARMONIC_LAST_INDEX`（64，共 65 条）。
  *   harmonic_u_ratio：当前谐波电压幅值占比。
  *   harmonic_i_ratio：当前谐波电流幅值占比。
  *   harmonic_phase：当前谐波有符号相位差。
@@ -356,6 +356,7 @@ always @(posedge clk) begin
                 state <= STATE_HARMONIC_FLAGS;
             end
             STATE_HARMONIC_FLAGS: begin
+                // ABI 收敛后帧尾恒为 index 64（`PQM_SHM_HARMONIC_LAST_INDEX`），一帧共 65 条。
                 if (harmonic_index_latched == `PQM_SHM_HARMONIC_LAST_INDEX) begin
                     state <= STATE_HARMONIC_GEN;
                 end else begin

@@ -71,7 +71,7 @@ pl/ip/xfft_0/hdl
 
 **`fork` 里的两个并发任务不能共用循环变量**：驱动任务和消费任务在 `fork ... join` 里并行，如果都用同一个 `integer k` 做下标，两边会互相踩，现象是检查项整体错位（`fft_phase_vector_calc` 用例踩过一次）。驱动用 `m`、消费用 `k`。
 
-**给初始清 RAM 的模块留足等待窗口**：`fft_harmonic_stats`、`freq_harmonic_iir_filter` 复位后要 501 拍把状态 RAM 清零才拉高 ready。若消费侧或驱动侧的等待循环只等 400 拍，第一帧就会整帧错位一项（两个用例各踩过一次）。现在这些用例先等 ready 拉高再开帧，等待上限也放到 800~1200 拍。
+**给初始清 RAM 的模块留足等待窗口**：`harmonic_stats`、`freq_harmonic_iir_filter` 复位后要顺序清状态 RAM 才拉高 ready（`freq_harmonic_iir_filter` 501 拍；`harmonic_stats` 在 ABI 收敛成 65 条后只清 65 拍）。若消费侧或驱动侧的等待循环只等 400 拍，第一帧就会整帧错位一项（两个用例各踩过一次）。现在这些用例先等 ready 拉高再开帧，等待上限也放到 800~1200 拍。
 
 **9 bit 字段的越界激励会被截断**：`s_harmonic_order` 只有 9 bit，本想用 600 当“超范围”输入，实际被截成 88（反而在范围内）。要越界就用 501。
 

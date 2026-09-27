@@ -16,10 +16,10 @@
  *     order2: u= 5000000/1750=2857   i 幅值为 0 -> 旁路 -> 0
  *     order3: u= 2500000/1750=1428   i= 5000000/2500=2000
  *     order0: 被捕获但幅值为 0 -> 旁路 -> 0
- *     order4..500: 帧标签不匹配 -> present=0、百分比 0
+ *     order4..64: 帧标签不匹配 -> present=0、百分比 0
  *
  *   三个场景：
- *     1) 一帧 501 项的完整输出：抽查 order 0/1/2/3/4/500 的 present 与百分比，
+ *     1) 一帧 65 项的完整输出：抽查 order 0/1/2/3/4/64 的 present 与百分比，
  *        并检查总幅值、帧计数、帧尾标志与 capture_frame_done
  *     2) enable=0 时不再产生有效输出
  *     3) 第二帧（同样内容）应能正常跑完，帧计数递增到 2
@@ -28,8 +28,8 @@
 module tb_harmonic_stats;
 
     localparam integer CLK_PERIOD  = 10;      // 100 MHz
-    localparam integer WATCHDOG_NS = 20000000; // 20 ms 兜底（501 项逐项输出较慢）
-    localparam integer MAX_ORDER   = 500;
+    localparam integer WATCHDOG_NS = 20000000; // 20 ms 兜底（65 项逐项输出）
+    localparam integer MAX_ORDER   = 64;      // ABI 条目数收敛为 65（0..64）
 
     reg clk = 1'b0;
     reg rst_n = 1'b0;
@@ -173,7 +173,7 @@ module tb_harmonic_stats;
         end
     endtask
 
-    // 消费一整帧 501 项输出，抽查关键项
+    // 消费一整帧 65 项输出，抽查关键项
     task consume_frame;
         input [127:0] frame_tag_str;
         begin
@@ -217,7 +217,7 @@ module tb_harmonic_stats;
                         end
                         MAX_ORDER: begin
                             if (m_harmonic_last !== 1'b1) begin
-                                $display("FAIL: %0s order500 应带上帧尾标志", frame_tag_str);
+                                $display("FAIL: %0s order64 应带上帧尾标志", frame_tag_str);
                                 errors = errors + 1;
                             end
                         end

@@ -17,7 +17,7 @@
  *     u 1 次 = 1000/1400*10000 = 7142.9 -> 缩放截断后约 7139
  *     u 3 次 =  400/1400*10000 = 2857.1 -> 约 2861
  *     i 1 次 = 100%（单一谐波）
- *     0 次 = 0（零均值）；65..500 次未被 RFG 捕获 -> present=0、占比 0
+ *     0 次 = 0（零均值）；ABI 收敛后只输出 0..64 共 65 条，65 次以上不再出现在窗口内
  */
 
 module tb_pqm_rfg_chain;
@@ -29,7 +29,7 @@ module tb_pqm_rfg_chain;
     localparam integer C_L         = 4;
     localparam integer C_D         = 1;
     localparam integer SHIFT       = 10;
-    localparam integer HARM_ORDERS = 501;      // harmonic_stats 固定输出 0..500
+    localparam integer HARM_ORDERS = 65;       // harmonic_stats 输出 0..64（ABI 条目 65 条）
     localparam integer FUND_BIN    = 1;        // 与 freq_analysis_top 一致
 
     reg clk = 1'b0;
@@ -87,6 +87,7 @@ module tb_pqm_rfg_chain;
     integer ipct [0:HARM_ORDERS-1];
     integer upres [0:HARM_ORDERS-1];
     reg     hs_done_seen = 1'b0;
+    integer hs_last_order = -1;
 
     pqm_rfg_frontend #(.C_N(C_N), .C_K(C_K), .C_L(C_L), .C_D(C_D)) u_fe (
         .clk(clk), .rst_n(rst_n),
@@ -149,11 +150,15 @@ module tb_pqm_rfg_chain;
 
     always @(posedge clk) begin
         if (rst_n && hs_valid && hs_ready) begin
-            if (hs_cnt < HARM_ORDERS) begin
+            if (hs_order > HARM_ORDERS - 1) begin
+                $display("FAIL: 谐波次数 %0d 超出 ABI 窗口 0..%0d", hs_order, HARM_ORDERS - 1);
+                errors = errors + 1;
+            end else if (hs_cnt < HARM_ORDERS) begin
                 upct[hs_order] = $signed(hs_u_pct);
                 ipct[hs_order] = $signed(hs_i_pct);
                 upres[hs_order] = {31'd0, hs_present};
             end
+            if (hs_last) hs_last_order = hs_order;
             hs_cnt = hs_cnt + 1;
         end
         if (rst_n && hs_frame_done) hs_done_seen <= 1'b1;
@@ -237,8 +242,7 @@ module tb_pqm_rfg_chain;
         for (i = 0; i <= 5; i = i + 1)
             $display("  %0d  : %6d %6d     %0d", i, upct[i], ipct[i], upres[i]);
         $display("  64 : %6d %6d     %0d", upct[64], ipct[64], upres[64]);
-        $display("  65 : %6d %6d     %0d", upct[65], ipct[65], upres[65]);
-        $display(" 500 : %6d %6d     %0d", upct[500], ipct[500], upres[500]);
+        $display("  帧尾 order = %0d（期望 64）", hs_last_order);
         $display("u_total_mag = %0d，i_total_mag = %0d", hs_u_total, hs_i_total);
 
         // 结构
@@ -268,10 +272,8 @@ module tb_pqm_rfg_chain;
             check_val(upct[i], 0, 30, "静默次 u_pct");
             check_val(ipct[i], 0, 30, "静默次 i_pct");
         end
-        for (i = C_K + 1; i <= 500; i = i + 1) begin
-            check_val(upres[i], 0, 0, "65..500 次 present 应为 0");
-            check_val(upct[i],  0, 0, "65..500 次 u_pct 应为 0");
-        end
+        // ABI 收敛后不再输出 65..500 次条目，改为确认帧尾标志恰落在 64 次。
+        check_val(hs_last_order, 64, 0, "帧尾 order");
 
         if (errors == 0) begin
             $display("");
