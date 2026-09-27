@@ -280,46 +280,57 @@ module pqm_pl_top #(
     //   harmonic_frame_start 置起。核心侧没有帧头信号，只有逐条的 last。
     //   若把 frame_start 直接接 last，则第一条永远拿不到 ready，下游全链
     //   反压死锁（实测：RFG 首帧算完后 scal=1/0、hs_ready=0 永久卡死）。
-    //   另：核心的谐波数据比 RFG 的 o_frame_done 晚一拍，若把数据直接接桥、
-    //   只把帧头打拍，会撕裂帧尾；这里把整条流打一拍，帧头与首条同拍到达。
+    //   帧头策略：检测到 index 0 时，把那条数据**扣住一拍**（hold 寄存器），
+    //   同时把脉冲打一拍。于是桥先看到脉冲（置 frame_active）、下一拍收到首条数据。
+    //   之前两版都不对：
+    //     v1「index 0 同拍发脉冲并清数据」→ 帧头有效，但 H0 那条被永久丢弃
+    //        （实测共享内存只有 k=1..63、无 k=0）。
+    //     v2「末条发脉冲」→ 上电首帧没有"末条"可参考，核心卡在第一条，
+    //        实测 hsp_seen=0、ps_harmonic_last 永不出现、流永久卡死。
+    //   现在：脉冲与数据分两拍，首帧也能起步，且一条不丢。
     // ------------------------------------------------------------------
-    reg        hrm_start_pulse;
+    reg        hrm_start_pulse_ff;
+    reg        hrm_hold;
     reg        hrm_valid_d;
     reg [8:0]  hrm_index_d;
     reg [31:0] hrm_u_d, hrm_i_d, hrm_phase_d, hrm_flags_d;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            hrm_start_pulse <= 1'b0;
-            hrm_valid_d     <= 1'b0;
-            hrm_index_d     <= 9'd0;
-            hrm_u_d         <= 32'd0;
-            hrm_i_d         <= 32'd0;
-            hrm_phase_d     <= 32'd0;
-            hrm_flags_d     <= 32'd0;
+            hrm_hold           <= 1'b0;
+            hrm_start_pulse_ff <= 1'b0;
+            hrm_valid_d        <= 1'b0;
+            hrm_index_d        <= 9'd0;
+            hrm_u_d            <= 32'd0;
+            hrm_i_d            <= 32'd0;
+            hrm_phase_d        <= 32'd0;
+            hrm_flags_d        <= 32'd0;
         end else begin
-            // 整条流打一拍
-            hrm_valid_d <= ps_harmonic_valid;
-            hrm_index_d <= ps_harmonic_index;
-            hrm_u_d     <= ps_harmonic_u_ratio;
-            hrm_i_d     <= ps_harmonic_i_ratio;
-            hrm_phase_d <= ps_harmonic_phase;
-            hrm_flags_d <= ps_harmonic_flags;
+            if (hrm_hold) begin
+                // 第二拍：重发被扣住的首条（此时桥已置起 frame_active）
+                hrm_valid_d <= 1'b1;
+                hrm_hold    <= 1'b0;
+            end else if (ps_harmonic_valid && (ps_harmonic_index == 9'd0)) begin
+                // 帧首：打一拍把脉冲送给桥，同时把这条数据扣进寄存器
+                hrm_valid_d <= 1'b0;
+                hrm_hold    <= 1'b1;
 
-            // 帧头：看到 index 0 就发一个脉冲（覆盖上电首帧）
-            hrm_start_pulse <= ps_harmonic_valid && (ps_harmonic_index == 9'd0);
-        end
+                hrm_index_d <= 9'd0;
+                hrm_u_d     <= ps_harmonic_u_ratio;
+                hrm_i_d     <= ps_harmonic_i_ratio;
+                hrm_phase_d <= ps_harmonic_phase;
+                hrm_flags_d <= ps_harmonic_flags;
+            end else begin
+                // 常规：整条流打一拍
+                hrm_valid_d <= ps_harmonic_valid;
+                hrm_index_d <= ps_harmonic_index;
+                hrm_u_d     <= ps_harmonic_u_ratio;
+                hrm_i_d     <= ps_harmonic_i_ratio;
+                hrm_phase_d <= ps_harmonic_phase;
+                hrm_flags_d <= ps_harmonic_flags;
+            end
 
-        // 帧头比首条早一拍：桥的 FSM 在同一拍里先看 frame_active、再看
-        // frame_start，两者同拍到达会把首条吞掉（首条被丢掉 → frame_active
-        // 虽然置起但无人再发首条 → harmonic_ready 永不拉高 → 全链死锁）。
-        if (hrm_start_pulse) begin
-            hrm_valid_d <= 1'b0;
-            hrm_index_d <= 9'd0;
-            hrm_u_d     <= 32'd0;
-            hrm_i_d     <= 32'd0;
-            hrm_phase_d <= 32'd0;
-            hrm_flags_d <= 32'd0;
+            hrm_start_pulse_ff <= ps_harmonic_valid && (ps_harmonic_index == 9'd0);
         end
     end
 
@@ -361,7 +372,7 @@ module pqm_pl_top #(
         .snapshot_commit(snap_commit_pulse),
         .snapshot_ready(snapshot_ready),
         .snapshot_words(ps_snapshot_words),
-        .harmonic_frame_start(hrm_start_pulse),
+        .harmonic_frame_start(hrm_start_pulse_ff),
         .harmonic_start_ready(harmonic_start_ready),
         .harmonic_valid(hrm_valid_d),
         .harmonic_ready(harmonic_ready),
