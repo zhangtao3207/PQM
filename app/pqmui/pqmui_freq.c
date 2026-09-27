@@ -134,7 +134,7 @@ void PQMUI_FreqCreate(void)
                                 LV_SYMBOL_LEFT, &label);
     lv_obj_add_event_cb(button, PQMUI_PreviousWindowEvent, LV_EVENT_CLICKED,
                         NULL);
-    HarmonicWindowLabel = PQMUI_CreateText(left, 160, 363, "H0 - H16", 0u);
+    HarmonicWindowLabel = PQMUI_CreateText(left, 160, 363, "H0 - H15", 0u);
     button = PQMUI_CreateButton(left, 414, 356, 48, 30,
                                 LV_SYMBOL_RIGHT, &label);
     lv_obj_add_event_cb(button, PQMUI_NextWindowEvent, LV_EVENT_CLICKED, NULL);
@@ -190,9 +190,9 @@ void PQMUI_FreqRefreshHarmonics(void)
         return;
     }
     for (point = 0u; point < PQMUI_HARMONIC_POINTS; ++point) {
-        /* 窗口起点是锚点：本页绘制锚点之后的 PQMUI_HARMONIC_POINTS 条，
-         * 即 H(锚点+1) .. H(锚点+STEP)。第 1 页锚点 = 0（H0），H0 只在标签里体现。*/
-        u32 harmonic = (u32)PQMUI_HarmonicWindowStart + 1u + point;
+        /* 窗口起点就是本页首条：本页绘制 H(起点) .. H(起点+POINTS-1)，
+         * 4 页 = H0-H15 / H16-H31 / H32-H47 / H48-H63，H0 也在第 1 页的图里。*/
+        u32 harmonic = (u32)PQMUI_HarmonicWindowStart + point;
 
         if (harmonic < PQMUI_HARMONIC_ENTRIES &&
             (PQMUI_LatestHarmonics.entries[harmonic].flags &
@@ -214,17 +214,14 @@ void PQMUI_FreqRefreshHarmonics(void)
     }
     lv_chart_refresh(MagnitudeChart);
     lv_chart_refresh(PhaseChart);
-    /* 标签显示本页覆盖的谐波范围：左端在第 1 页取锚点 H0（额外的 0 次），
-     * 其余页取本页首条 H(锚点+1)；右端固定为 H(锚点+STEP)。 */
+    /* 标签显示本页覆盖的谐波范围：左端 = 本页首条（窗口起点），右端 = 起点 + STEP - 1。 */
     lv_label_set_text_fmt(HarmonicWindowLabel, "H%u - H%u",
-                          (unsigned int)(PQMUI_HarmonicWindowStart == 0u
-                                             ? 0u
-                                             : (PQMUI_HarmonicWindowStart + 1u)),
+                          (unsigned int)PQMUI_HarmonicWindowStart,
                           (unsigned int)(PQMUI_HarmonicWindowStart +
-                                         PQMUI_HARMONIC_STEP));
+                                         (PQMUI_HARMONIC_STEP - 1u)));
 
-    /* 谐波详情显示本页第一条谐波：H0 为直流，没有占比含义，故从锚点+1 起。 */
-    selected = (u32)PQMUI_HarmonicWindowStart + 1u;
+    /* 谐波详情显示本页第一条谐波（即窗口起点）的 U/I/相位。 */
+    selected = (u32)PQMUI_HarmonicWindowStart;
     if ((PQMUI_LatestHarmonics.entries[selected].flags &
          PQMUI_HARMONIC_FLAG_RATIO) != 0u) {
         const pqmui_harmonic_t *entry = &PQMUI_LatestHarmonics.entries[selected];
