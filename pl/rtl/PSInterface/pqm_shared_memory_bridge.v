@@ -4,6 +4,13 @@
 /*
  * 模块名称：pqm_shared_memory_bridge
  * 功能说明：通过双口 BRAM 向 PS 原子发布标量快照、双 bank 谐波和命令响应。
+ *
+ * 跨时钟域（本模块只有 PL 侧 PORTB 时钟）：共享内存是异步真双口 RAM，PORTA 归 PS
+ *   （clk_fpga_0，100 MHz）、PORTB 归 PL（clk_out1_clk_wiz_0，50 MHz），两时钟不同源。
+ *   本模块**写**的字（初始化头、快照、状态、谐波 bank、命令响应）只被 PS 读，且一律
+ *   "数据先写、序号/状态后写"，给 PS 留一致性令牌；本模块**读**的只有命令区三个字
+ *   （REQUEST/ARGUMENT/SEQUENCE，0x80/0x81/0x82），那一侧的跨域确认交给
+ *   pqm_shm_command_capture 做"两遍一致"核对。
  * 输入端口：
  *   clk：共享内存发布时钟。
  *   rst_n：低有效同步逻辑复位。
@@ -23,7 +30,8 @@
  *   snapshot_ready：允许接收新的标量快照提交。
  *   harmonic_start_ready：允许开始新的谐波帧发布。
  *   harmonic_ready：允许接收当前谐波条目。
- *   command_valid：向 PL 控制逻辑发出的单拍命令脉冲。
+ *   command_valid：向 PL 控制逻辑发出的单拍命令脉冲；只在命令三元组经两遍读
+ *     逐字确认一致后才发出（确认逻辑见 pqm_shm_command_capture）。
  *   command_code：PS 请求的命令码。
  *   command_argument：PS 请求的命令参数。
  *   command_sequence：PS 请求的命令序号。
@@ -82,8 +90,9 @@ localparam [4:0] STATE_HARMONIC_GEN      = 5'd9;
 localparam [4:0] STATE_HARMONIC_STATUS   = 5'd10;
 localparam [4:0] STATE_POLL_SEQUENCE     = 5'd11;
 localparam [4:0] STATE_CHECK_SEQUENCE    = 5'd12;
-localparam [4:0] STATE_CAPTURE_CODE      = 5'd13;
-localparam [4:0] STATE_CAPTURE_ARGUMENT  = 5'd14;
+// 命令确认交给 pqm_shm_command_capture：CHECK 检出候选后进这里等它给出稳定三元组。
+// 5'd14 不再使用（留空），以保持 STATE_RESPONSE_* 的编码不变。
+localparam [4:0] STATE_CAPTURE_WAIT      = 5'd13;
 localparam [4:0] STATE_RESPONSE_DATA     = 5'd15;
 localparam [4:0] STATE_RESPONSE_SEQUENCE = 5'd16;
 
@@ -103,8 +112,16 @@ reg  [31:0]  harmonic_u_latched;
 reg  [31:0]  harmonic_i_latched;
 reg  [31:0]  harmonic_phase_latched;
 reg  [31:0]  harmonic_flags_latched;
-reg  [31:0]  pending_command_sequence;
-reg  [31:0]  last_command_sequence;
+// 命令确认路径：握手、端口归属与已受理序号（实现见 pqm_shm_command_capture）。
+reg          capture_start;
+reg  [3:0]   capture_timer;
+wire         capture_busy;
+wire  [13:0] capture_addr;
+wire  [31:0] capture_code;
+wire  [31:0] capture_argument;
+wire  [31:0] capture_sequence;
+wire         capture_valid;
+wire  [31:0] capture_last_sequence;
 reg  [31:0]  response_latched;
 reg  [31:0]  response_sequence_latched;
 wire [13:0]  harmonic_base_addr;
@@ -244,12 +261,8 @@ always @* begin
         STATE_CHECK_SEQUENCE: begin
             bram_addr = `PQM_SHM_COMMAND_REQUEST_WORD;
         end
-        STATE_CAPTURE_CODE: begin
-            bram_addr = `PQM_SHM_COMMAND_ARGUMENT_WORD;
-        end
-        STATE_CAPTURE_ARGUMENT: begin
-            bram_addr = `PQM_SHM_COMMAND_SEQUENCE_WORD;
-        end
+        // 命令确认期间（STATE_CAPTURE_WAIT）的读地址由捕获器给出，
+        // 见本 always 块末尾的 capture_busy 覆盖。
         STATE_RESPONSE_DATA: begin
             bram_addr   = `PQM_SHM_COMMAND_RESPONSE_WORD;
             bram_wrdata = response_latched;
@@ -266,6 +279,10 @@ always @* begin
             bram_we     = 4'b0000;
         end
     endcase
+
+    // 命令确认期间把读地址让给捕获器；写使能保持 0（捕获器只读）。
+    // 放在 case 之后，最后赋值优先，从而不必重排既有状态分支。
+    if (capture_busy) bram_addr = capture_addr;
 end
 
 // 串行调度初始化、快照、谐波、命令读取和响应提交。
@@ -284,8 +301,9 @@ always @(posedge clk) begin
         harmonic_i_latched        <= 32'd0;
         harmonic_phase_latched    <= 32'd0;
         harmonic_flags_latched    <= 32'd0;
-        pending_command_sequence  <= 32'd0;
-        last_command_sequence     <= 32'd0;
+        // 命令序号的所有权在 pqm_shm_command_capture 内部（capture_last_sequence）。
+        capture_start              <= 1'b0;
+        capture_timer              <= 4'd0;
         response_latched          <= 32'd0;
         response_sequence_latched <= 32'd0;
         command_valid             <= 1'b0;
@@ -297,6 +315,7 @@ always @(posedge clk) begin
         active_harmonic_bank      <= 1'b0;
     end else begin
         command_valid <= 1'b0;
+        capture_start <= 1'b0;
 
         case (state)
             STATE_INIT: begin
@@ -325,7 +344,7 @@ always @(posedge clk) begin
                     harmonic_frame_active <= 1'b1;
                 end else if (command_response_valid) begin
                     response_latched          <= command_response;
-                    response_sequence_latched <= last_command_sequence;
+                    response_sequence_latched <= capture_last_sequence;
                     state                     <= STATE_RESPONSE_DATA;
                 end else begin
                     state <= STATE_POLL_SEQUENCE;
@@ -377,23 +396,30 @@ always @(posedge clk) begin
                 state <= STATE_CHECK_SEQUENCE;
             end
             STATE_CHECK_SEQUENCE: begin
-                if ((bram_rddata != 32'd0) && (bram_rddata != last_command_sequence)) begin
-                    pending_command_sequence <= bram_rddata;
-                    state                    <= STATE_CAPTURE_CODE;
+                // 预读只用来发现"可能有新命令"；真正的三元组由捕获器两遍读比对后给出。
+                // 顶层端口、ABI 地址与 command_valid 语义都不变。
+                if ((bram_rddata != 32'd0) && (bram_rddata != capture_last_sequence)) begin
+                    capture_start <= 1'b1;
+                    capture_timer <= 4'd0;
+                    state         <= STATE_CAPTURE_WAIT;
                 end else begin
                     state <= STATE_IDLE;
                 end
             end
-            STATE_CAPTURE_CODE: begin
-                command_code <= bram_rddata;
-                state        <= STATE_CAPTURE_ARGUMENT;
-            end
-            STATE_CAPTURE_ARGUMENT: begin
-                command_argument      <= bram_rddata;
-                command_sequence      <= pending_command_sequence;
-                last_command_sequence <= pending_command_sequence;
-                command_valid         <= 1'b1;
-                state                 <= STATE_IDLE;
+            STATE_CAPTURE_WAIT: begin
+                if (capture_valid) begin
+                    command_code     <= capture_code;
+                    command_argument <= capture_argument;
+                    command_sequence <= capture_sequence;
+                    command_valid    <= 1'b1;
+                    state            <= STATE_IDLE;
+                end else if (capture_timer == 4'hF) begin
+                    // 捕获器一轮固定 7 个读周期；等不到结果的唯一可能是接口异常。
+                    // 退回 IDLE 重新轮询，绝不挂死，也绝不发布未确认的数据。
+                    state <= STATE_IDLE;
+                end else begin
+                    capture_timer <= capture_timer + 1'b1;
+                end
             end
             STATE_RESPONSE_DATA: begin
                 state <= STATE_RESPONSE_SEQUENCE;
@@ -407,5 +433,29 @@ always @(posedge clk) begin
         endcase
     end
 end
+
+// ------------------------------------------------------------------
+// 命令确认（跨时钟域）
+//   PS 从 PORTA（clk_fpga_0，100 MHz）写、PL 从 PORTB（clk_out1_clk_wiz_0，50 MHz）
+//   读同一块异步真双口 RAM，两个时钟不同源；ABI 冻结，命令区只有 32 位多比特字，
+//   没有可以放同步器的单比特通道。实测失败模式：同址读写冲突让某一次读拿到跳变前的
+//   旧值，于是出现"新序号 + 旧命令码/旧参数"的裂缝命令。
+//   本模块把三元组连读两遍逐字比对，不一致就丢弃重试，只有确认一致才发布 valid；
+//   丢掉的命令不会丢——PS 写完命令后内存恒定，下一轮轮询必定读到一致的三元组。
+// ------------------------------------------------------------------
+pqm_shm_command_capture u_command_capture (
+    .clk              (clk),
+    .rst_n            (rst_n),
+    .start            (capture_start),
+    .busy             (capture_busy),
+    .bram_addr        (capture_addr),
+    .bram_rddata      (bram_rddata),
+    .command_code     (capture_code),
+    .command_argument (capture_argument),
+    .command_sequence (capture_sequence),
+    .command_valid    (capture_valid),
+    .last_sequence    (capture_last_sequence),
+    .reject_count     ()
+);
 
 endmodule
