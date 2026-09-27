@@ -18,11 +18,14 @@
 /* 时域波形列数，对应图表横轴点数 */
 #define PQMUI_WAVE_COLUMNS      400
 
-/* 谐波表规模与频域页窗口步进 */
-#define PQMUI_HARMONIC_ENTRIES  501
-#define PQMUI_HARMONIC_POINTS   26
-#define PQMUI_HARMONIC_STEP     25
-#define PQMUI_HARMONIC_MAX_START 475
+/* 谐波表规模与频域页窗口：ABI 共 65 条（H0..H64），UI 分 4 页、每页 16 条。
+ * 第 1 页额外带 0 次（H0 + H1-H16），之后 H17-H32 / H33-H48 / H49-H64。
+ * 窗口起点是“锚点”：本页绘制锚点之后的 16 条（锚点+1 .. 锚点+STEP），
+ * 第 1 页锚点就是 H0，因此第 1 页标签从 H0 起算。 */
+#define PQMUI_HARMONIC_ENTRIES  65
+#define PQMUI_HARMONIC_POINTS   16
+#define PQMUI_HARMONIC_STEP     16
+#define PQMUI_HARMONIC_MAX_START 48
 
 /* 时域图表纵轴满量程，对应 AD 的 int16 输出 */
 #define PQMUI_WAVE_FULL_SCALE   32767

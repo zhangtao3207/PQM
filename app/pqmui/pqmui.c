@@ -193,7 +193,7 @@ void PQMUI_Init(void)
 
     PQMUI_TimeCreate();
     PQMUI_FreqCreate();
-    PQMUI_HarmonicWindowStart = 1u;
+    PQMUI_HarmonicWindowStart = 0u;
     PQMUI_SetPageVisible();
 }
 
