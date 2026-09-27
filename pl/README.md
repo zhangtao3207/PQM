@@ -23,7 +23,7 @@ pl/
 `pl/rtl/` 与 `pl/sim/` 下的文件取自旧工程：
 
 - 源：`../PQM/FPGA/rtl/PSInterface/`、`../PQM/FPGA/sim/PSInterface/`
-- `pl/rtl/ADC_PARALLEL/` + `pl/sim/ADC_PARALLEL/`：AD7606 并行采集通路（`AD7606_Parallel_DRIVER` 与它内嵌的 `ad7606_parallel_ctrl`）及其测试平台。
+- `pl/rtl/ADC_PARALLEL/` + `pl/sim/ADC_PARALLEL/`：AD7606 并行采集通路（`AD7606_Parallel_DRIVER` 与它内嵌的 `ad7606_parallel_ctrl`）及其测试平台；另有自研的采样节拍发生器 `pqm_adc_pacer`（25.6 kHz，见交接文件 §3.1）。
 - `pl/rtl/DataProcessor/` + `pl/sim/DataProcessor/`：测量算法，**保留旧工程的分层目录**（`BasicMath/`、`SignalProcessing/TimeAnalysis/...`），所以运行脚本按递归方式找被测模块并整组编译。
 
 **喂数据的约定**：测量算法用的是**单调码值**。AD7606 输出是二进制补码，`pqm_pl_core` 先把它 XOR `0x8000` 转成偏移二进制（0x8000 为零点）才送进测量核心；`p2p_measure` 这类模块内部用无符号比较求最大/最小，必须按这个前提写激励。
@@ -73,6 +73,11 @@ pl/ip/xfft_0/hdl
 **给初始清 RAM 的模块留足等待窗口**：`fft_harmonic_stats`、`freq_harmonic_iir_filter` 复位后要 501 拍把状态 RAM 清零才拉高 ready。若消费侧或驱动侧的等待循环只等 400 拍，第一帧就会整帧错位一项（两个用例各踩过一次）。现在这些用例先等 ready 拉高再开帧，等待上限也放到 800~1200 拍。
 
 **9 bit 字段的越界激励会被截断**：`s_harmonic_order` 只有 9 bit，本想用 600 当“超范围”输入，实际被截成 88（反而在范围内）。要越界就用 501。
+
+**TB 别直接拿非阻塞赋值的变量当拍号**：监视器里 `last_cyc <= cyc` 之后，同一拍读它得到的是旧值。写 `pqm_adc_pacer` 用例时因此把 1786 个间隔的跨度少算了 2452 拍（恰好是窗口前那段），看起来像“平均频率不精确”。要么多等一拍再读，要么把要参与判定的计时变量改成阻塞赋值。同一用例还踩了两次计数器的坑：间隔计数的首项没加守卫（`last_cyc` 初值 0，首项变成“从 0 到第一个脉冲”，凭空多出一个超界间隔）；以及监视器的“复位释放后首脉冲相位”计数器在**复位保持期间**没解除武装，把复位期的 200 拍也数进去（D 项因此测出 101 拍而不是 1954）。
+
+**判“平均频率严格等于某值”时要选对判据**：`2^W / INC` 在周期是 5^n 的分数时不可能精确（二进制模数约不掉因子 5），别去凑单个周期的比值，改判“整数拍窗口内脉冲数恰好为整数”（`pqm_adc_pacer` 的 A2 项：15625 拍内恰好 8 个脉冲）。
+
 ## xfft 实测结论（2026-09-27）
 
 用真实仿真源（`pl/sim/xfft_probe/`，配置与设计用的常量完全一致）测出来的事实：
