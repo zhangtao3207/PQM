@@ -138,7 +138,8 @@ PASS: pqm_pl_top
    - PL：`harmonic_stats.MAX_ORDER` 500→64→63、`PQM_SHM_HARMONIC_LAST_INDEX` `0x1F4`→`0x40`(=64)→`0x3F`(=63)，最终每帧 **64 条（0..63）**；桥侧帧尾判定用宏、条目地址 = 基址 + (9 bit 索引 << 2)，64 条下无需改代码。
    - 用例同步：`tb_pqm_pl_top`（帧尾 500→64→63、`items` 65→64）、`tb_harmonic_stats`（`MAX_ORDER` 64→63）、`tb_pqm_rfg_chain`（`HARM_ORDERS` 65→64、帧尾 order 恰为 63）、`tb_pqm_freq_analysis_rfg`（`HARM_ORDERS` 65→64）、`tb_pqm_shared_memory_bridge`（发 0..63，bank1 末条校验 `(63<<2)+3 = 0x4000003F`）都按 64 条重新基线；**顶层阈值判据一个没放宽**。
    - PS：`PQMUI_HARMONIC_ENTRIES` 501→65→**64**，`POINTS=16` / `STEP=16` / `MAX_START=48` 不变；窗口起点初值为 **0**。
-   - 分页语义为**直接索引制**：窗口起点 s∈{0,16,32,48} 就是本页首条，本页画 H(s)..H(s+15)，4 页 = H0–H15 / H16–H31 / H32–H47 / H48–H63（无重复、无空洞；H0 也在第 1 页的图里，其占比为 0 故柱高为 0），页码标签由 `H(s) - H(s+15)` 生成。
+   - 分页语义为**直接索引制**：窗口起点 s∈{0,16,32,48} 就是本页首条，本页画 H(s)..H(s+15)，4 页 = H0–H15 / H16–H31 / H32–H47 / H48–H63（无重复、无空洞），页码标签由 `H(s) - H(s+15)` 生成。
+   - **H0 在图上是不画柱的（空槽）**：H0 的 4 个 word 会写进共享内存（帧头缺陷已修，实测 `harm_wr=2048=64×4×8`、共享内存 k=0..63 齐全），但其 `flags` present 位为 0（直流幅值≈0，未过 `harmonic_stats` 的 present 阈值），PS 侧因此画 `LV_CHART_POINT_NONE`。这是用户 2026-09-27 确认的口径：**H0 保持空槽，不强制画 0 高度柱**。
    - PS 侧**未编译**（本机无 ARM 工具链），只做了静态核对；4 页槽数都是 16，柱宽与折线间距不随翻页变化。
 3. **`pqm_sample_fifo` 的写满/溢出路径没有独立用例**（现有用例只覆盖未满的正常流）。
 4. **可选项**：把仿真的相位查表从行为级模型换成真 IP 生成的 `sim/rom_atan_lut_1024.v`（做法见 `pl/README.md`；同名的两个模块不能同时编译）。
