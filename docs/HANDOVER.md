@@ -109,7 +109,7 @@ ADC 采样流 → pqm_sample_fifo(每通道 64 深) → pqm_rfg_frontend(2×RFG 
 
 ## 5 约定与坑
 
-- 仿真入口：`powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -All`（24 例约 4 分钟）；单例 `-Test <模块>`（8~14 秒）。
+- 仿真入口：`powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -All`（25 例约 4 分钟）；单例 `-Test <模块>`（7~12 秒）。
 - 约定：`pl/rtl/<组>/<模块>.v` ↔ `pl/sim/<组>/tb_<模块>.v`，**组名必须一致**；判定必须看日志里的 `PASS: <用例名>`（`xsim -runall` 遇 `$fatal` 仍返回 0）。
 - 用例需要额外源/向量时，在 `pl/sim/<组>/tb_<用例>.models.txt` 里逐行列目录（**按用例独立，漏建会让 readmemh 静默留 X**）。
 - 数值检查必须带 `^actual === 1'bx` 守卫（Verilog 里 `if(X)` 为假，范围比较会静默放行）。
