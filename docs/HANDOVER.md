@@ -110,9 +110,9 @@ INFO: 1a 复位期间无 tick
 INFO: 1b tick=4200 frame=4200 gap=[1953,1954] 标称 1953
 INFO: 1c pending=0 sample=4200 ready=8204111
 INFO: 2b zero_valid=1/1 zero_code=8000/8000 code_changed=4166
-INFO: 3 harm_frames=8 items=4008 max_index=500 last=500 h1_present=1 h1_ratio=7138
+INFO: 3 harm_frames=8 items=520 max_index=64 last=64 h1_present=1 h1_ratio=7138
 INFO: 3in  RFG 输入前 24 点不符 0 个
-INFO: 4 commit=9 u_rms=812（期望约 762）bram_wr=16764 harm_wr=16000
+INFO: 4 commit=9 u_rms=812（期望约 762）bram_wr=2812 harm_wr=2048
 INFO: 5abi  从共享内存解出：1次u=7138 3次u=2861 present=1 最大index=64
 PASS: pqm_pl_top
 ```
@@ -120,7 +120,9 @@ PASS: pqm_pl_top
 要点：
 - 谐波 1 次 u 占比 7138、3 次 2861（解析 7142.9 / 2857.1），与频域链单模块验收一致。
 - 共享内存 ABI 回读与核心输出逐项一致（bank0 基址 word `0x400`、bank1 `0x800`，每条 4 word）。RFG 取点 `C_K=64`，
-  所以**有值的最大频点是 64**，65..500 按设计 `present=0`。
+  所以**有值的最大频点是 64**。ABI 收敛为 0..64 共 65 条后，帧尾 index 与最大 present index 都是 64（65 次以上不再进共享内存）。
+- 谐波 ABI 收敛为 65 条（0..64）后每帧 65 项（日志 `items=8×65=520`，帧尾 `last=64`）。注意 `harmonic_stats`
+  内部的谐波缓存仍按 **bin 号**索引（FUND_BIN=1 时最大 bin=500），深度必须保持 501，与输出条目数无关。
 - 快照提交 9 次，`u_rms` 字段 812（TB 期望 762，偏 +6.6%，在 ±20% 判据内；偏差来源未查证）。
 - 采样侧：帧间隔只有 1953/1954 拍、`adc_tick_pending` 恒 0 ⇒ 25.6 kHz 无丢样本。
 - 本轮同时删除了一处死逻辑：`pqm_rfg_sample_pump`（其 `o_sample_valid/u/i` 在全链里没有任何消费者），
@@ -132,8 +134,13 @@ PASS: pqm_pl_top
    ~~剩下的是接线：pacer 的 `o_tick` 接 `AD7606_Parallel_DRIVER.start`~~ **已完成**：`pqm_pl_top` 已接线；
    忙闲取舍已定 —— tick 撞上驱动忙时置粘滞标志 `adc_tick_pending`，正常时序下恒为 0（一帧约占 700 拍 < 周期 1953 拍）。
    代价要记住：采样率降 8 倍后，时域链过零分辨率变成 39 µs ⇒ 频率 ±0.1 Hz、相位 ±0.7°（PF 在 φ≈0 处二阶不敏感）。若不够，退回"102.4 kSPS 采 + 4 倍抽取给 RFG"。
-2. **ABI/UI 收敛**：谐波条目 **501 → 65**（`pl/rtl/PSInterface/pqm_shared_memory_map.vh` + 共享内存桥 + PS 读侧 + UI），UI 谐波显示改成**每页 16 条、第 1 页额外带 0 次**（H0 + H1–H16，之后 H17–H32 / H33–H48 / H49–H64 共 4 页）。
-   ⚠️ "每页 16 条"是我对用户原话的理解（频率页幅值图与相位图共用谐波窗口，我按两个图都改）——**动手前先跟用户确认一次**。
+2. ~~ABI/UI 收敛~~ **已完成**（PL + PS 两侧；PL 侧 `-Test pqm_pl_top` 与 `-All` 都重跑全绿）。
+   - PL：`harmonic_stats.MAX_ORDER` 500→64、`PQM_SHM_HARMONIC_LAST_INDEX` `0x1F4`→`0x40`（=64），每帧 65 条；桥侧帧尾判定与 `harmonic_entry_addr`（9 bit 索引左移 2）在 65 条下无需改动。
+   - 用例同步：`tb_pqm_pl_top`（帧尾 500→64）、`tb_harmonic_stats`、`tb_pqm_rfg_chain`、`tb_pqm_freq_analysis_rfg`、`tb_pqm_shared_memory_bridge` 都按 65 条重新基线；判据阈值一律未放宽。
+   - PS：`PQMUI_HARMONIC_ENTRIES` 501→65、`POINTS` 26→16、`STEP` 25→16、`MAX_START` 475→48；窗口起点初值 1→**0**。
+   - 分页语义按用户口径实现为**锚点制**：窗口起点 s∈{0,16,32,48} 是锚点，本页画 H(s+1)..H(s+16)（第 4 页 = H49–H64，正好到 ABI 末条 64）；第 1 页锚点 0 即 H0（直流，无占比含义），只在标签里体现为 `H0 - H16`，其余页标签 `H17 - H32`/`H33 - H48`/`H49 - H64`。
+   - ⚠️ 用户原话「第 1 页 = H0 + H1–H16（共 17 条）」与显式宏 `PQMUI_HARMONIC_POINTS=16`（每页 16 个柱子）不能同时成立：本实现取 16 个柱子 + 标签带 H0。若确要让 H0 成为第 1 页的第 17 根柱子，需把 `PQMUI_HARMONIC_POINTS` 改 17 并让两图的 `lv_chart_set_point_count` 随之变化（柱宽会随之变）。
+   - PS 侧**未编译**（本机无 ARM 工具链），只做了静态核对；柱子宽度因 16 点/页而由 LVGL 自动布局变化（414 px ÷ 16 槽）。
 3. **`pqm_sample_fifo` 的写满/溢出路径没有独立用例**（现有用例只覆盖未满的正常流）。
 4. **可选项**：把仿真的相位查表从行为级模型换成真 IP 生成的 `sim/rom_atan_lut_1024.v`（做法见 `pl/README.md`；同名的两个模块不能同时编译）。
 5. **增量 6/7（大块）**：建 Vivado 工程（官方视频段参数逐条照抄官方 `.bd` 并冻结 + PQM 测量段），离线综合/实现拿资源与时序；上板验证等板子可用。旧工程 IP 照搬要先 `upgrade_ip`（2018.3 定制、2022.2 下 locked）。
