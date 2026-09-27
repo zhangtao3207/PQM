@@ -3,6 +3,8 @@ export/
 build/
 generated/
 sdk_workspace/
+# xsim 在仓库根异常退出时留下的产物（构建产物应落在 pl/sim/build/）
+xsim.dir/
 *.jou
 *.log
 *.str

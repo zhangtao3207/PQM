@@ -32,7 +32,8 @@
  * 双向: 无。
  */
 module pqm_measurement_core #(
-    parameter integer MEASUREMENT_INTERVAL_CYCLES = 1_000_000
+    parameter integer MEASUREMENT_INTERVAL_CYCLES = 1_000_000,
+    parameter integer MEASURE_FRAME_SAMPLES        = 6144
 )(
     input  wire         clk,
     input  wire         rst_n,
@@ -55,7 +56,8 @@ module pqm_measurement_core #(
     output wire [31:0]  ps_harmonic_u_ratio,
     output wire [31:0]  ps_harmonic_i_ratio,
     output wire [31:0]  ps_harmonic_phase,
-    output wire [31:0]  ps_harmonic_flags
+    output wire [31:0]  ps_harmonic_flags,
+    output wire         freq_sample_ready   // RFG 取样口：供前置缓冲使用
 );
 
 localparam [2:0] ST_INTERVAL   = 3'd0;
@@ -158,7 +160,6 @@ wire signed [31:0] apparent_s_x100_wire;
 wire signed [31:0] power_factor_x100_wire;
 wire [31:0] reactive_q_raw_abs_wire;
 wire signed [31:0] reactive_q_raw_phase_signed;
-wire freq_sample_valid;
 wire freq_harmonic_valid;
 wire freq_harmonic_last;
 wire [8:0] freq_harmonic_order;
@@ -202,9 +203,33 @@ assign u_full_scale_x100 = full_scale_low_range_active
 assign i_full_scale_x100 = full_scale_low_range_active
                             ? I_FULL_SCALE_LOW_X100 : I_FULL_SCALE_HIGH_X100;
 
-// 仅在 U/I 同拍有效时把样本送入频域分析，保持通道帧严格对齐。
-assign freq_sample_valid = u_sample_valid && i_sample_valid;
+// 频域链的样本契约：pqm_freq_analysis_rfg 只接受**已去直流的中心化样本**
+// （它内部把 frontend 的 i_zero_code 硬编码为 16'd0，说明它的样本必须已经是
+//  centered 形式）。所以这里必须先减零点码，不能直接把原始偏移码送进去。
+// 踩过的坑：直接送原始码会让整条频域链骑在一个 ~32768 的直流台阶上，
+// 表现为 bin0 巨大（实测 20362）以及奇次频点严格按 1/n 泄漏（直流台阶的频谱）。
+wire signed [16:0] freq_u_centered_ext = $signed({1'b0, u_sample_code}) - $signed({1'b0, u_zero_code});
+wire signed [16:0] freq_i_centered_ext = $signed({1'b0, i_sample_code}) - $signed({1'b0, i_zero_code});
+wire signed [15:0] freq_u_centered = freq_u_centered_ext[15:0];
+wire signed [15:0] freq_i_centered = freq_i_centered_ext[15:0];
 
+// 仅在 U/I 同拍有效时把样本送入频域分析，保持通道帧严格对齐。
+wire freq_sample_valid_raw = u_sample_valid && i_sample_valid;
+reg  freq_sample_valid;
+reg  signed [15:0] freq_sample_u;
+reg  signed [15:0] freq_sample_i;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        freq_sample_valid <= 1'b0;
+        freq_sample_u     <= 16'sd0;
+        freq_sample_i     <= 16'sd0;
+    end else begin
+        freq_sample_valid <= freq_sample_valid_raw;
+        freq_sample_u     <= freq_u_centered;
+        freq_sample_i     <= freq_i_centered;
+    end
+end
 
 // 用频域基波相位的符号修正无功功率方向，同时保持其绝对值不变。
 assign reactive_q_raw_abs_wire = reactive_q_raw_wire[31]
@@ -302,7 +327,7 @@ time_parameters_initiator #(
     .SAMPLE_WIDTH(16),
     .MAX_FRAME_SAMPLES(8192),
     .N_WIDTH(13),
-    .MEASURE_FRAME_SAMPLES(6144)
+    .MEASURE_FRAME_SAMPLES(MEASURE_FRAME_SAMPLES)
 ) u_time_parameters_initiator (
     .clk(clk), .rst_n(rst_n), .start(parameters_start),
     .u_sample_valid(u_sample_valid), .u_sample_code(u_sample_code),
@@ -356,10 +381,13 @@ time_x100_normalizer #(
 pqm_freq_analysis_rfg u_freq_analysis (
     .clk(clk), .rst_n(rst_n), .enable(1'b1),
     .i_sample_valid(freq_sample_valid),
-    .i_sample_u(u_sample_code), .i_sample_i(i_sample_code),
-    .i_u_zero_code(u_zero_code), .i_u_zero_valid(u_zero_valid),
-    .i_i_zero_code(i_zero_code), .i_i_zero_valid(i_zero_valid),
-    .o_sample_ready(),
+    .i_sample_u(freq_sample_u), .i_sample_i(freq_sample_i),
+    // 样本已在此处中心化，所以零码给 0、有效位给 1：frontend 内部做
+    // sample - zero_ref = sample - 0 = sample，等价于不再去直流。
+    // 这与原厂 RFG 整链用例（tb_pqm_rfg_chain，已 PASS）的激励形式完全一致。
+    .i_u_zero_code(16'd0), .i_u_zero_valid(1'b1),
+    .i_i_zero_code(16'd0), .i_i_zero_valid(1'b1),
+    .o_sample_ready(freq_sample_ready),
     .i_harmonic_ready(ps_harmonic_ready),
     .m_harmonic_valid(freq_harmonic_valid),
     .m_harmonic_last(freq_harmonic_last),

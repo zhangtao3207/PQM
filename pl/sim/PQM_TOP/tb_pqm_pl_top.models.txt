@@ -1,0 +1,9 @@
+# tb_pqm_pl_top needs the whole measurement chain, so list every RTL subdirectory.
+# NOTE: this file MUST use CRLF line endings. Windows PowerShell 5.1 Get-Content
+# only splits on CRLF; with bare LF it reads the whole file as ONE line and
+# silently swallows the first entry (ADC_PARALLEL) -- the compile then fails with
+# "Module <pqm_adc_pacer> not found".
+pl/rtl/ADC_PARALLEL
+pl/rtl/DataProcessor
+pl/rtl/PSInterface
+pl/rtl/RFG

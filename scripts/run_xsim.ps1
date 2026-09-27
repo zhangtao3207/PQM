@@ -119,8 +119,14 @@ foreach ($t in $tests) {
     $modelSrcVhd = @()
     $modelData   = @()
     foreach ($d in $modelDirs) {
-        $modelSrcV   += @(Get-ChildItem -Path (Join-Path $d '*') -Recurse -Include '*.v', '*.sv' -File | ForEach-Object { $_.FullName })
-        $modelSrcVhd += @(Get-ChildItem -Path (Join-Path $d '*') -Recurse -Include '*.vhd', '*.vhdl' -File | ForEach-Object { $_.FullName })
+        # 注意：这里不能用 -Include。<本脚本由 powershell -File 跑在 Windows PowerShell 5.1 下，
+        # 5.1 的 `Get-ChildItem -Path <dir>\* -Recurse -Include` 不会深入子目录
+        # （DataProcessor 这种分层目录只会找到根下 1 个文件），且是**静默**少找；
+        # 先递归再用 Where-Object 过滤在 5.1 与 7.x 下行为一致。
+        $modelSrcV   += @(Get-ChildItem -Path $d -Recurse -File |
+            Where-Object { $_.Extension -in @('.v', '.sv') } | ForEach-Object { $_.FullName })
+        $modelSrcVhd += @(Get-ChildItem -Path $d -Recurse -File |
+            Where-Object { $_.Extension -in @('.vhd', '.vhdl') } | ForEach-Object { $_.FullName })
         $modelData   += @(Get-ChildItem -Path $d -Recurse -File |
             Where-Object { $_.Extension -notin @('.v', '.vhd', '.vhdl', '.sv') } | ForEach-Object { $_.FullName })
     }
@@ -134,7 +140,9 @@ foreach ($t in $tests) {
         # 依赖 IP 的模块（xfft / rom_atan_lut 等）只做语法分析，不会进到 xelab 的层次里。
         $groupRtl = @()
         if ($hasGroupRtl) {
-            $groupRtl = @(Get-ChildItem -Path (Join-Path $groupRoot '*') -Recurse -Include '*.v', '*.sv' -File |
+            # 同上：5.1 下用 -Include 会漏掉子目录，这里改成递归后过滤。
+            $groupRtl = @(Get-ChildItem -Path $groupRoot -Recurse -File |
+                Where-Object { $_.Extension -in @('.v', '.sv') } |
                 ForEach-Object { $_.FullName })
             if (-not $groupRtl) { throw "组内没有 RTL 文件：$groupRoot" }
         }

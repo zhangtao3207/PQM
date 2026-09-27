@@ -5,7 +5,7 @@
 
 ## 0 一句话现状
 
-PS 端界面已按官方 `37_zynq_lvgl` 基线搭好并做到像素级等价；PL 测量链的**时域链与频域链都已单模块仿真验证**（25 个用例全绿），**频域链已从 Xilinx xfft 完全切到自研 RFG**，**ADC 采样控速（`pqm_adc_pacer`，25.6 kHz）已做完并有用例**。尚未做：ABI/UI 收敛、PL 顶层接线、Vivado 集成与上板（板子断电）。
+PS 端界面已按官方 `37_zynq_lvgl` 基线搭好并做到像素级等价；PL 测量链**已连成系统并通过系统级仿真**（`pqm_pl_top` + `tb_pqm_pl_top`，`-All` 共 26 个用例全绿），**频域链已从 Xilinx xfft 完全切到自研 RFG**，**ADC 采样控速（`pqm_adc_pacer`，25.6 kHz）已做完并有用例**。尚未做：Vivado 集成与上板（板子断电）、ABI/UI 收敛。
 
 ## 1 硬约束（不可违反）
 
@@ -22,6 +22,7 @@ PS 端界面已按官方 `37_zynq_lvgl` 基线搭好并做到像素级等价；P
 | PL 时域链 | ✅ 单模块验证 | `AD7606_Parallel_DRIVER`、`p2p_measure`、`ui_rms_measure`、`power_metrics_calc`、`phase_diff_calc`、`frequency_measure`、`time_zero_code_tracker`、`time_x100_normalizer`、`time_parameters_initiator` 均有用例 |
 | PL 频域链 | ✅ 单模块 + 整链验证 | 见 §3 |
 | ADC 采样控速 25.6 kHz | ✅ 单模块验证 | `pqm_adc_pacer`（26 位累加器、INC=34361）：平均严格 25.6 kHz，相邻间隔 1953/1954 拍。用例 `tb_pqm_adc_pacer`，详见 §3.1 |
+| PL 测量链系统级验证 | ✅ 系统级仿真通过 | `pl/rtl/PQM_TOP/pqm_pl_top.v` + `pl/sim/PQM_TOP/tb_pqm_pl_top.v`：全链逐环判据（pacer → AD7606 驱动 → 补码转偏移码 → 零点跟踪×2 → 测量核心 → 共享内存桥）；谐波 1 次占比 7138 / 3 次 2861、共享内存 ABI 回读一致、快照提交 9 次且 `u_rms`=812、采样 25.6 kHz 无丢样本（gap 1953/1954、`adc_tick_pending`=0）。详见 §3.2 |
 | 仿真基础设施 | ✅ | `scripts/run_xsim.ps1`：`-Test <模块>` / `-All`；支持 `.v` 与 `.sv`、`.sv` 测试平台、行为级 IP 模型、用例级额外源清单 |
 | 长期记忆 | ✅ | `.dsh/MEMORY.md`（四域）+ `.dsh/memory/` 11 张卡片 + `.dsh/PROGRESS.md` |
 
@@ -77,7 +78,7 @@ ADC 采样流 → pqm_sample_fifo(每通道 64 深) → pqm_rfg_frontend(2×RFG 
 - 选 34361 而不是更接近 34359.738 的 34360：后者会让间隔退化成恒定 1953 拍
   （`2^25 × 34360` 整除 `2^26`），每 8 个脉冲漂移 -1 拍；34361 给出标准交替。
 - 纯时基：不看 ADC 忙闲（25.6 kHz 周期 1953 拍，一次采样约占 700 拍）；
-  重触发策略留给将来的 PL 顶层。
+  重触发策略已在 `pqm_pl_top` 里定案：tick 撞上驱动忙时不重触发，只置粘滞标志 `adc_tick_pending`。
 
 验收（`-Test pqm_adc_pacer`，日志 `export/xsim_pqm_adc_pacer.log`）：
 
@@ -91,25 +92,57 @@ ADC 采样流 → pqm_sample_fifo(每通道 64 深) → pqm_rfg_frontend(2×RFG 
 
 注：A2 窗口按“15625 拍 ÷ 1953.125 拍/脉冲 = 8 个脉冲”计数，不是 8000。
 
-**待办**：pacer 尚未被任何设计文件实例化（PQM2 还没有 PL 顶层），`AD7606_Parallel_DRIVER.start`
-的接线属于 §4 第 5 条的 Vivado 集成范围。
+**接线已完成**：`pqm_pl_top` 已实例化 pacer，`o_tick` 接 `AD7606_Parallel_DRIVER.start`；
+tick 撞上驱动忙时置粘滞标志 `adc_tick_pending`（丢样本这件事是可见的），正常时序下恒为 0。
+
+## 3.2 PL 测量链系统级验收（2026-10）
+
+用例 `pl/sim/PQM_TOP/tb_pqm_pl_top.v`，被测 `pl/rtl/PQM_TOP/pqm_pl_top.v`。激励：在 AD7606 引脚上挂芯片
+行为模型，喂代码级正弦 u = 1000·cos(ωn) + 400·cos(3ωn)、i = 800·sin(ωn)（滞后 90°）。TB 逐环判据：
+1a 复位期无 tick ┊ 1b 每个 tick 都被消费（`adc_tick_pending`=0）┊ 1c 帧间隔 1953~1954 拍 ┊ 1d valid 与帧一一对应 ┊
+2a 码值随正弦变化 ┊ 2b 零点收敛到 0x8000 ┊ 3in 送进 RFG 的前 24 点与解析值逐点相等 ┊ 3 谐波帧结构与 1 次占比 ┊
+4 快照提交与 `u_rms` ┊ 5 桥写 BRAM 与共享内存 ABI 回读。
+
+实测日志（`export/xsim_pqm_pl_top.log`，`-Test pqm_pl_top`，TB 默认的缩短测量参数，约 90 秒）：
+
+```
+INFO: 1a 复位期间无 tick
+INFO: 1b tick=4200 frame=4200 gap=[1953,1954] 标称 1953
+INFO: 1c pending=0 sample=4200 ready=8204111
+INFO: 2b zero_valid=1/1 zero_code=8000/8000 code_changed=4166
+INFO: 3 harm_frames=8 items=4008 max_index=500 last=500 h1_present=1 h1_ratio=7138
+INFO: 3in  RFG 输入前 24 点不符 0 个
+INFO: 4 commit=9 u_rms=812（期望约 762）bram_wr=16764 harm_wr=16000
+INFO: 5abi  从共享内存解出：1次u=7138 3次u=2861 present=1 最大index=64
+PASS: pqm_pl_top
+```
+
+要点：
+- 谐波 1 次 u 占比 7138、3 次 2861（解析 7142.9 / 2857.1），与频域链单模块验收一致。
+- 共享内存 ABI 回读与核心输出逐项一致（bank0 基址 word `0x400`、bank1 `0x800`，每条 4 word）。RFG 取点 `C_K=64`，
+  所以**有值的最大频点是 64**，65..500 按设计 `present=0`。
+- 快照提交 9 次，`u_rms` 字段 812（TB 期望 762，偏 +6.6%，在 ±20% 判据内；偏差来源未查证）。
+- 采样侧：帧间隔只有 1953/1954 拍、`adc_tick_pending` 恒 0 ⇒ 25.6 kHz 无丢样本。
+- 本轮同时删除了一处死逻辑：`pqm_rfg_sample_pump`（其 `o_sample_valid/u/i` 在全链里没有任何消费者），
+  删除前后 `pqm_pl_top` 用例的全部数值逐项不变。
 
 ## 4 未完成（下一步就在这里面挑）
 
 1. ~~ADC 控速到 25.6 kHz~~ **已完成**（`pqm_adc_pacer` + `tb_pqm_adc_pacer`，见 §3.1）。
-   剩下的是接线：pacer 的 `o_tick` 接 `AD7606_Parallel_DRIVER.start`，但要等 PL 顶层（§4 第 5 条）才做；
-   接线时注意纯时基策略：pacer 不管忙闲，若一次采样跨过下一个 tick，脉冲会被丢掉（需在顶层定取舍）。
+   ~~剩下的是接线：pacer 的 `o_tick` 接 `AD7606_Parallel_DRIVER.start`~~ **已完成**：`pqm_pl_top` 已接线；
+   忙闲取舍已定 —— tick 撞上驱动忙时置粘滞标志 `adc_tick_pending`，正常时序下恒为 0（一帧约占 700 拍 < 周期 1953 拍）。
    代价要记住：采样率降 8 倍后，时域链过零分辨率变成 39 µs ⇒ 频率 ±0.1 Hz、相位 ±0.7°（PF 在 φ≈0 处二阶不敏感）。若不够，退回"102.4 kSPS 采 + 4 倍抽取给 RFG"。
 2. **ABI/UI 收敛**：谐波条目 **501 → 65**（`pl/rtl/PSInterface/pqm_shared_memory_map.vh` + 共享内存桥 + PS 读侧 + UI），UI 谐波显示改成**每页 16 条、第 1 页额外带 0 次**（H0 + H1–H16，之后 H17–H32 / H33–H48 / H49–H64 共 4 页）。
    ⚠️ "每页 16 条"是我对用户原话的理解（频率页幅值图与相位图共用谐波窗口，我按两个图都改）——**动手前先跟用户确认一次**。
 3. **`pqm_sample_fifo` 的写满/溢出路径没有独立用例**（现有用例只覆盖未满的正常流）。
 4. **可选项**：把仿真的相位查表从行为级模型换成真 IP 生成的 `sim/rom_atan_lut_1024.v`（做法见 `pl/README.md`；同名的两个模块不能同时编译）。
 5. **增量 6/7（大块）**：建 Vivado 工程（官方视频段参数逐条照抄官方 `.bd` 并冻结 + PQM 测量段），离线综合/实现拿资源与时序；上板验证等板子可用。旧工程 IP 照搬要先 `upgrade_ip`（2018.3 定制、2022.2 下 locked）。
-6. 老 `divider_signed.v` 无人实例化（死代码）。
+6. 死代码：老 `divider_signed.v` 无人实例化（未清理）；`pqm_rfg_sample_pump`（取样缓冲，输出在全链里没有任何消费者）已于本轮删除。
+7. ~~建 PL 测量链顶层并做系统级联调~~ **已完成**（`pqm_pl_top` + `tb_pqm_pl_top`，见 §3.2）；Vivado 集成见上面第 5 条。
 
 ## 5 约定与坑
 
-- 仿真入口：`powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -All`（25 例约 4 分钟）；单例 `-Test <模块>`（7~12 秒）。
+- 仿真入口：`powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -All`（26 例约 5 分钟，其中系统级用例 `pqm_pl_top` 单独占约 90 秒）；单例 `-Test <模块>`（7~12 秒）。
 - 约定：`pl/rtl/<组>/<模块>.v` ↔ `pl/sim/<组>/tb_<模块>.v`，**组名必须一致**；判定必须看日志里的 `PASS: <用例名>`（`xsim -runall` 遇 `$fatal` 仍返回 0）。
 - 用例需要额外源/向量时，在 `pl/sim/<组>/tb_<用例>.models.txt` 里逐行列目录（**按用例独立，漏建会让 readmemh 静默留 X**）。
 - 数值检查必须带 `^actual === 1'bx` 守卫（Verilog 里 `if(X)` 为假，范围比较会静默放行）。
