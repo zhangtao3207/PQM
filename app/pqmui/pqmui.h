@@ -26,8 +26,10 @@
 #define PQMUI_HARMONIC_STEP     16
 #define PQMUI_HARMONIC_MAX_START 48
 
-/* 时域图表纵轴满量程，对应 AD 的 int16 输出 */
-#define PQMUI_WAVE_FULL_SCALE   32767
+/* 时域图表纵轴满刻度：波形按“占本通道满量程的百分比”绘制。
+ * 电压与电流共用同一条归一化纵轴（±100.00%，10000 = 100%），
+ * 两路各自的满量程由纵轴两侧的静态刻度文字分别标注：左电压、右电流。 */
+#define PQMUI_WAVE_SCALE_X100   10000
 
 /* 谐波条目标志位 */
 #define PQMUI_HARMONIC_FLAG_RATIO 0x01u
@@ -126,6 +128,8 @@ void PQMUI_Init(void);
 void PQMUI_SetRangeRequest(pqmui_range_request_fn request);
 /* 接收量程命令结果并更新按钮文字或错误状态。 */
 void PQMUI_SetRangeResult(u8 success, u8 low_range);
+/* 下发当前量程下 U/I 的满量程（工程量 x100），时域页据此刷新纵轴刻度。 */
+void PQMUI_SetFullScale(u32 u_full_scale_x100, u32 i_full_scale_x100);
 /* 更新最新测量值，未冻结时刷新当前页面。 */
 void PQMUI_UpdateMeasurement(const pqmui_measurement_t *measurement);
 /* 更新时域波形包络。 */

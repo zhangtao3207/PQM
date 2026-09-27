@@ -4,7 +4,8 @@
  * 初始化顺序与官方 37_zynq_lvgl 例程保持一致：配置时钟与显示控制器、启动
  * VDMA、初始化 LVGL 的显示与触摸接口，然后把界面交给 PQM 界面层。相对官方
  * 例程只改了两处：界面入口由示例的 lv_demo_music() 换成 PQMUI_Init()，主循环
- * 里追加一次假数据源轮询。示例中未被引用的绘图辅助函数声明与配色表已删除。
+ * 里追加一次共享内存轮询——界面上的测量值全部由 PL 实测、经 0x40000000 的
+ * PS/PL 共享内存读回，不再有假数据源。示例中未被引用的绘图辅助函数声明与配色表已删除。
  */
 
 #include <stdio.h>
@@ -33,7 +34,7 @@
 
 /* PQM 界面 */
 #include "pqmui/pqmui.h"
-#include "demo/pqmui_demo.h"
+#include "pqmshm/pqmshm.h"
 
 //宏定义
 #define BYTES_PIXEL        3                          //像素字节数，RGB888占3个字节
@@ -95,7 +96,7 @@ int main(void)
     while(1)
     {
     	lv_task_handler();
-        PQMUI_DemoPoll();               /* 阶段1假数据源，阶段3接入真实数据后删除 */
+        PQMUI_ShmPoll();                /* 读 PL 实测结果：PS/PL 共享内存 0x40000000 */
     }
 
     return 0;

@@ -41,9 +41,12 @@ static const u32 FreqHarmonicColors[3] = {
 static lv_obj_t *MagnitudeChart;
 static lv_obj_t *PhaseChart;
 static lv_chart_series_t *MagnitudeSeries[2];
-static lv_chart_series_t *PhaseSeries;
+static lv_chart_series_t *PhaseSeriesPos;
+static lv_chart_series_t *PhaseSeriesNeg;
 static lv_coord_t MagnitudePoints[2][PQMUI_HARMONIC_POINTS];
-static lv_coord_t PhasePoints[PQMUI_HARMONIC_POINTS];
+/* 相位图两个 series 的 y 数组：正走蓝、非正走红，另一侧填空点。 */
+static lv_coord_t PhasePointsPos[PQMUI_HARMONIC_POINTS];
+static lv_coord_t PhasePointsNeg[PQMUI_HARMONIC_POINTS];
 static lv_obj_t *FreqValueLabels[5];
 static lv_obj_t *FreqHarmonicLabels[3];
 static lv_obj_t *HarmonicWindowLabel;
@@ -96,7 +99,7 @@ void PQMUI_FreqCreate(void)
     lv_obj_set_pos(MagnitudeChart, 48, 38);
     lv_obj_set_size(MagnitudeChart, 414, 205);
     lv_obj_clear_flag(MagnitudeChart, LV_OBJ_FLAG_SCROLLABLE);
-    /* 谐波占比按“每个谐波一根”的方式展示，故用条形图；相位图仍为折线。 */
+    /* 谐波占比按“每个谐波一根”的方式展示，故用条形图；相位图同样是条形图。 */
     lv_chart_set_type(MagnitudeChart, LV_CHART_TYPE_BAR);
     lv_chart_set_point_count(MagnitudeChart, PQMUI_HARMONIC_POINTS);
     lv_chart_set_range(MagnitudeChart, LV_CHART_AXIS_PRIMARY_Y, 0, 10000);
@@ -119,14 +122,23 @@ void PQMUI_FreqCreate(void)
     lv_obj_set_pos(PhaseChart, 48, 266);
     lv_obj_set_size(PhaseChart, 414, 82);
     lv_obj_clear_flag(PhaseChart, LV_OBJ_FLAG_SCROLLABLE);
-    lv_chart_set_type(PhaseChart, LV_CHART_TYPE_LINE);
+    /* 相位图与上方幅度图同宽同 x 位置：同样用条形图，缺相谐波不画柱，
+     * 不再像折线图那样只剩零星散点。
+     * LVGL 8.2 一个 series 只有一种颜色，所以拆成两个 series：
+     *   phase > 0  -> 蓝 PQMUI_COLOR_PHASE；phase <= 0 -> 红 PQMUI_COLOR_ALARM；
+     * 两者各自在另一侧填 LV_CHART_POINT_NONE，互不覆盖。 */
+    lv_chart_set_type(PhaseChart, LV_CHART_TYPE_BAR);
     lv_chart_set_point_count(PhaseChart, PQMUI_HARMONIC_POINTS);
     lv_chart_set_range(PhaseChart, LV_CHART_AXIS_PRIMARY_Y, -18000, 18000);
     lv_chart_set_div_line_count(PhaseChart, 3, 6);
-    PhaseSeries = lv_chart_add_series(PhaseChart,
-                                      lv_color_hex(PQMUI_COLOR_PHASE),
-                                      LV_CHART_AXIS_PRIMARY_Y);
-    lv_chart_set_ext_y_array(PhaseChart, PhaseSeries, PhasePoints);
+    PhaseSeriesPos = lv_chart_add_series(PhaseChart,
+                                         lv_color_hex(PQMUI_COLOR_PHASE),
+                                         LV_CHART_AXIS_PRIMARY_Y);
+    PhaseSeriesNeg = lv_chart_add_series(PhaseChart,
+                                         lv_color_hex(PQMUI_COLOR_ALARM),
+                                         LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_set_ext_y_array(PhaseChart, PhaseSeriesPos, PhasePointsPos);
+    lv_chart_set_ext_y_array(PhaseChart, PhaseSeriesNeg, PhasePointsNeg);
     PQMUI_CreateText(left, 6, 264, "+180", 1u);
     PQMUI_CreateText(left, 12, 322, "-180", 1u);
 
@@ -185,6 +197,7 @@ void PQMUI_FreqRefreshHarmonics(void)
 {
     u32 point;
     u32 selected;
+    u32 probe;
 
     if (!PQMUI_HarmonicsAvailable) {
         return;
@@ -201,15 +214,26 @@ void PQMUI_FreqRefreshHarmonics(void)
                 PQMUI_LatestHarmonics.entries[harmonic].u_ratio_x100;
             MagnitudePoints[1][point] =
                 PQMUI_LatestHarmonics.entries[harmonic].i_ratio_x100;
-            PhasePoints[point] =
-                (PQMUI_LatestHarmonics.entries[harmonic].flags &
-                 PQMUI_HARMONIC_FLAG_PHASE) != 0u
-                    ? PQMUI_LatestHarmonics.entries[harmonic].phase_x100
-                    : LV_CHART_POINT_NONE;
+            if ((PQMUI_LatestHarmonics.entries[harmonic].flags &
+                 PQMUI_HARMONIC_FLAG_PHASE) != 0u &&
+                PQMUI_LatestHarmonics.entries[harmonic].phase_x100 > 0) {
+                PhasePointsPos[point] =
+                    PQMUI_LatestHarmonics.entries[harmonic].phase_x100;
+                PhasePointsNeg[point] = LV_CHART_POINT_NONE;
+            } else if ((PQMUI_LatestHarmonics.entries[harmonic].flags &
+                        PQMUI_HARMONIC_FLAG_PHASE) != 0u) {
+                PhasePointsPos[point] = LV_CHART_POINT_NONE;
+                PhasePointsNeg[point] =
+                    PQMUI_LatestHarmonics.entries[harmonic].phase_x100;
+            } else {
+                PhasePointsPos[point] = LV_CHART_POINT_NONE;
+                PhasePointsNeg[point] = LV_CHART_POINT_NONE;
+            }
         } else {
             MagnitudePoints[0][point] = LV_CHART_POINT_NONE;
             MagnitudePoints[1][point] = LV_CHART_POINT_NONE;
-            PhasePoints[point] = LV_CHART_POINT_NONE;
+            PhasePointsPos[point] = LV_CHART_POINT_NONE;
+            PhasePointsNeg[point] = LV_CHART_POINT_NONE;
         }
     }
     lv_chart_refresh(MagnitudeChart);
@@ -220,8 +244,24 @@ void PQMUI_FreqRefreshHarmonics(void)
                           (unsigned int)(PQMUI_HarmonicWindowStart +
                                          (PQMUI_HARMONIC_STEP - 1u)));
 
-    /* 谐波详情显示本页第一条谐波（即窗口起点）的 U/I/相位。 */
+    /* 谐波详情块显示「本页第一条 present 的谐波」，而不是窗口起点本身：
+     * 第 1 页的窗口起点是 H0（直流空槽，flags = 0x00，按已确认口径不 present），
+     * 直接取起点会永远落到兜底分支、三行都显示 --。这里在
+     * [窗口起点, 窗口起点 + 本页条数) 内向后扫第一个 present 的条目；
+     * 上界同时夹住 PQMUI_HARMONIC_ENTRIES，避免越界读。整页都无 present 时
+     * 退回窗口起点并沿用 -- 兜底。 */
     selected = (u32)PQMUI_HarmonicWindowStart;
+    for (probe = selected;
+         (probe < (u32)PQMUI_HARMONIC_ENTRIES) &&
+         (probe < (selected + (u32)PQMUI_HARMONIC_POINTS));
+         ++probe) {
+        if ((PQMUI_LatestHarmonics.entries[probe].flags &
+             PQMUI_HARMONIC_FLAG_RATIO) != 0u) {
+            selected = probe;
+            break;
+        }
+    }
+
     if ((PQMUI_LatestHarmonics.entries[selected].flags &
          PQMUI_HARMONIC_FLAG_RATIO) != 0u) {
         const pqmui_harmonic_t *entry = &PQMUI_LatestHarmonics.entries[selected];

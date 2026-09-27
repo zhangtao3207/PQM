@@ -17,6 +17,10 @@ extern lv_obj_t *PQMUI_RangeButtonLabel;
 /* 量程请求回调，由外部注册。 */
 extern pqmui_range_request_fn PQMUI_RangeRequest;
 
+/* 当前量程下 U/I 的满量程（工程量 x100），由数据源在量程变化时下发。 */
+extern u32 PQMUI_UMaxX100;
+extern u32 PQMUI_IMaxX100;
+
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
@@ -31,6 +35,7 @@ void PQMUI_UpdateStatus(void);
 void PQMUI_TimeCreate(void);
 void PQMUI_TimeRefreshMeasurement(void);
 void PQMUI_TimeRefreshWaveform(const pqmui_wave_column_t *columns);
+void PQMUI_TimeRefreshScale(void);
 
 /* 频域页 */
 void PQMUI_FreqCreate(void);

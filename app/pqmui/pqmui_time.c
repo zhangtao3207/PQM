@@ -11,8 +11,8 @@
 
 #include <limits.h>
 
-/* 横轴时间跨度文本。真实时基由 PL 的帧采样率决定，尚未确定，沿用旧工程的显示值。 */
-#define PQMUI_TIME_AXIS_SPAN_TEXT "20 ms"
+/* 横轴时间跨度文本。一屏 400 列覆盖约 2.8 个 50 Hz 周期（60 ms 口径）。 */
+#define PQMUI_TIME_AXIS_SPAN_TEXT "60 ms"
 
 static const pqmui_field_t TimeFields[10] = {
     PQMUI_FIELD_FREQUENCY,
@@ -50,6 +50,10 @@ static lv_obj_t *TimeChart;
 static lv_chart_series_t *TimeSeries[4];
 static lv_coord_t TimePoints[4][PQMUI_WAVE_COLUMNS];
 static lv_obj_t *TimeValueLabels[10];
+
+/* 纵轴双刻度的文字标签：0/1 = 左（电压满量程），2/3 = 右（电流满量程）。
+ * LVGL 只有一个 Y 轴，所以两组刻度都是静态 label，图本身用 ±100% 归一化坐标。 */
+static lv_obj_t *TimeScaleLabels[4];
 
 lv_obj_t *PQMUI_RangeButtonLabel;
 
@@ -93,10 +97,10 @@ void PQMUI_TimeCreate(void)
     lv_obj_clear_flag(left, LV_OBJ_FLAG_SCROLLABLE);
     PQMUI_CreateText(left, 18, 10, "Voltage / Current Waveform", 0u);
 
-    label = PQMUI_CreateText(left, 302, 12, "U", 0u);
+    label = PQMUI_CreateText(left, 302, 12, "U/V", 0u);
     lv_obj_set_style_text_color(label, lv_color_hex(PQMUI_COLOR_U_WAVE),
                                 LV_PART_MAIN);
-    label = PQMUI_CreateText(left, 340, 12, "I", 0u);
+    label = PQMUI_CreateText(left, 340, 12, "I/A", 0u);
     lv_obj_set_style_text_color(label, lv_color_hex(PQMUI_COLOR_I_WAVE),
                                 LV_PART_MAIN);
 
@@ -107,8 +111,9 @@ void PQMUI_TimeCreate(void)
     lv_obj_clear_flag(TimeChart, LV_OBJ_FLAG_SCROLLABLE);
     lv_chart_set_type(TimeChart, LV_CHART_TYPE_LINE);
     lv_chart_set_point_count(TimeChart, PQMUI_WAVE_COLUMNS);
+    /* 归一化纵轴：两路各自按“占本通道满量程的百分比”绘制，共用 ±100.00%。 */
     lv_chart_set_range(TimeChart, LV_CHART_AXIS_PRIMARY_Y,
-                       -PQMUI_WAVE_FULL_SCALE, PQMUI_WAVE_FULL_SCALE);
+                       -PQMUI_WAVE_SCALE_X100, PQMUI_WAVE_SCALE_X100);
     lv_chart_set_div_line_count(TimeChart, 7, 8);
     TimeSeries[0] = lv_chart_add_series(TimeChart,
                                         lv_color_hex(PQMUI_COLOR_U_WAVE),
@@ -127,9 +132,15 @@ void PQMUI_TimeCreate(void)
                                  TimePoints[index]);
     }
 
-    PQMUI_CreateText(left, 8, 54, "+FS", 1u);
+    /* 纵轴双刻度（用户口径）：左侧标电压满量程、右侧标电流满量程，
+     * 数值随量程切换更新。单位由标题行的图例 U/V、I/A 给出：
+     * 右侧刻度到面板内边只剩 23 px，“+30”在 14 号字下宽 25.4 px 会被裁掉一个
+     * 数字，所以右侧顶端省掉 "+" 前缀（顶端位置本身即表示正值），负号照常写。 */
+    TimeScaleLabels[0] = PQMUI_CreateText(left, 8, 54, "+350", 1u);
     PQMUI_CreateText(left, 14, 184, "0", 1u);
-    PQMUI_CreateText(left, 8, 310, "-FS", 1u);
+    TimeScaleLabels[1] = PQMUI_CreateText(left, 8, 310, "-350", 1u);
+    TimeScaleLabels[2] = PQMUI_CreateText(left, 462, 54, "30", 1u);
+    TimeScaleLabels[3] = PQMUI_CreateText(left, 462, 310, "-30", 1u);
     PQMUI_CreateText(left, 48, 338, "0", 1u);
     PQMUI_CreateText(left, 420, 338, PQMUI_TIME_AXIS_SPAN_TEXT, 1u);
 
@@ -152,6 +163,8 @@ void PQMUI_TimeCreate(void)
                                         LV_PART_MAIN);
         }
     }
+
+    PQMUI_TimeRefreshScale();
 }
 
 void PQMUI_TimeRefreshMeasurement(void)
@@ -178,13 +191,36 @@ void PQMUI_TimeRefreshWaveform(const pqmui_wave_column_t *columns)
 
     for (index = 0u; index < PQMUI_WAVE_COLUMNS; ++index) {
         TimePoints[0][index] = (columns[index].u_min == INT16_MIN)
-                                   ? -PQMUI_WAVE_FULL_SCALE
+                                   ? -PQMUI_WAVE_SCALE_X100
                                    : columns[index].u_min;
         TimePoints[1][index] = columns[index].u_max;
         TimePoints[2][index] = (columns[index].i_min == INT16_MIN)
-                                   ? -PQMUI_WAVE_FULL_SCALE
+                                   ? -PQMUI_WAVE_SCALE_X100
                                    : columns[index].i_min;
         TimePoints[3][index] = columns[index].i_max;
     }
     lv_chart_refresh(TimeChart);
+}
+
+/*
+ * 按当前满量程刷新纵轴双刻度：左侧电压、右侧电流。
+ * 纵轴是 ±100.00% 的归一化坐标，所以刻度值就是各通道的满量程本身；
+ * 两种量程的满量程都是整数值（350/30 与 10/3），这里按 x100 取整到工程量单位。
+ */
+void PQMUI_TimeRefreshScale(void)
+{
+    if (TimeScaleLabels[0] == NULL || TimeScaleLabels[1] == NULL ||
+        TimeScaleLabels[2] == NULL || TimeScaleLabels[3] == NULL) {
+        return;
+    }
+
+    lv_label_set_text_fmt(TimeScaleLabels[0], "+%u",
+                          (unsigned int)(PQMUI_UMaxX100 / 100u));
+    lv_label_set_text_fmt(TimeScaleLabels[1], "-%u",
+                          (unsigned int)(PQMUI_UMaxX100 / 100u));
+    /* 右侧顶端省略 "+" 前缀，理由见 PQMUI_TimeCreate 中的刻度说明。 */
+    lv_label_set_text_fmt(TimeScaleLabels[2], "%u",
+                          (unsigned int)(PQMUI_IMaxX100 / 100u));
+    lv_label_set_text_fmt(TimeScaleLabels[3], "-%u",
+                          (unsigned int)(PQMUI_IMaxX100 / 100u));
 }

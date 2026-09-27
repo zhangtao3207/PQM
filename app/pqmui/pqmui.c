@@ -31,6 +31,10 @@ u16 PQMUI_HarmonicWindowStart;
 
 pqmui_range_request_fn PQMUI_RangeRequest;
 
+/* 当前量程下 U/I 的满量程（工程量 x100）。上电默认按大量程（350 V / 30 A）
+ * 取值，PL 复位后也是大量程；量程被受理后由数据源立即下发真实值。 */
+u32 PQMUI_UMaxX100 = 35000u;
+u32 PQMUI_IMaxX100 = 3000u;
 /* 按当前页面状态切换两页的可见性，并同步标题与翻页按钮文字。 */
 static void PQMUI_SetPageVisible(void)
 {
@@ -200,6 +204,21 @@ void PQMUI_Init(void)
 void PQMUI_SetRangeRequest(pqmui_range_request_fn request)
 {
     PQMUI_RangeRequest = request;
+}
+
+void PQMUI_SetFullScale(u32 u_full_scale_x100, u32 i_full_scale_x100)
+{
+    /* 0 是非法满量程（会除零），保持上一次的有效值不动。 */
+    if (u_full_scale_x100 == 0u || i_full_scale_x100 == 0u) {
+        return;
+    }
+    if (u_full_scale_x100 == PQMUI_UMaxX100 &&
+        i_full_scale_x100 == PQMUI_IMaxX100) {
+        return;
+    }
+    PQMUI_UMaxX100 = u_full_scale_x100;
+    PQMUI_IMaxX100 = i_full_scale_x100;
+    PQMUI_TimeRefreshScale();
 }
 
 void PQMUI_SetRangeResult(u8 success, u8 low_range)
