@@ -4,8 +4,8 @@
  * 模块: pqm_rfg_scale
  * 功能:
  *   把 pqm_rfg_frontend 的 32 位顺序流（0 次 + 1..C_K 次）缩放成
- *   **与 fft_result_receiver 输出形状完全一致**的 16 位频点流，从而让后续
- *   fft_magnitude_calc / fft_harmonic_stats / fft_phase_vector_calc /
+ *   **与原 FFT 链接收器（已删）输出形状完全一致**的 16 位频点流，从而让后续
+ *   magnitude_calc / harmonic_stats / phase_vector_calc /
  *   freq_harmonic_iir_filter / freq_metrics_raw_calc **原样复用**（都已验证过）。
  *
  * 为什么一次统一的右移就够了（这是等价性的依据）：

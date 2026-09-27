@@ -1,9 +1,9 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: tb_fft_magnitude_calc
+ * 模块: tb_magnitude_calc
  * 功能:
- *   fft_magnitude_calc 的单元测试平台：对每个 FFT 频点算 real^2+imag^2 与 sqrt，
+ *   magnitude_calc 的单元测试平台：对每个频点算 real^2+imag^2 与 sqrt，
  *   并把频点索引、帧尾标志和原始 real/imag 对齐透传。
  *
  *   激励取勾股数，期望值全是精确整数：
@@ -19,7 +19,7 @@
  *     3) 另一组频点，检查不同量级下的开方结果
  */
 
-module tb_fft_magnitude_calc;
+module tb_magnitude_calc;
 
     localparam integer CLK_PERIOD  = 10;      // 100 MHz
     localparam integer WATCHDOG_NS = 2000000; // 2 ms 兜底
@@ -59,7 +59,7 @@ module tb_fft_magnitude_calc;
 
     always #(CLK_PERIOD / 2) clk = ~clk;
 
-    fft_magnitude_calc dut (
+    magnitude_calc dut (
         .clk(clk),
         .rst_n(rst_n),
         .enable(enable),
@@ -258,10 +258,10 @@ module tb_fft_magnitude_calc;
         end
 
         if (errors == 0) begin
-            $display("PASS: fft_magnitude_calc");
+            $display("PASS: magnitude_calc");
         end else begin
-            $display("FAIL: fft_magnitude_calc，共 %0d 处不符", errors);
-            $fatal(1, "fft_magnitude_calc 用例未通过");
+            $display("FAIL: magnitude_calc，共 %0d 处不符", errors);
+            $fatal(1, "magnitude_calc 用例未通过");
         end
         $finish;
     end

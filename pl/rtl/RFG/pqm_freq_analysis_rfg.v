@@ -12,7 +12,7 @@
  *     fft_fundamental_freq_tracker（基波周期估计来自 FFT 输出；本版改用时域测频）
  *
  *   **其余后级逐条照抄原顶层**，一个都不改：
- *     fft_magnitude_calc -> fft_harmonic_stats(FUND_BIN=1) -> fft_phase_vector_calc
+ *     magnitude_calc -> harmonic_stats(FUND_BIN=1) -> phase_vector_calc
  *     -> phase_deg_lut_calc（内部用 rom_atan_lut_1024）-> freq_harmonic_iir_filter
  *
  *   去直流在这里做（与原 fft_stream_adapter 同一写法：两路零扩展到 17 位再相减），
@@ -181,7 +181,7 @@ module pqm_freq_analysis_rfg #(
     wire        mag_busy, mag_frame_done;
     wire [15:0] mag_frame_count;
 
-    fft_magnitude_calc u_fft_magnitude_calc (
+    magnitude_calc u_magnitude_calc (
         .clk(clk), .rst_n(rst_n), .enable(enable),
         .s_bin_valid(sc_bin_valid), .s_bin_ready(sc_bin_ready),
         .s_bin_last(sc_bin_last), .s_bin_index(sc_bin_index),
@@ -207,9 +207,9 @@ module pqm_freq_analysis_rfg #(
     wire [15:0] hs_frame_count;
     wire [31:0] hs_u_total, hs_i_total;
 
-    fft_harmonic_stats #(
+    harmonic_stats #(
         .FUND_BIN(HARMONIC_FUND_BIN)
-    ) u_fft_harmonic_stats (
+    ) u_harmonic_stats (
         .clk(clk), .rst_n(rst_n), .enable(enable),
         .s_mag_valid(mag_valid), .s_mag_ready(harm_stats_s_mag_ready),
         .s_mag_last(mag_last), .s_bin_index(mag_bin_index),
@@ -239,7 +239,7 @@ module pqm_freq_analysis_rfg #(
     wire        pv_busy, pv_frame_done;
     wire [15:0] pv_frame_count;
 
-    fft_phase_vector_calc u_fft_phase_vector_calc (
+    phase_vector_calc u_phase_vector_calc (
         .clk(clk), .rst_n(rst_n), .enable(enable),
         .s_harmonic_valid(hs_valid), .s_harmonic_ready(hs_ready),
         .s_harmonic_last(hs_last), .s_harmonic_order(hs_order),

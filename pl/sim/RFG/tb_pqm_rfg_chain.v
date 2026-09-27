@@ -3,11 +3,11 @@
 /*
  * 模块: tb_pqm_rfg_chain
  * 功能:
- *   RFG 频域整链验证：pqm_rfg_frontend -> pqm_rfg_scale -> fft_magnitude_calc
- *   -> fft_harmonic_stats，并直接核对**下游真正消费的量：谐波占比**。
+ *   RFG 频域整链验证：pqm_rfg_frontend -> pqm_rfg_scale -> magnitude_calc
+ *   -> harmonic_stats，并直接核对**下游真正消费的量：谐波占比**。
  *
  *   这一步是"能否完全移出 FFT"的关键验收：
- *   后两个模块（fft_magnitude_calc / fft_harmonic_stats）是原 FFT 链上已验证过的
+ *   后两个模块（magnitude_calc / harmonic_stats）是原 FFT 链上已验证过的
  *   模块，本用例证明它们**原样**就能吃 RFG 的流，且占比与解析值一致。
  *
  *   激励（同 tb_pqm_rfg_frontend，512 点 = 一个 50 Hz 周期）：
@@ -29,7 +29,7 @@ module tb_pqm_rfg_chain;
     localparam integer C_L         = 4;
     localparam integer C_D         = 1;
     localparam integer SHIFT       = 10;
-    localparam integer HARM_ORDERS = 501;      // fft_harmonic_stats 固定输出 0..500
+    localparam integer HARM_ORDERS = 501;      // harmonic_stats 固定输出 0..500
     localparam integer FUND_BIN    = 1;        // 与 freq_analysis_top 一致
 
     reg clk = 1'b0;
@@ -56,7 +56,7 @@ module tb_pqm_rfg_chain;
 
     // magnitude
     wire        mag_valid, mag_last;
-    wire        hs_s_mag_ready;      // fft_harmonic_stats 的 s_mag_ready -> 幅值模块的 m_mag_ready
+    wire        hs_s_mag_ready;      // harmonic_stats 的 s_mag_ready -> 幅值模块的 m_mag_ready
     wire [10:0] mag_bin_index;
     wire signed [15:0] mag_u_real, mag_u_imag, mag_i_real, mag_i_imag;
     wire [32:0] mag_u_mag_sq, mag_i_mag_sq;
@@ -112,7 +112,7 @@ module tb_pqm_rfg_chain;
         .o_frame_done(sc_frame_done)
     );
 
-    fft_magnitude_calc u_mag (
+    magnitude_calc u_mag (
         .clk(clk), .rst_n(rst_n), .enable(1'b1),
         .s_bin_valid(sc_bin_valid), .s_bin_ready(sc_bin_ready),
         .s_bin_last(sc_bin_last), .s_bin_index(sc_bin_index),
@@ -128,7 +128,7 @@ module tb_pqm_rfg_chain;
         .mag_frame_count(mag_frame_count)
     );
 
-    fft_harmonic_stats #(.FUND_BIN(FUND_BIN[10:0])) u_hs (
+    harmonic_stats #(.FUND_BIN(FUND_BIN[10:0])) u_hs (
         .clk(clk), .rst_n(rst_n), .enable(1'b1),
         .s_mag_valid(mag_valid), .s_mag_ready(hs_s_mag_ready),
         .s_mag_last(mag_last), .s_bin_index(mag_bin_index),

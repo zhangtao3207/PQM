@@ -3,10 +3,10 @@
 /*
  * 模块: pqm_measurement_core
  * 功能:
- *   在 PS 显示模式下保留确定性的时域测量、FFT、谐波统计和骤变告警，
+ *   在 PS 显示模式下保留确定性的时域测量、频域谐波统计和骤变告警，
  *   直接生成共享内存标量快照与谐波流，不实例化任何 PL 显示或文本格式化逻辑。
  * 输入:
- *   clk: 采样、时域测量和 FFT 共用的 50 MHz 工作时钟。
+ *   clk: 采样、时域测量与频域分析共用的 50 MHz 工作时钟。
  *   rst_n: 低有效异步复位。
  *   full_scale_low_range_active: 当前是否使用低量程换算参数。
  *   u_sample_valid: 电压样本有效脉冲。
@@ -156,11 +156,8 @@ wire signed [31:0] active_p_x100_wire;
 wire signed [31:0] reactive_q_x100_wire;
 wire signed [31:0] apparent_s_x100_wire;
 wire signed [31:0] power_factor_x100_wire;
-wire signed [31:0] fft_fund_freq_period_raw;
-wire fft_fund_freq_valid;
-wire fft_freq_use;
 wire [31:0] reactive_q_raw_abs_wire;
-wire signed [31:0] reactive_q_raw_fft_signed;
+wire signed [31:0] reactive_q_raw_phase_signed;
 wire freq_sample_valid;
 wire freq_harmonic_valid;
 wire freq_harmonic_last;
@@ -208,14 +205,12 @@ assign i_full_scale_x100 = full_scale_low_range_active
 // 仅在 U/I 同拍有效时把样本送入频域分析，保持通道帧严格对齐。
 assign freq_sample_valid = u_sample_valid && i_sample_valid;
 
-// FFT 周期结果有效且非零时优先作为时域频率归一化输入。
-assign fft_freq_use = 1'b0;   // RFG 版没有 FFT 基波跟踪器，频率一律用时域测量结果
 
-// 使用 FFT 相位符号修正无功功率方向，同时保持其绝对值不变。
+// 用频域基波相位的符号修正无功功率方向，同时保持其绝对值不变。
 assign reactive_q_raw_abs_wire = reactive_q_raw_wire[31]
                                ? (~reactive_q_raw_wire + 32'd1)
                                : reactive_q_raw_wire[31:0];
-assign reactive_q_raw_fft_signed =
+assign reactive_q_raw_phase_signed =
     (freq_phase1_valid && (reactive_q_raw_abs_wire != 32'd0))
         ? (freq_phase1_x100[31]
             ? (~reactive_q_raw_abs_wire + 32'd1)
@@ -356,7 +351,7 @@ time_x100_normalizer #(
     .power_factor_x100(power_factor_x100_wire)
 );
 
-// 复用 FFT 顶层，持续输出基波周期以及 0 到 500 次谐波幅值和相位流。
+// 频域链：RFG 版顶层持续输出 0 到 C_K 次谐波幅值与相位流。
 // RFG 版频域链：替掉 freq_analysis_top（无 xfft IP、无流适配器、无 FFT 基波跟踪器）
 pqm_freq_analysis_rfg u_freq_analysis (
     .clk(clk), .rst_n(rst_n), .enable(1'b1),
@@ -494,11 +489,9 @@ always @(posedge clk or negedge rst_n) begin
                     i_pp_raw_pending <= i_pp_raw_wire;
                     phase_offset_raw_pending <= phase_offset_raw_wire;
                     phase_period_raw_pending <= phase_period_raw_wire;
-                    freq_period_raw_pending <= fft_freq_use
-                                             ? fft_fund_freq_period_raw
-                                             : freq_period_raw_wire;
+                    freq_period_raw_pending <= freq_period_raw_wire;
                     active_p_raw_pending <= active_p_raw_wire;
-                    reactive_q_raw_pending <= reactive_q_raw_fft_signed;
+                    reactive_q_raw_pending <= reactive_q_raw_phase_signed;
                     apparent_s_raw_pending <= apparent_s_raw_wire;
                     power_factor_raw_pending <= power_factor_raw_wire;
                     u_full_scale_x100_pending <= u_full_scale_x100;
@@ -507,7 +500,7 @@ always @(posedge clk or negedge rst_n) begin
                     u_pp_valid_latched <= u_pp_valid_wire;
                     i_pp_valid_latched <= i_pp_valid_wire;
                     phase_valid_latched <= power_metrics_valid_wire;
-                    freq_valid_latched <= fft_freq_use || freq_valid_wire;
+                    freq_valid_latched <= freq_valid_wire;
                     power_metrics_valid_latched <= power_metrics_valid_wire;
                     state <= ST_START_X100;
                 end

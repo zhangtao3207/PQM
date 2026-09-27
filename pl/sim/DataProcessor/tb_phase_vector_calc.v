@@ -1,9 +1,9 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: tb_fft_phase_vector_calc
+ * 模块: tb_phase_vector_calc
  * 功能:
- *   fft_phase_vector_calc 的单元测试平台：对 0~500 次谐波统计结果逐项算出
+ *   phase_vector_calc 的单元测试平台：对 0~500 次谐波统计结果逐项算出
  *   U-I 相位差的 atan2 输入向量 dot/cross，并判断该向量是否可用于算相位。
  *
  *   dot   = Ur*Ir + Ui*Ii
@@ -21,7 +21,7 @@
  *   下游 m_harmonic_ready 每收一项空一拍，故意制造反压。
  */
 
-module tb_fft_phase_vector_calc;
+module tb_phase_vector_calc;
 
     localparam integer CLK_PERIOD  = 10;      // 100 MHz
     localparam integer WATCHDOG_NS = 2000000; // 2 ms 兜底
@@ -86,7 +86,7 @@ module tb_fft_phase_vector_calc;
 
     always #(CLK_PERIOD / 2) clk = ~clk;
 
-    fft_phase_vector_calc dut (
+    phase_vector_calc dut (
         .clk                 (clk),
         .rst_n               (rst_n),
         .enable              (enable),
@@ -308,10 +308,10 @@ module tb_fft_phase_vector_calc;
         repeat (10) @(posedge clk);
 
         if (errors == 0) begin
-            $display("PASS: fft_phase_vector_calc");
+            $display("PASS: phase_vector_calc");
         end else begin
-            $display("FAIL: fft_phase_vector_calc，共 %0d 处不符", errors);
-            $fatal(1, "fft_phase_vector_calc 用例未通过");
+            $display("FAIL: phase_vector_calc，共 %0d 处不符", errors);
+            $fatal(1, "phase_vector_calc 用例未通过");
         end
         $finish;
     end

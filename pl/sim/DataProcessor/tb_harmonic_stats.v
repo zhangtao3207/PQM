@@ -1,9 +1,9 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: tb_fft_harmonic_stats
+ * 模块: tb_harmonic_stats
  * 功能:
- *   fft_harmonic_stats 的单元测试平台：接收一帧正半谱幅值结果，
+ *   harmonic_stats 的单元测试平台：接收一帧正半谱幅值结果，
  *   累计 0~500 次谐波的总幅值，再把每一项占总幅值的百分比逐项输出。
  *
  *   测试帧（FUND_BIN=1，bin 号即谐波次数）：
@@ -25,7 +25,7 @@
  *     3) 第二帧（同样内容）应能正常跑完，帧计数递增到 2
  */
 
-module tb_fft_harmonic_stats;
+module tb_harmonic_stats;
 
     localparam integer CLK_PERIOD  = 10;      // 100 MHz
     localparam integer WATCHDOG_NS = 20000000; // 20 ms 兜底（501 项逐项输出较慢）
@@ -74,7 +74,7 @@ module tb_fft_harmonic_stats;
     reg     ok;
     always #(CLK_PERIOD / 2) clk = ~clk;
 
-    fft_harmonic_stats dut (
+    harmonic_stats dut (
         .clk(clk),
         .rst_n(rst_n),
         .enable(enable),
@@ -282,10 +282,10 @@ module tb_fft_harmonic_stats;
         end
 
         if (errors == 0) begin
-            $display("PASS: fft_harmonic_stats");
+            $display("PASS: harmonic_stats");
         end else begin
-            $display("FAIL: fft_harmonic_stats，共 %0d 处不符", errors);
-            $fatal(1, "fft_harmonic_stats 用例未通过");
+            $display("FAIL: harmonic_stats，共 %0d 处不符", errors);
+            $fatal(1, "harmonic_stats 用例未通过");
         end
         $finish;
     end

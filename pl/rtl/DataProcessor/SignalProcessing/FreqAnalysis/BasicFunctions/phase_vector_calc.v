@@ -1,13 +1,13 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: fft_phase_vector_calc
+ * 模块: phase_vector_calc
  * 功能:
  *   接收 0~500 次谐波统计结果，计算 U-I 相位差的 atan2 输入向量。
  *   输出 dot/cross，其中 U-I 相位差等于 atan2(cross, dot)。
  *
  * 输入:
- *   clk: 频域相位向量计算时钟，通常接 fft_clk。
+ *   clk: 频域相位向量计算时钟，通常接频域工作时钟。
  *   rst_n: 低有效复位信号。
  *   enable: 相位向量计算使能，拉低时清空待输出结果。
  *   s_harmonic_valid: 上游谐波统计结果有效标志。
@@ -42,7 +42,7 @@
  *   m_phase_dot: U 与 I 的同相投影，等于 Ur*Ir + Ui*Ii。
  *   m_phase_cross: U 与 I 的正交投影，等于 Ui*Ir - Ur*Ii。
  */
-module fft_phase_vector_calc (
+module phase_vector_calc (
     input  wire               clk,
     input  wire               rst_n,
     input  wire               enable,

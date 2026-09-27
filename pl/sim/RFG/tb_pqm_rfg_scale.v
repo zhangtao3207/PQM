@@ -5,7 +5,7 @@
  * 功能:
  *   frontend -> scale 串联验证：确认缩放后的 16 位频点流（形状与
  *   fft_result_receiver 的输出一致）数值正确，可以直接喂给现有的
- *   fft_magnitude_calc / fft_harmonic_stats 等已验证模块。
+ *   magnitude_calc / harmonic_stats 等已验证模块。
  *
  *   激励同 tb_pqm_rfg_frontend：
  *     u[n] = 1000*cos(2*pi*n/512) + 400*cos(6*pi*n/512)

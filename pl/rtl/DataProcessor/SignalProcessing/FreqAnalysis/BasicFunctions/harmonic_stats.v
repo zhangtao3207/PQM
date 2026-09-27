@@ -1,13 +1,13 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: fft_harmonic_stats
+ * 模块: harmonic_stats
  * 功能:
- *   接收一帧正半谱 FFT 幅值结果，统计 0~500 次谐波的 U/I 幅值及其占总幅值百分比。
+ *   接收一帧正半谱幅值结果，统计 0~500 次谐波的 U/I 幅值及其占总幅值百分比。
  *   本模块同时用块 RAM 缓存每次谐波的 real/imag，供后续 U-I 相位差计算模块使用。
  *
  * 输入:
- *   clk: 频域统计时钟，通常接 fft_clk。
+ *   clk: 频域统计时钟，通常接频域工作时钟。
  *   rst_n: 低有效复位信号。
  *   enable: 谐波统计使能，拉低时停止接收并清空输出状态。
  *   s_mag_valid: 上游幅值结果有效标志。
@@ -42,7 +42,7 @@
  *   u_total_mag: 本帧 0~500 次谐波的电压幅值总和。
  *   i_total_mag: 本帧 0~500 次谐波的电流幅值总和。
  */
-module fft_harmonic_stats #(
+module harmonic_stats #(
     parameter [10:0] FUND_BIN = 11'd1
 )(
     input  wire               clk,

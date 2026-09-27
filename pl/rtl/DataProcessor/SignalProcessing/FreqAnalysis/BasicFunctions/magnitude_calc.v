@@ -1,14 +1,14 @@
 `timescale 1ns / 1ps
 
 /*
- * 模块: fft_magnitude_calc
+ * 模块: magnitude_calc
  * 功能:
- *   接收筛选后的 FFT 频点复数结果，计算电压和电流通道的幅值平方和幅值，
+ *   接收筛选后的频点复数结果，计算电压和电流通道的幅值平方和幅值，
  *   并把同一频点的 real/imag 与幅值结果对齐透传。
  *   本模块只处理单个频点流，不做谐波选择、THD 累加、相位计算或显示格式转换。
  *
  * 输入:
- *   clk: 频域计算时钟，通常接 fft_clk。
+ *   clk: 频域计算时钟，通常接频域工作时钟。
  *   rst_n: 低有效复位信号。
  *   enable: 幅值计算使能，拉低时丢弃输入流并清空待输出结果。
  *   s_bin_valid: 上游频点结果有效标志。
@@ -37,7 +37,7 @@
  *   mag_frame_done: 一帧正半谱幅值结果已被下游取完的单周期脉冲。
  *   mag_frame_count: 已完整输出的正半谱幅值帧计数。
  */
-module fft_magnitude_calc (
+module magnitude_calc (
     input  wire               clk,
     input  wire               rst_n,
     input  wire               enable,
