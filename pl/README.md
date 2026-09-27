@@ -8,12 +8,12 @@ PL 端以官方例程 `37_zynq_lvgl` 的显示通路为基线，把旧工程 PQM
 pl/
 ├─ rtl/<组>/<模块>.v        # 自研 RTL，组名与 sim 侧一致
 ├─ sim/<组>/tb_<模块>.v     # 单元测试平台
-├─ sim/models/              # 行为级 IP 仿真模型 + 它们要读的数据文件
+├─ sim/models/              # IP 仿真模型（真 IP 仿真网表 + 依赖的厂商模型）+ 它们要读的数据文件
 ├─ sim/build/               # 仿真生成物（已 gitignore）
 ├─ data/                    # 约束与查找表
 ├─ ip/                      # 用到的 IP（xci）
 ├─ scripts/                 # Vivado 工程与构建脚本
-└─ scripts/coe_to_mem.ps1   # COE -> $readmemh 用的 .mem
+└─ scripts/coe_to_mem.ps1   # COE -> $readmemh 用的 .mem（旧行为级模型用，已不在仿真流程里）
 ```
 
 `scripts/run_xsim.ps1` 按这个约定自动配对：给定用例名 `<模块>`，它去 `pl/sim/*/tb_<模块>.v` 找测试平台、去同组名的 `pl/rtl/<组>/<模块>.v` 找被测模块。**所以新增模块时，两边的组名必须一致。**
@@ -39,7 +39,7 @@ powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -Test pqm_shared_m
 ```
 用例通过时打印 `PASS: <模块>`；日志写到 `export/xsim_<模块>.log`，并在结尾报告耗时。
 
-`run_xsim.ps1` 默认把 `pl/sim/models/` **根目录**下的模型编给所有用例（只编译、不强制实例化，`xelab` 只拉真正用到的层次），并把同一目录下的非源码文件（如 `.mem`）复制到每个用例的 build 目录，供 `$readmemh` 读取。
+`run_xsim.ps1` 默认把 `pl/sim/models/`（含子目录，递归收集）下的模型编给所有用例（只编译、不强制实例化，`xelab` 只拉真正用到的层次），并把同一批目录下的非源码文件（如 `.mem`/`.mif`）复制到每个用例的 build 目录，供仿真运行时读取（`$readmemh` / `$fscanf`）。
 
 更重的 IP 仿真源由用例按需引入：在 `pl/sim/<组>/tb_<用例>.models.txt` 里逐行写仓库相对目录（递归收集），例如
 
@@ -54,7 +54,7 @@ pl/ip/xfft_0/hdl
 
 | 来源 | 做法 |
 | --- | --- |
-| `rom_atan_lut_1024` | 写行为级等价模型 `pl/sim/models/rom_atan_lut_1024.v`（1025x14、读延迟 1 拍），数据由 `pl/scripts/coe_to_mem.ps1` 从旧工程 COE 机械转换 |
+| `rom_atan_lut_1024` | **用真实仿真网表**：`pl/sim/models/rom_atan_lut_1024/` 下放 `rom_atan_lut_1024.v`（真 IP 仿真网表，复制自 `pl/ip/rom_atan_lut_1024/sim/`）、它依赖的 `blk_mem_gen_v8_4.v`（复制自 `pl/ip/rom_atan_lut_1024/simulation/`）和运行时要读的 `rom_atan_lut_1024.mif`；2026-09-27 从手写行为级模型切换而来，详见文末专节 |
 | `xfft_0` | **用真实仿真源**：`pl/scripts/gen_xfft_sim_model.tcl` 只生成 simulation target，产物落 `pl/ip/xfft_0/{sim,hdl}/`（已 gitignore，xci 本身提交） |
 
 `pl/ip/xfft_0/xfft_0.xci` 是从旧工程拷来的副本（旧工程定制于 **Vivado 2018.3**，在 2022.2 下是 locked 状态，必须先 `upgrade_ip`）。升级只动版本元数据：升级前后的 26 条用户参数已逐行比对，**零差异**（脚本会把快照存到 `export/xfft_params_before/after.txt`）。
@@ -87,6 +87,7 @@ pl/ip/xfft_0/hdl
 4. **`scripts/run_xsim.ps1` 由 Windows PowerShell 5.1 执行**：5.1 下 `Get-ChildItem -Path <dir>\* -Recurse -Include` 不深入子目录且**静默少找**（DataProcessor 的 21 个文件只找到 1 个）。已改为「递归 + `Where-Object` 过滤」，不要改回去。
 5. **`.models.txt` 必须 CRLF 行尾**：5.1 的 `Get-Content` 对纯 LF 文件会把整个文件当一行读，静默吞掉第一条目录。
 6. **共享内存 ABI 的取值**：谐波 bank0 基址 word `0x400`、bank1 `0x800`，每条 4 个 word（U 占比 / I 占比 / 相位(有符号 32 位) / flags[0]=present）。RFG 取点 `C_K=64`，所以**有值的最大频点是 64**，65..500 按设计 present=0（不要误判成 500）。
+7. **真 IP ROM 的 `ena` 必须给两拍**：`rom_atan_lut_1024`（blk_mem_gen，Primitives Output Register 使能）的读通路是两级、两级都以 `ena` 作 CE，**单拍 `ena` 脉冲取不到数据**（拿到的是上一次查表的值）。`time_x100_normalizer` / `phase_deg_lut_calc` 已改成 REQ/WAIT 两拍给 `ena`、在新增的 `ST_*_ROM_CAP` 拍取数；手写的 1 拍行为级模型会掩盖这个问题，详见「rom_atan_lut_1024」一节。
 
 ## xfft 实测结论（2026-09-27）
 
@@ -162,10 +163,47 @@ blk_mem_gen_fft_fifo_ram) -> `fft_result_receiver` -> ...）。已删除：`fft_
   （产物 `sim/rom_atan_lut_1024.v`，**普通 Verilog**，不像 xfft 是加密 VHDL；
    它运行时读 `rom_atan_lut_1024.mif`）
 
-**仿真仍用行为级模型 `pl/sim/models/rom_atan_lut_1024.v`**，理由：接口逐位一致
-（`clka/ena/addra[10:0]/douta[13:0]`，1025×14、读延迟 1 拍，参数取自 xci），数据取自
-同一份 COE，且不需要先跑 Vivado 生成。真 xci 放在仓库里是**为综合准备**的。
+**仿真是真 IP 仿真网表**（2026-09-27 从手写行为级模型切换）：`pl/sim/models/rom_atan_lut_1024/`
+下放三份文件，harness 递归收集 `pl/sim/models/`，因此所有用例都编到它们：
 
-注意：行为级模型与生成的 `sim/rom_atan_lut_1024.v` **同名模块，不能同时编译**。
-harness 只编 `pl/sim/models/` 根目录与各用例清单列出的目录、不会碰 `pl/ip/**`，
-所以结构上不会撞；若要改用真模型，必须把 `pl/sim/models/rom_atan_lut_1024.v` 移出。
+| 文件 | 来源 | 作用 |
+| --- | --- | --- |
+| `rom_atan_lut_1024.v` | 复制自 `pl/ip/rom_atan_lut_1024/sim/` | 真 IP 仿真网表，模块名与端口逐位不变，内部实例化 `blk_mem_gen_v8_4_5` |
+| `blk_mem_gen_v8_4.v` | 复制自 `pl/ip/rom_atan_lut_1024/simulation/` | 网表依赖的 blk_mem_gen 8.4 仿真模型 |
+| `rom_atan_lut_1024.mif` | 复制自 `pl/ip/rom_atan_lut_1024/` | 运行时要读的初始化数据（1025 行 14 位二进制） |
+
+`pl/ip/` 下的这三份都是 gitignore 的 Vivado 生成物，所以 `pl/sim/models/` 里这三份**要提交**，
+否则干净克隆跑不了仿真。
+
+注意：`pl/ip/rom_atan_lut_1024/sim/rom_atan_lut_1024.v` 与 `pl/sim/models/rom_atan_lut_1024/rom_atan_lut_1024.v`
+是**同名模块，不能同时编译**。harness 只编 `pl/sim/models/` 与各用例清单列出的目录、不会碰 `pl/ip/**`，
+所以结构上不会撞。旧的行为级模型 `pl/sim/models/rom_atan_lut_1024.v` 与它的数据文件 `pl/sim/models/atan_lut_1024.mem` 已删除。
+
+**初始化文件是 `.mif`，不是 `.mem`**：网表给 blk_mem_gen 传的是 `C_LOAD_INIT_FILE(1)` +
+`C_INIT_FILE_NAME("rom_atan_lut_1024.mif")`，`blk_mem_gen_v8_4.v` 走的就是这条分支（`$fopen` + `$fscanf("%b")`）；
+`C_INIT_FILE("rom_atan_lut_1024.mem")` 那条 `$readmemh` 分支被包在 `C_USE_BRAM_BLOCK` 里，本 IP 该参数为 0，永不执行。
+实测把 `.mif` 从 build 目录拿掉，模型在 0 时刻打印
+`WARNING: file rom_atan_lut_1024.mif could not be opened` 后直接 `$finish`（`blk_mem_gen_v8_4.v` 第 2742 行），
+用例因日志里没有 `PASS:` 而失败。`.mif` 与已删的 `atan_lut_1024.mem` 逐行同值（1025 行，按 `%b` 转 `%04x` 比对零差异），
+所以数值结论与改前一致。
+
+**真 IP 的读时序与手写行为级模型不一致（换模型时踩到，2026-09-27）**：
+本 IP 的 `.xci` 里是 `C_READ_LATENCY_A=1` + `C_HAS_MEM_OUTPUT_REGS_A=1` + `C_HAS_REGCEA=0`，
+`blk_mem_gen_v8_4.v` 的读通路因此有**两级寄存器，且两级都以 `ena` 作 CE**（`read_a` 把
+`memory_out_a` 打在 `ena` 上，输出级 `regce_i = (C_HAS_REGCE==0) && EN`）。
+后果：**单拍 `ena` 脉冲只把地址送进第一级，`douta` 永远拿不到数据**；要两拍 `ena`（地址保持不变）
+数据才出来。手写的 `always @(posedge clka) if (ena) douta <= mem[addra];` 是 1 拍，掩盖了这一点。
+两个 ROM 消费者（`time_x100_normalizer`、`phase_deg_lut_calc`）原本都是「REQ 拍给 ena、WAIT 拍取数」，
+换成真 IP 后取到的是**上一次查表的值**，`tb_time_x100_normalizer`（`phase_x100 = 0`，期望 -4500）和
+`tb_pqm_freq_analysis_rfg`（相位差 18000，期望 9000）因此失败——不是初始化文件的问题，数据本身是对的。
+
+**修法（已改 RTL，不动任何 testbench、不动判据）**：`ena` 拉宽到 REQ/WAIT 两拍，取数挪到新增的
+`ST_ROM_CAP`/`ST_PHASE_ROM_CAP` 状态。`time_x100_normalizer` 的 `state` 由 4 bit 加宽到 5 bit（原编码 0~15 已用满）。
+这样在**真 IP 和行为级模型下取到的都是 `mem[addr]`**（后者两拍读到的是同一个地址的值），
+所以换模型前后 `pqm_pl_top` 的全部打印值（含 `ph = -9000`）逐项相同，全量 27/27 PASS。
+若不想动 RTL，替代方案是把 IP 的 Primitives Output Register 关掉后重新生成（读延迟变 1 拍）——
+那属于改综合用的硬件配置，需要 Vivado 重新生成与复核。
+
+**探针复现**（临时 tb，不入仓库）：单拍 `ena`、`addra=512` → `douta` 恒为 0（永不出现 4500）；
+连续两拍 `ena`（100→101）→ `douta=618=LUT[100]`；按 RTL 的「每次查表单拍脉冲」模式，
+第 2 次取到的是第 1 次地址的数据（`618=LUT[100]`）。

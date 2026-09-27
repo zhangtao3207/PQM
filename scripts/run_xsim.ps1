@@ -99,10 +99,12 @@ foreach ($t in $tests) {
     Set-Content -LiteralPath $logPath -Value "=== xsim $name ===" -Encoding UTF8
 
     # 行为级 IP 仿真模型与它们需要的数据文件。
-    #   - pl/sim/models/ 根目录下的模型：所有用例都编（例如 rom_atan_lut_1024，很轻）。
+    #   - pl/sim/models/ 下的模型：所有用例都编（递归收集，子目录也算）。
+    #     例：rom_atan_lut_1024/ 放真 IP 仿真网表 rom_atan_lut_1024.v、它依赖的
+    #     blk_mem_gen_v8_4.v，以及运行时要读的初始化文件 rom_atan_lut_1024.mif。
     #   - 更重的模型（例如 xfft 的加密 VHDL，十几 MB）由用例按需引入：在
     #     pl/sim/<组>/tb_<用例>.models.txt 里逐行写仓库相对目录。
-    # .v 走 xvlog，.vhd/.vhdl 走 xvhdl，其余扩展名当作 $readmemh 要读的数据文件复制进 build 目录。
+    # .v 走 xvlog，.vhd/.vhdl 走 xvhdl，其余扩展名当作仿真运行时读取的数据文件（$readmemh / $fscanf）复制进 build 目录。
     $modelDirs = @()
     if (Test-Path -LiteralPath $modelRoot) { $modelDirs += $modelRoot }
     $modelManifest = Join-Path $simRoot (Join-Path $group "tb_$name.models.txt")

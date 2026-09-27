@@ -14,15 +14,32 @@ xsim.dir/
 *.bit
 *.bin
 
-# Vivado 生成物：IP 的仿真源与生成工程（xci 本身是源，要提交）
+# Vivado 工程（vivado/ 下提交脚本、源码、约束、IP 源、报告与 XSA）
+# 注意：vivado/build/ 是可再生的工程生成物，忽略；
+# 但 XSA 是重建 Vitis 平台必需的交付产物，必须提交，不能忽略。
+vivado/build/
+
+# IP 生成物（.xci / .coe 是源，要提交）
+vivado/ip/**/sim/
+vivado/ip/**/simulation/
+vivado/ip/**/*.veo
+vivado/ip/**/*.vho
+vivado/ip/**/*.mif
+vivado/ip/**/*.xml
+vivado/ip/**/*.dcp
+vivado/ip/**/*_stub.v
+vivado/ip/**/*_stub.vhdl
+vivado/ip/**/*.v
+vivado/ip/**/*.vhd
+vivado/ip/**/*.xdc
 
 # 临时提交信息文件
 commit_msg.txt
 
-# ROM IP 的 Vivado 生成物（xci 与 coe 是源，要提交）
-pl/ip/rom_atan_lut_1024/sim/
-pl/ip/rom_atan_lut_1024/simulation/
-pl/ip/rom_atan_lut_1024/*.mif
+# ROM IP：xci/coe/.mif 与 sim/ 下的仿真网表都是仿真必需，必须提交。
+# （换用真 IP 后，blk_mem_gen 模型运行时读的就是 rom_atan_lut_1024.mif；
+#   仿真源在 pl/sim/models/rom_atan_lut_1024/ 下，若这里被忽略则新克隆无法仿真。）
+# 只有 veo/vho/xml 这类工具生成的模板文件属于生成物，忽略。
 pl/ip/rom_atan_lut_1024/*.veo
 pl/ip/rom_atan_lut_1024/*.vho
 pl/ip/rom_atan_lut_1024/*.xml

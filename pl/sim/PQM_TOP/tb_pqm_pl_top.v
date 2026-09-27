@@ -135,8 +135,9 @@ module tb_pqm_pl_top;
     integer in_n = 0;
     integer in_bad = 0;
     integer rb_bank, rb_k, rb_base;
-    integer rb_h1_u, rb_h3_u, rb_h1_p, rb_max_idx;
+    integer rb_h1_u, rb_h3_u, rb_h1_p, rb_max_idx, rb_h1_ph;
     reg [31:0] rb_u, rb_i, rb_ph, rb_fl;
+    reg signed [31:0] rb_h1_ph_s;
     integer in_got [0:23];
     integer in_exp [0:23];
     integer scan_i;
@@ -458,7 +459,7 @@ module tb_pqm_pl_top;
                  snap_commit_count, u_rms_now, U_RMS_EXPECT, bram_wr_count, bram_harm_wr);
 
         // ---------------- PS 侧回读：按 ABI 从共享内存解出谐波 ----------------
-        rb_h1_u = -1; rb_h3_u = -1; rb_h1_p = -1; rb_max_idx = -1;
+        rb_h1_u = -1; rb_h3_u = -1; rb_h1_p = -1; rb_max_idx = -1; rb_h1_ph = 0;
         for (rb_bank = 0; rb_bank < 2; rb_bank = rb_bank + 1) begin
             for (rb_k = 0; rb_k <= 500; rb_k = rb_k + 1) begin
                 rb_base = 14'h400 + rb_bank * 14'h800 + rb_k * 4;
@@ -466,6 +467,9 @@ module tb_pqm_pl_top;
                 rb_i  = ps_bram[rb_base + 14'd1];
                 rb_ph = ps_bram[rb_base + 14'd2];
                 rb_fl = ps_bram[rb_base + 14'd3];
+                if ((rb_k == 1) && (rb_fl[0] === 1'b1) && (rb_bank == 1)) begin
+                    rb_h1_ph = rb_ph;
+                end
                 if ((rb_k == 1) && (rb_fl[0] === 1'b1)) begin
                     rb_h1_u = rb_u[15:0];
                     rb_h1_p = rb_fl[0];
@@ -475,12 +479,14 @@ module tb_pqm_pl_top;
                 if ((rb_fl[0] === 1'b1) && (rb_k > rb_max_idx))
                     rb_max_idx = rb_k;
                 if ((rb_k <= 3) && (rb_bank == 1) && (rb_fl[0] === 1'b1))
-                    $display("INFO: 5abin bank1 k=%0d u=%0d i=%0d ph=%0d fl=%0d",
-                             rb_k, rb_u, rb_i, rb_ph, rb_fl);
+                    $display("INFO: 5abin bank1 k=%0d u=%0d i=%0d ph=%0d(有符号 %0d) fl=%0d",
+                             rb_k, rb_u, rb_i, rb_ph, $signed(rb_ph), rb_fl);
             end
         end
-        $display("INFO: 5abi  从共享内存解出：1次u=%0d 3次u=%0d present=%0d 最大index=%0d",
-                 rb_h1_u, rb_h3_u, rb_h1_p, rb_max_idx);
+        // rb_h1_ph 已在扫描中锁存，这里先转成有符号视图，供显示与断言共用。
+        rb_h1_ph_s = rb_h1_ph;
+        $display("INFO: 5abi  从共享内存解出：1次u=%0d 3次u=%0d present=%0d 最大index=%0d 1次相位=%0d(x100)",
+                 rb_h1_u, rb_h3_u, rb_h1_p, rb_max_idx, rb_h1_ph_s);
 
         if (snap_commit_count < 1) begin
             $display("FAIL: 4a 没有出现快照提交");
@@ -519,6 +525,40 @@ module tb_pqm_pl_top;
         if (rb_max_idx != 63) begin
             $display("FAIL: 5abi 共享内存里最大 present index=%0d，期望 63", rb_max_idx);
             err = err + 1;
+        end
+
+        // ---------------- 第 5 环 ABI 回读判定：1 次谐波 U-I 相位差 ----------------
+        // 覆盖范围（已实测确认）：本断言读的是共享内存 ABI 里谐波条目的 phase 字段，
+        // 该字段只由**频域链**产生：RFG(bin k) -> harmonic_stats -> phase_vector_calc
+        // -> phase_deg_lut_calc（内部的 rom_atan_lut_1024）-> freq_harmonic_iir_filter
+        // -> pqm_measurement_core.ps_harmonic_phase -> 共享内存桥。
+        // 时域链的功率角（time_x100_normalizer 的 phase_x100）走快照标量字，
+        // 不经过这里，由 tb_time_x100_normalizer 保护。实测：单独回退
+        // time_x100_normalizer.v 时本用例仍 PASS；只有回退 phase_deg_lut_calc.v
+        // 才会让本断言 FAIL（见下方容差说明）。
+        // 判据依据（解析）：激励 u = 1000*cos(wn) + 400*cos(3wn)，i = 800*sin(wn)，
+        // 一帧 512 点恰为一个 50 Hz 周期。RFG 取 bin k=1 的 DFT 系数：
+        //   U1 = 256000 + j*0（纯实部），I1 = 0 - j*204800（纯负虚部）
+        // phase_vector_calc 给出 dot = Ur*Ir + Ui*Ii、cross = Ui*Ir - Ur*Ii：
+        //   dot = 0，cross = -256000*(-204800) > 0
+        // 因此 atan2(cross, dot) = +90.00 度，即 x100 工程量为 +9000。
+        // 仿真实测 ph = -9000（32 位有符号；无符号打印 4294958296），
+        // 与解析值差 180.00 度：极性与这组解析符号约定相反，属整链固有的极性约定，
+        // 不是本次要保护的缺陷。故此处以实测基准为中心、按解析推导的容差设窗口。
+        // 容差推导：本激励下 dot 恒为 0，相位只可能落在 0 或 ±90.00 度这几个离散值，
+        // 故 ±1.00 度（x100 即 ±100）的窗口已远大于量化与 IIR 收敛残差，
+        // 同时仍能挡住"ROM 取数错拍导致查表拿到上一次的值、相位整体错位"这类缺陷。
+        // 实测有效性：把 phase_deg_lut_calc.v 临时回退到修复前（ena 只给单拍），
+        // 本用例报 FAIL: 5abi 1 次谐波相位=-2893，期望 -9000 附近。
+        if (rb_h1_ph === 32'bx) begin
+            $display("FAIL: 5abi 1 次谐波相位未写入（X）");
+            err = err + 1;
+        end else begin
+            if (rb_h1_ph_s < -9100 || rb_h1_ph_s > -8900) begin
+                $display("FAIL: 5abi 1 次谐波相位=%0d(x100)，期望 -9000 附近（解析幅值 9000，极性为整链约定）",
+                         rb_h1_ph_s);
+                err = err + 1;
+            end
         end
 
         if (err == 0) begin

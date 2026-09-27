@@ -99,6 +99,7 @@ localparam [2:0] ST_DIV_WAIT = 3'd2;
 localparam [2:0] ST_ROM_REQ  = 3'd3;
 localparam [2:0] ST_ROM_WAIT = 3'd4;
 localparam [2:0] ST_OUTPUT   = 3'd5;
+localparam [2:0] ST_ROM_CAP  = 3'd6;
 
 localparam signed [15:0] PHASE_180_X100 = 16'sd18000;
 
@@ -151,7 +152,10 @@ assign s_harmonic_ready = enable && (state == ST_IDLE);
 assign input_fire       = s_harmonic_valid && s_harmonic_ready;
 assign output_fire      = m_harmonic_valid_reg && m_harmonic_ready;
 assign div_start        = (state == ST_DIV_REQ);
-assign rom_en           = (state == ST_ROM_REQ);
+// 真 IP（blk_mem_gen，Primitives Output Register 使能）的读通路是两级、两级都以 ena 作 CE：
+// 单拍 ena 只把地址送进第一级，douta 拿不到数据。因此 ena 拉宽到 REQ/WAIT 两拍，
+// 在 ST_ROM_CAP 拍取数（真 IP 与行为级模型下都得到 mem[addr]）。
+assign rom_en           = (state == ST_ROM_REQ) || (state == ST_ROM_WAIT);
 assign phase_deg_busy   = (state != ST_IDLE) || m_harmonic_valid_reg;
 
 // 组合计算 dot/cross 的绝对值和 ROM 地址除法的被除数、除数。
@@ -313,6 +317,10 @@ always @(posedge clk or negedge rst_n) begin
                 end
 
                 ST_ROM_WAIT: begin
+                    state <= ST_ROM_CAP;
+                end
+
+                ST_ROM_CAP: begin
                     m_harmonic_valid_reg      <= 1'b1;
                     m_phase_diff_deg_x100_reg <= phase_deg_next;
                     state                     <= ST_OUTPUT;

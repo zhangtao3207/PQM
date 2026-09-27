@@ -98,6 +98,7 @@ localparam [3:0] ST_POWER_X100_WAIT  = 4'd12;
 localparam [3:0] ST_COMMIT           = 4'd13;
 localparam [3:0] ST_POWER_PRODUCT_LATCH = 4'd14;
 localparam [3:0] ST_POWER_DIV_START     = 4'd15;
+localparam [4:0] ST_PHASE_ROM_CAP       = 5'd16;
 
 localparam [31:0] HALF_SCALE_CODE    = 32'd1 << (CODE_WIDTH - 1);
 localparam [31:0] ROUND_BIAS         = HALF_SCALE_CODE >> 1;
@@ -111,7 +112,7 @@ localparam [95:0] RMS_SCALE_DEN_HALF = 96'd53683814450;
 localparam [15:0] PF_SCALE_DEN       = 16'd100;
 localparam [15:0] PF_SCALE_DEN_HALF  = 16'd50;
 
-reg  [3:0]               state;
+reg  [4:0]               state;   // 5 bit：ST_PHASE_ROM_CAP = 5'd16 需要第 5 位
 
 reg  signed [31:0]       work_u_rms_raw;
 reg  signed [31:0]       work_i_rms_raw;
@@ -350,7 +351,10 @@ divider_unsigned #(
 // 根据 atan 地址查表得到第一象限角度，再配合象限修正生成最终相位。
 rom_atan_lut_1024 u_phase_power_angle_rom (
     .clka (clk),
-    .ena  (state == ST_PHASE_ROM_REQ),
+    // 真 IP（blk_mem_gen，Primitives Output Register 使能）的读通路是两级、两级都以 ena 作 CE：
+    // 单拍 ena 只把地址送进第一级，douta 拿不到数据。这里 ena 拉宽到 REQ/WAIT 两拍，
+    // 在 ST_PHASE_ROM_CAP 拍取数（真 IP 与行为级模型下都得到 mem[addr]）。
+    .ena  ((state == ST_PHASE_ROM_REQ) || (state == ST_PHASE_ROM_WAIT)),
     .addra(phase_rom_addr),
     .douta(phase_rom_angle_deg_x100)
 );
@@ -681,6 +685,10 @@ always @(posedge clk or negedge rst_n) begin
             end
 
             ST_PHASE_ROM_WAIT: begin
+                state <= ST_PHASE_ROM_CAP;
+            end
+
+            ST_PHASE_ROM_CAP: begin
                 if (phase_result_valid)
                     phase_x100 <= {{16{phase_angle_next[15]}}, phase_angle_next};
                 else
