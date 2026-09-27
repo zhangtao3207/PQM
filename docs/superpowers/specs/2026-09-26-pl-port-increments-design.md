@@ -67,3 +67,16 @@
    附带确认：`fft_bin_index = fft_output_tuser[10:0]` 的假设**成立**（XK_INDEX 报的就是自然频点号），不是缺陷。
 2. **硬件前提**：AD7606 模块需实际插在扩展口上才能做增量 6/7 的上板验证。
 3. **顶层 RTL 变大后综合时间会涨**：测量链并入顶层后，顶层综合可能明显超过 5 分钟。若确实如此，再考虑把测量链做成自研 OOC 模块——但要清楚代价是**切断跨边界优化**，时序可能变差。
+
+## 8 命名变更（2026-09-27）
+
+频域链切到 RFG 后，下面三个模块去掉了 `fft_` 前缀（纯改名，功能与内容未变，改名后全量回归 24/24 通过）：
+
+| 旧名 | 新名 |
+| --- | --- |
+| `fft_magnitude_calc` | `magnitude_calc` |
+| `fft_harmonic_stats` | `harmonic_stats` |
+| `fft_phase_vector_calc` | `phase_vector_calc` |
+
+本文档前面的增量表用的是**当时的名字**（记录当时验证了什么），不再回改；`pl/README.md` 记录当前状态。
+另：`pl/rtl/RFG/common/fft_twiddle_q24.sv` 保留原名——它是 RFG 研究项目自带的共享旋转系数 LUT，名字里的 fft 指他们自己的 FFT 实现。

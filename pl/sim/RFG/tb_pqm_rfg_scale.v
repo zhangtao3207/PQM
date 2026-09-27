@@ -4,7 +4,7 @@
  * 模块: tb_pqm_rfg_scale
  * 功能:
  *   frontend -> scale 串联验证：确认缩放后的 16 位频点流（形状与
- *   fft_result_receiver 的输出一致）数值正确，可以直接喂给现有的
+ *   原 FFT 链接收器（已删）的输出一致）数值正确，可以直接喂给现有的
  *   magnitude_calc / harmonic_stats 等已验证模块。
  *
  *   激励同 tb_pqm_rfg_frontend：
@@ -194,7 +194,7 @@ module tb_pqm_rfg_scale;
         repeat (10) @(posedge clk);
 
         $display("");
-        $display("========== RFG 缩放级串联（>>%0d 后应直接进 fft_magnitude_calc） ==========", SHIFT);
+        $display("========== RFG 缩放级串联（>>%0d 后应直接进 magnitude_calc） ==========", SHIFT);
         $display("输出项数 = %0d（期望 %0d），次序错误 = %0d，末项在 item#%0d，frame_done = %0b",
                  item_cnt, ITEMS, order_err, last_seen_at, frame_done_seen);
         $display("次数 :     u_re    u_im    i_re    i_im");
