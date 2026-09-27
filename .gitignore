@@ -25,3 +25,6 @@ pl/ip/rom_atan_lut_1024/*.veo
 pl/ip/rom_atan_lut_1024/*.vho
 pl/ip/rom_atan_lut_1024/*.xml
 pl/sim/ipgen/
+
+# 记忆/进度（DSH 插件的工具状态，不进版本控制）
+.dsh/
