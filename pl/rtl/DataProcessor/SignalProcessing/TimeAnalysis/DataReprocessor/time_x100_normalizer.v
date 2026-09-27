@@ -9,13 +9,13 @@
  *   clk: 模块工作时钟。
  *   rst_n: 低有效复位信号。
  *   start: 启动一次 raw->x100 归一化流程。
- *   u_rms_raw: 电压 RMS 原始码值。
- *   i_rms_raw: 电流 RMS 原始码值。
+ *   u1_rms_raw: U1 RMS 原始码值。
+ *   u2_rms_raw: U2 RMS 原始码值。
  *   rms_valid: RMS 原始数据有效标志。
- *   u_pp_raw: 电压峰峰值原始码值。
- *   i_pp_raw: 电流峰峰值原始码值。
- *   u_pp_valid: 电压峰峰值原始数据有效标志。
- *   i_pp_valid: 电流峰峰值原始数据有效标志。
+ *   u1_pp_raw: U1峰峰值原始码值。
+ *   u2_pp_raw: U2峰峰值原始码值。
+ *   u1_pp_valid: U1峰峰值原始数据有效标志。
+ *   u2_pp_valid: U2峰峰值原始数据有效标志。
  *   phase_offset_raw: 相位偏移原始计数。
  *   phase_period_raw: 相位周期原始计数。
  *   phase_valid: 相位原始数据有效标志。
@@ -25,16 +25,16 @@
  *   reactive_q_raw: 无功功率原始码值。
  *   apparent_s_raw: 视在功率原始码值。
  *   power_factor_raw: 功率因数原始码值。
- *   u_full_scale_x100: 电压满量程 x100 参数。
- *   i_full_scale_x100: 电流满量程 x100 参数。
+ *   u1_full_scale_x100: U1满量程 x100 参数。
+ *   u2_full_scale_x100: U2满量程 x100 参数。
  *   power_metrics_valid: 功率相关原始数据有效标志。
  *
  * 输出:
  *   done: 本次 x100 归一化完成脉冲。
- *   u_rms_x100: 电压 RMS 的 x100 结果。
- *   i_rms_x100: 电流 RMS 的 x100 结果。
- *   u_pp_x100: 电压峰峰值的 x100 结果。
- *   i_pp_x100: 电流峰峰值的 x100 结果。
+ *   u1_rms_x100: U1 RMS 的 x100 结果。
+ *   u2_rms_x100: U2 RMS 的 x100 结果。
+ *   u1_pp_x100: U1峰峰值的 x100 结果。
+ *   u2_pp_x100: U2峰峰值的 x100 结果。
  *   phase_x100: 功率角的 x100 结果。
  *   freq_x100: 频率的 x100 结果。
  *   active_p_x100: 有功功率的 x100 结果。
@@ -49,13 +49,13 @@ module time_x100_normalizer #(
     input  wire                    clk,
     input  wire                    rst_n,
     input  wire                    start,
-    input  wire signed [31:0]      u_rms_raw,
-    input  wire signed [31:0]      i_rms_raw,
+    input  wire signed [31:0]      u1_rms_raw,
+    input  wire signed [31:0]      u2_rms_raw,
     input  wire                    rms_valid,
-    input  wire signed [31:0]      u_pp_raw,
-    input  wire signed [31:0]      i_pp_raw,
-    input  wire                    u_pp_valid,
-    input  wire                    i_pp_valid,
+    input  wire signed [31:0]      u1_pp_raw,
+    input  wire signed [31:0]      u2_pp_raw,
+    input  wire                    u1_pp_valid,
+    input  wire                    u2_pp_valid,
     input  wire signed [31:0]      phase_offset_raw,
     input  wire signed [31:0]      phase_period_raw,
     input  wire                    phase_valid,
@@ -65,15 +65,15 @@ module time_x100_normalizer #(
     input  wire signed [31:0]      reactive_q_raw,
     input  wire signed [31:0]      apparent_s_raw,
     input  wire signed [31:0]      power_factor_raw,
-    input  wire [31:0]             u_full_scale_x100,
-    input  wire [31:0]             i_full_scale_x100,
+    input  wire [31:0]             u1_full_scale_x100,
+    input  wire [31:0]             u2_full_scale_x100,
     input  wire                    power_metrics_valid,
 
     output reg                     done,
-    output reg signed [31:0]       u_rms_x100,
-    output reg signed [31:0]       i_rms_x100,
-    output reg signed [31:0]       u_pp_x100,
-    output reg signed [31:0]       i_pp_x100,
+    output reg signed [31:0]       u1_rms_x100,
+    output reg signed [31:0]       u2_rms_x100,
+    output reg signed [31:0]       u1_pp_x100,
+    output reg signed [31:0]       u2_pp_x100,
     output reg signed [31:0]       phase_x100,
     output reg signed [31:0]       freq_x100,
     output reg signed [31:0]       active_p_x100,
@@ -114,13 +114,13 @@ localparam [15:0] PF_SCALE_DEN_HALF  = 16'd50;
 
 reg  [4:0]               state;   // 5 bit：ST_PHASE_ROM_CAP = 5'd16 需要第 5 位
 
-reg  signed [31:0]       work_u_rms_raw;
-reg  signed [31:0]       work_i_rms_raw;
+reg  signed [31:0]       work_u1_rms_raw;
+reg  signed [31:0]       work_u2_rms_raw;
 reg                      work_rms_valid;
-reg  signed [31:0]       work_u_pp_raw;
-reg  signed [31:0]       work_i_pp_raw;
-reg                      work_u_pp_valid;
-reg                      work_i_pp_valid;
+reg  signed [31:0]       work_u1_pp_raw;
+reg  signed [31:0]       work_u2_pp_raw;
+reg                      work_u1_pp_valid;
+reg                      work_u2_pp_valid;
 reg  signed [31:0]       work_phase_offset_raw;
 reg  signed [31:0]       work_phase_period_raw;
 reg                      work_phase_valid;
@@ -128,26 +128,26 @@ reg  signed [31:0]       work_freq_period_raw;
 reg                      work_freq_valid;
 
 reg                      rms_start_pulse;
-wire                     u_rms_conv_valid;
-wire                     i_rms_conv_valid;
-wire [31:0]              u_rms_conv_value;
-wire [31:0]              i_rms_conv_value;
+wire                     u1_rms_conv_valid;
+wire                     u2_rms_conv_valid;
+wire [31:0]              u1_rms_conv_value;
+wire [31:0]              u2_rms_conv_value;
 
 reg                      p2p_start_pulse;
-wire signed [31:0]       u_full_scale_x100_signed;
-wire signed [31:0]       i_full_scale_x100_signed;
-wire [31:0]              u_pp_raw_abs;
-wire [31:0]              i_pp_raw_abs;
-wire signed [63:0]       u_pp_scale_product_signed;
-wire signed [63:0]       i_pp_scale_product_signed;
-wire [63:0]              u_pp_scale_product_unsigned;
-wire [63:0]              i_pp_scale_product_unsigned;
-wire                     u_pp_div_done;
-wire                     u_pp_div_zero;
-wire [63:0]              u_pp_div_quotient;
-wire                     i_pp_div_done;
-wire                     i_pp_div_zero;
-wire [63:0]              i_pp_div_quotient;
+wire signed [31:0]       u1_full_scale_x100_signed;
+wire signed [31:0]       u2_full_scale_x100_signed;
+wire [31:0]              u1_pp_raw_abs;
+wire [31:0]              u2_pp_raw_abs;
+wire signed [63:0]       u1_pp_scale_product_signed;
+wire signed [63:0]       u2_pp_scale_product_signed;
+wire [63:0]              u1_pp_scale_product_unsigned;
+wire [63:0]              u2_pp_scale_product_unsigned;
+wire                     u1_pp_div_done;
+wire                     u1_pp_div_zero;
+wire [63:0]              u1_pp_div_quotient;
+wire                     u2_pp_div_done;
+wire                     u2_pp_div_zero;
+wire [63:0]              u2_pp_div_quotient;
 
 reg                      freq_start_pulse;
 wire                     freq_div_done;
@@ -216,92 +216,92 @@ wire                     power_factor_x100_div_done;
 wire                     power_factor_x100_div_zero;
 wire [31:0]              power_factor_x100_div_quotient;
 
-// 使用 signed_code_to_x100 将锁存的电压 RMS 原始码换算成 x100 工程值。
+// 使用 signed_code_to_x100 将锁存的U1 RMS 原始码换算成 x100 工程值。
 signed_code_to_x100 #(
     .WIDTH(CODE_WIDTH)
-) u_u_rms_raw_to_x100 (
+) u_u1_rms_raw_to_x100 (
     .clk            (clk),
     .rst_n          (rst_n),
     .start          (rms_start_pulse),
-    .code_in        (work_u_rms_raw[CODE_WIDTH-1:0]),
-    .full_scale_x100(u_full_scale_x100),
+    .code_in        (work_u1_rms_raw[CODE_WIDTH-1:0]),
+    .full_scale_x100(u1_full_scale_x100),
     .busy           (),
-    .value_valid    (u_rms_conv_valid),
-    .value_x100     (u_rms_conv_value)
+    .value_valid    (u1_rms_conv_valid),
+    .value_x100     (u1_rms_conv_value)
 );
 
-// 使用 signed_code_to_x100 将锁存的电流 RMS 原始码换算成 x100 工程值。
+// 使用 signed_code_to_x100 将锁存的U2 RMS 原始码换算成 x100 工程值。
 signed_code_to_x100 #(
     .WIDTH(CODE_WIDTH)
-) u_i_rms_raw_to_x100 (
+) u_u2_rms_raw_to_x100 (
     .clk            (clk),
     .rst_n          (rst_n),
     .start          (rms_start_pulse),
-    .code_in        (work_i_rms_raw[CODE_WIDTH-1:0]),
-    .full_scale_x100(i_full_scale_x100),
+    .code_in        (work_u2_rms_raw[CODE_WIDTH-1:0]),
+    .full_scale_x100(u2_full_scale_x100),
     .busy           (),
-    .value_valid    (i_rms_conv_valid),
-    .value_x100     (i_rms_conv_value)
+    .value_valid    (u2_rms_conv_valid),
+    .value_x100     (u2_rms_conv_value)
 );
 
 // 提取峰峰值 raw 的幅值，并准备后续满量程换算所需的组合量。
-assign u_pp_raw_abs            = work_u_pp_raw[31] ? 32'd0 : work_u_pp_raw[31:0];
-assign i_pp_raw_abs            = work_i_pp_raw[31] ? 32'd0 : work_i_pp_raw[31:0];
-assign u_full_scale_x100_signed= u_full_scale_x100;
-assign i_full_scale_x100_signed= i_full_scale_x100;
+assign u1_pp_raw_abs            = work_u1_pp_raw[31] ? 32'd0 : work_u1_pp_raw[31:0];
+assign u2_pp_raw_abs            = work_u2_pp_raw[31] ? 32'd0 : work_u2_pp_raw[31:0];
+assign u1_full_scale_x100_signed= u1_full_scale_x100;
+assign u2_full_scale_x100_signed= u2_full_scale_x100;
 
-// 将电压峰峰值 raw 与电压满量程相乘，构造 x100 换算分子。
+// 将U1峰峰值 raw 与U1满量程相乘，构造 x100 换算分子。
 multiplier_signed #(
     .A_WIDTH(32),
     .B_WIDTH(32)
-) u_u_pp_scale_multiplier (
-    .multiplicand({1'b0, u_pp_raw_abs[30:0]}),
-    .multiplier  (u_full_scale_x100_signed),
-    .product     (u_pp_scale_product_signed)
+) u_u1_pp_scale_multiplier (
+    .multiplicand({1'b0, u1_pp_raw_abs[30:0]}),
+    .multiplier  (u1_full_scale_x100_signed),
+    .product     (u1_pp_scale_product_signed)
 );
 
-// 将电流峰峰值 raw 与电流满量程相乘，构造 x100 换算分子。
+// 将U2峰峰值 raw 与U2满量程相乘，构造 x100 换算分子。
 multiplier_signed #(
     .A_WIDTH(32),
     .B_WIDTH(32)
-) u_i_pp_scale_multiplier (
-    .multiplicand({1'b0, i_pp_raw_abs[30:0]}),
-    .multiplier  (i_full_scale_x100_signed),
-    .product     (i_pp_scale_product_signed)
+) u_u2_pp_scale_multiplier (
+    .multiplicand({1'b0, u2_pp_raw_abs[30:0]}),
+    .multiplier  (u2_full_scale_x100_signed),
+    .product     (u2_pp_scale_product_signed)
 );
 
 // 将峰峰值乘积整理成无符号除法器输入。
-assign u_pp_scale_product_unsigned = u_pp_scale_product_signed[63] ? 64'd0 : u_pp_scale_product_signed[63:0];
-assign i_pp_scale_product_unsigned = i_pp_scale_product_signed[63] ? 64'd0 : i_pp_scale_product_signed[63:0];
+assign u1_pp_scale_product_unsigned = u1_pp_scale_product_signed[63] ? 64'd0 : u1_pp_scale_product_signed[63:0];
+assign u2_pp_scale_product_unsigned = u2_pp_scale_product_signed[63] ? 64'd0 : u2_pp_scale_product_signed[63:0];
 
-// 对电压峰峰值 raw 执行比例换算，得到电压峰峰值 x100。
+// 对U1峰峰值 raw 执行比例换算，得到U1峰峰值 x100。
 divider_unsigned #(
     .WIDTH(64)
-) u_u_pp_divider (
+) u_u1_pp_divider (
     .clk           (clk),
     .rst_n         (rst_n),
     .start         (p2p_start_pulse),
-    .dividend      (u_pp_scale_product_unsigned + {32'd0, ROUND_BIAS}),
+    .dividend      (u1_pp_scale_product_unsigned + {32'd0, ROUND_BIAS}),
     .divisor       ({32'd0, HALF_SCALE_CODE}),
     .busy          (),
-    .done          (u_pp_div_done),
-    .divide_by_zero(u_pp_div_zero),
-    .quotient      (u_pp_div_quotient)
+    .done          (u1_pp_div_done),
+    .divide_by_zero(u1_pp_div_zero),
+    .quotient      (u1_pp_div_quotient)
 );
 
-// 对电流峰峰值 raw 执行比例换算，得到电流峰峰值 x100。
+// 对U2峰峰值 raw 执行比例换算，得到U2峰峰值 x100。
 divider_unsigned #(
     .WIDTH(64)
-) u_i_pp_divider (
+) u_u2_pp_divider (
     .clk           (clk),
     .rst_n         (rst_n),
     .start         (p2p_start_pulse),
-    .dividend      (i_pp_scale_product_unsigned + {32'd0, ROUND_BIAS}),
+    .dividend      (u2_pp_scale_product_unsigned + {32'd0, ROUND_BIAS}),
     .divisor       ({32'd0, HALF_SCALE_CODE}),
     .busy          (),
-    .done          (i_pp_div_done),
-    .divide_by_zero(i_pp_div_zero),
-    .quotient      (i_pp_div_quotient)
+    .done          (u2_pp_div_done),
+    .divide_by_zero(u2_pp_div_zero),
+    .quotient      (u2_pp_div_quotient)
 );
 
 // 根据周期 raw 完成频率 x100 换算。
@@ -368,13 +368,13 @@ assign active_p_raw_neg     = active_p_raw_work[31] && (active_p_raw_abs != 32'd
 assign reactive_q_raw_neg   = reactive_q_raw_work[31] && (reactive_q_raw_abs != 32'd0);
 assign power_factor_raw_neg = power_factor_raw_work[31] && (power_factor_raw_abs != 32'd0);
 
-// 计算电压/电流满量程乘积，作为功率类 raw 统一缩放的公共系数。
+// 计算U1/U2满量程乘积，作为功率类 raw 统一缩放的公共系数。
 multiplier_signed #(
     .A_WIDTH(32),
     .B_WIDTH(32)
 ) u_full_scale_multiplier (
-    .multiplicand(u_full_scale_x100_signed),
-    .multiplier  (i_full_scale_x100_signed),
+    .multiplicand(u1_full_scale_x100_signed),
+    .multiplier  (u2_full_scale_x100_signed),
     .product     (full_scale_prod_signed)
 );
 
@@ -477,13 +477,13 @@ divider_unsigned #(
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         state                  <= ST_IDLE;
-        work_u_rms_raw         <= 32'sd0;
-        work_i_rms_raw         <= 32'sd0;
+        work_u1_rms_raw         <= 32'sd0;
+        work_u2_rms_raw         <= 32'sd0;
         work_rms_valid         <= 1'b0;
-        work_u_pp_raw          <= 32'sd0;
-        work_i_pp_raw          <= 32'sd0;
-        work_u_pp_valid        <= 1'b0;
-        work_i_pp_valid        <= 1'b0;
+        work_u1_pp_raw          <= 32'sd0;
+        work_u2_pp_raw          <= 32'sd0;
+        work_u1_pp_valid        <= 1'b0;
+        work_u2_pp_valid        <= 1'b0;
         work_phase_offset_raw  <= 32'sd0;
         work_phase_period_raw  <= 32'sd0;
         work_phase_valid       <= 1'b0;
@@ -514,10 +514,10 @@ always @(posedge clk or negedge rst_n) begin
         reactive_q_scale_product_work <= 96'd0;
         apparent_s_scale_product_work <= 96'd0;
         done                   <= 1'b0;
-        u_rms_x100             <= 32'sd0;
-        i_rms_x100             <= 32'sd0;
-        u_pp_x100              <= 32'sd0;
-        i_pp_x100              <= 32'sd0;
+        u1_rms_x100             <= 32'sd0;
+        u2_rms_x100             <= 32'sd0;
+        u1_pp_x100              <= 32'sd0;
+        u2_pp_x100              <= 32'sd0;
         phase_x100             <= 32'sd0;
         freq_x100              <= 32'sd0;
         active_p_x100          <= 32'sd0;
@@ -544,13 +544,13 @@ always @(posedge clk or negedge rst_n) begin
         case (state)
             ST_IDLE: begin
                 if (start) begin
-                    work_u_rms_raw        <= u_rms_raw;
-                    work_i_rms_raw        <= i_rms_raw;
+                    work_u1_rms_raw        <= u1_rms_raw;
+                    work_u2_rms_raw        <= u2_rms_raw;
                     work_rms_valid        <= rms_valid;
-                    work_u_pp_raw         <= u_pp_raw;
-                    work_i_pp_raw         <= i_pp_raw;
-                    work_u_pp_valid       <= u_pp_valid;
-                    work_i_pp_valid       <= i_pp_valid;
+                    work_u1_pp_raw         <= u1_pp_raw;
+                    work_u2_pp_raw         <= u2_pp_raw;
+                    work_u1_pp_valid       <= u1_pp_valid;
+                    work_u2_pp_valid       <= u2_pp_valid;
                     work_phase_offset_raw <= phase_offset_raw;
                     work_phase_period_raw <= phase_period_raw;
                     work_phase_valid      <= phase_valid;
@@ -574,23 +574,23 @@ always @(posedge clk or negedge rst_n) begin
                     rms_start_pulse <= 1'b1;
                     state           <= ST_RMS_X100_WAIT;
                 end else begin
-                    u_rms_x100 <= 32'sd0;
-                    i_rms_x100 <= 32'sd0;
+                    u1_rms_x100 <= 32'sd0;
+                    u2_rms_x100 <= 32'sd0;
                     state      <= ST_P2P_START;
                 end
             end
 
             ST_RMS_X100_WAIT: begin
-                if (u_rms_conv_valid && i_rms_conv_valid) begin
-                    if (u_rms_conv_value > VALUE_CLIP_999)
-                        u_rms_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
+                if (u1_rms_conv_valid && u2_rms_conv_valid) begin
+                    if (u1_rms_conv_value > VALUE_CLIP_999)
+                        u1_rms_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
                     else
-                        u_rms_x100 <= {1'b0, u_rms_conv_value[30:0]};
+                        u1_rms_x100 <= {1'b0, u1_rms_conv_value[30:0]};
 
-                    if (i_rms_conv_value > VALUE_CLIP_999)
-                        i_rms_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
+                    if (u2_rms_conv_value > VALUE_CLIP_999)
+                        u2_rms_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
                     else
-                        i_rms_x100 <= {1'b0, i_rms_conv_value[30:0]};
+                        u2_rms_x100 <= {1'b0, u2_rms_conv_value[30:0]};
 
                     state <= ST_P2P_START;
                 end
@@ -602,20 +602,20 @@ always @(posedge clk or negedge rst_n) begin
             end
 
             ST_P2P_WAIT: begin
-                if (u_pp_div_done && i_pp_div_done) begin
-                    if (!work_u_pp_valid || u_pp_div_zero)
-                        u_pp_x100 <= 32'sd0;
-                    else if ((u_pp_div_quotient[63:32] != 32'd0) || (u_pp_div_quotient[31:0] > VALUE_CLIP_999))
-                        u_pp_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
+                if (u1_pp_div_done && u2_pp_div_done) begin
+                    if (!work_u1_pp_valid || u1_pp_div_zero)
+                        u1_pp_x100 <= 32'sd0;
+                    else if ((u1_pp_div_quotient[63:32] != 32'd0) || (u1_pp_div_quotient[31:0] > VALUE_CLIP_999))
+                        u1_pp_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
                     else
-                        u_pp_x100 <= {1'b0, u_pp_div_quotient[30:0]};
+                        u1_pp_x100 <= {1'b0, u1_pp_div_quotient[30:0]};
 
-                    if (!work_i_pp_valid || i_pp_div_zero)
-                        i_pp_x100 <= 32'sd0;
-                    else if ((i_pp_div_quotient[63:32] != 32'd0) || (i_pp_div_quotient[31:0] > VALUE_CLIP_999))
-                        i_pp_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
+                    if (!work_u2_pp_valid || u2_pp_div_zero)
+                        u2_pp_x100 <= 32'sd0;
+                    else if ((u2_pp_div_quotient[63:32] != 32'd0) || (u2_pp_div_quotient[31:0] > VALUE_CLIP_999))
+                        u2_pp_x100 <= {1'b0, VALUE_CLIP_999[30:0]};
                     else
-                        i_pp_x100 <= {1'b0, i_pp_div_quotient[30:0]};
+                        u2_pp_x100 <= {1'b0, u2_pp_div_quotient[30:0]};
 
                     state <= ST_FREQ_START;
                 end

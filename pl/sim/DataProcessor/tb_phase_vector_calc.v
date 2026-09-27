@@ -4,11 +4,11 @@
  * 模块: tb_phase_vector_calc
  * 功能:
  *   phase_vector_calc 的单元测试平台：对 0~500 次谐波统计结果逐项算出
- *   U-I 相位差的 atan2 输入向量 dot/cross，并判断该向量是否可用于算相位。
+ *   U1-U2 相位差的 atan2 输入向量 dot/cross，并判断该向量是否可用于算相位。
  *
  *   dot   = Ur*Ir + Ui*Ii
  *   cross = Ui*Ir - Ur*Ii
- *   valid = present && (u_mag != 0) && (i_mag != 0)
+ *   valid = present && (u_mag != 0) && (u2_mag != 0)
  *
  *   六个用例项覆盖：u_mag=0 的旁路、普通同相、负值组合、present=0、
  *   u_mag=0 的大数、以及 16 位边界值（含 33 位宽结果不溢出）。
@@ -34,14 +34,14 @@ module tb_phase_vector_calc;
     reg s_harmonic_last = 1'b0;
     reg [8:0] s_harmonic_order = 9'd0;
     reg s_harmonic_present = 1'b0;
-    reg signed [15:0] s_u_real = 16'sd0;
-    reg signed [15:0] s_u_imag = 16'sd0;
-    reg signed [15:0] s_i_real = 16'sd0;
-    reg signed [15:0] s_i_imag = 16'sd0;
-    reg [16:0] s_u_mag = 17'd0;
-    reg [16:0] s_i_mag = 17'd0;
-    reg [15:0] s_u_pct_x100 = 16'd0;
-    reg [15:0] s_i_pct_x100 = 16'd0;
+    reg signed [15:0] s_u1_real = 16'sd0;
+    reg signed [15:0] s_u1_imag = 16'sd0;
+    reg signed [15:0] s_u2_real = 16'sd0;
+    reg signed [15:0] s_u2_imag = 16'sd0;
+    reg [16:0] s_u1_mag = 17'd0;
+    reg [16:0] s_u2_mag = 17'd0;
+    reg [15:0] s_u1_pct_x100 = 16'd0;
+    reg [15:0] s_u2_pct_x100 = 16'd0;
     reg m_harmonic_ready = 1'b0;
 
     wire               s_harmonic_ready;
@@ -49,14 +49,14 @@ module tb_phase_vector_calc;
     wire               m_harmonic_last;
     wire [8:0]         m_harmonic_order;
     wire               m_harmonic_present;
-    wire signed [15:0] m_u_real;
-    wire signed [15:0] m_u_imag;
-    wire signed [15:0] m_i_real;
-    wire signed [15:0] m_i_imag;
-    wire [16:0]        m_u_mag;
-    wire [16:0]        m_i_mag;
-    wire [15:0]        m_u_pct_x100;
-    wire [15:0]        m_i_pct_x100;
+    wire signed [15:0] m_u1_real;
+    wire signed [15:0] m_u1_imag;
+    wire signed [15:0] m_u2_real;
+    wire signed [15:0] m_u2_imag;
+    wire [16:0]        m_u1_mag;
+    wire [16:0]        m_u2_mag;
+    wire [15:0]        m_u1_pct_x100;
+    wire [15:0]        m_u2_pct_x100;
     wire               m_phase_vector_valid;
     wire signed [32:0] m_phase_dot;
     wire signed [32:0] m_phase_cross;
@@ -95,27 +95,27 @@ module tb_phase_vector_calc;
         .s_harmonic_last     (s_harmonic_last),
         .s_harmonic_order    (s_harmonic_order),
         .s_harmonic_present  (s_harmonic_present),
-        .s_u_real            (s_u_real),
-        .s_u_imag            (s_u_imag),
-        .s_i_real            (s_i_real),
-        .s_i_imag            (s_i_imag),
-        .s_u_mag             (s_u_mag),
-        .s_i_mag             (s_i_mag),
-        .s_u_pct_x100        (s_u_pct_x100),
-        .s_i_pct_x100        (s_i_pct_x100),
+        .s_u1_real            (s_u1_real),
+        .s_u1_imag            (s_u1_imag),
+        .s_u2_real            (s_u2_real),
+        .s_u2_imag            (s_u2_imag),
+        .s_u1_mag             (s_u1_mag),
+        .s_u2_mag             (s_u2_mag),
+        .s_u1_pct_x100        (s_u1_pct_x100),
+        .s_u2_pct_x100        (s_u2_pct_x100),
         .m_harmonic_ready    (m_harmonic_ready),
         .m_harmonic_valid    (m_harmonic_valid),
         .m_harmonic_last     (m_harmonic_last),
         .m_harmonic_order    (m_harmonic_order),
         .m_harmonic_present  (m_harmonic_present),
-        .m_u_real            (m_u_real),
-        .m_u_imag            (m_u_imag),
-        .m_i_real            (m_i_real),
-        .m_i_imag            (m_i_imag),
-        .m_u_mag             (m_u_mag),
-        .m_i_mag             (m_i_mag),
-        .m_u_pct_x100        (m_u_pct_x100),
-        .m_i_pct_x100        (m_i_pct_x100),
+        .m_u1_real            (m_u1_real),
+        .m_u1_imag            (m_u1_imag),
+        .m_u2_real            (m_u2_real),
+        .m_u2_imag            (m_u2_imag),
+        .m_u1_mag             (m_u1_mag),
+        .m_u2_mag             (m_u2_mag),
+        .m_u1_pct_x100        (m_u1_pct_x100),
+        .m_u2_pct_x100        (m_u2_pct_x100),
         .m_phase_vector_valid(m_phase_vector_valid),
         .m_phase_dot         (m_phase_dot),
         .m_phase_cross       (m_phase_cross)
@@ -168,7 +168,7 @@ module tb_phase_vector_calc;
             in_upct[4] = 16'd0; in_ipct[4] = 16'd5000;
             exp_dot[4] = -33'sd110000; exp_cross[4] = 33'sd20000; exp_valid[4] = 1'b0;
 
-            // order 5：16 位边界值；u_mag=3、i_mag=0 -> 向量不可用
+            // order 5：16 位边界值；u_mag=3、u2_mag=0 -> 向量不可用
             in_present[5] = 1'b1;
             in_ur[5] =  16'sh8000; in_ui[5] =  16'sd32767;
             in_ir[5] =  16'sh8000; in_ii[5] =  16'sh8000;
@@ -187,14 +187,14 @@ module tb_phase_vector_calc;
                 s_harmonic_order   = m;
                 s_harmonic_last    = (m == ITEMS - 1);
                 s_harmonic_present = in_present[m];
-                s_u_real           = in_ur[m];
-                s_u_imag           = in_ui[m];
-                s_i_real           = in_ir[m];
-                s_i_imag           = in_ii[m];
-                s_u_mag            = in_umag[m];
-                s_i_mag            = in_imag[m];
-                s_u_pct_x100       = in_upct[m];
-                s_i_pct_x100       = in_ipct[m];
+                s_u1_real           = in_ur[m];
+                s_u1_imag           = in_ui[m];
+                s_u2_real           = in_ir[m];
+                s_u2_imag           = in_ii[m];
+                s_u1_mag            = in_umag[m];
+                s_u2_mag            = in_imag[m];
+                s_u1_pct_x100       = in_upct[m];
+                s_u2_pct_x100       = in_ipct[m];
                 s_harmonic_valid   = 1'b1;
                 target             = input_fires + 1;
                 wait (input_fires == target);
@@ -245,16 +245,16 @@ module tb_phase_vector_calc;
                         errors = errors + 1;
                     end
                     // 透传字段
-                    if (m_u_real !== in_ur[k] || m_u_imag !== in_ui[k] ||
-                        m_i_real !== in_ir[k] || m_i_imag !== in_ii[k]) begin
+                    if (m_u1_real !== in_ur[k] || m_u1_imag !== in_ui[k] ||
+                        m_u2_real !== in_ir[k] || m_u2_imag !== in_ii[k]) begin
                         $display("FAIL: %0s order%0d 实虚部透传不符", tag, k);
                         errors = errors + 1;
                     end
-                    if (m_u_mag !== in_umag[k] || m_i_mag !== in_imag[k]) begin
+                    if (m_u1_mag !== in_umag[k] || m_u2_mag !== in_imag[k]) begin
                         $display("FAIL: %0s order%0d 幅值透传不符", tag, k);
                         errors = errors + 1;
                     end
-                    if (m_u_pct_x100 !== in_upct[k] || m_i_pct_x100 !== in_ipct[k]) begin
+                    if (m_u1_pct_x100 !== in_upct[k] || m_u2_pct_x100 !== in_ipct[k]) begin
                         $display("FAIL: %0s order%0d 百分比透传不符", tag, k);
                         errors = errors + 1;
                     end

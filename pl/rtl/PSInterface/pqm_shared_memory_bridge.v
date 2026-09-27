@@ -19,8 +19,8 @@
  *   harmonic_frame_start：请求开始向非活动 bank 发布一帧谐波。
  *   harmonic_valid：当前谐波条目有效。
  *   harmonic_index：当前谐波阶次，范围为 0 至 `PQM_SHM_HARMONIC_LAST_INDEX`（63，共 64 条）。
- *   harmonic_u_ratio：当前谐波电压幅值占比。
- *   harmonic_i_ratio：当前谐波电流幅值占比。
+ *   harmonic_u1_ratio：当前谐波U1幅值占比。
+ *   harmonic_u2_ratio：当前谐波U2幅值占比。
  *   harmonic_phase：当前谐波有符号相位差。
  *   harmonic_flags：当前谐波有效性和告警标志。
  *   command_response_valid：命令处理结果有效。
@@ -56,8 +56,8 @@ module pqm_shared_memory_bridge (
     input  wire          harmonic_valid,
     output wire          harmonic_ready,
     input  wire   [8:0]  harmonic_index,
-    input  wire  [31:0]  harmonic_u_ratio,
-    input  wire  [31:0]  harmonic_i_ratio,
+    input  wire  [31:0]  harmonic_u1_ratio,
+    input  wire  [31:0]  harmonic_u2_ratio,
     input  wire  [31:0]  harmonic_phase,
     input  wire  [31:0]  harmonic_flags,
     output reg           command_valid,
@@ -82,8 +82,8 @@ localparam [4:0] STATE_IDLE              = 5'd1;
 localparam [4:0] STATE_SNAPSHOT_WRITE    = 5'd2;
 localparam [4:0] STATE_SNAPSHOT_STATUS   = 5'd3;
 localparam [4:0] STATE_SNAPSHOT_SEQUENCE = 5'd4;
-localparam [4:0] STATE_HARMONIC_U        = 5'd5;
-localparam [4:0] STATE_HARMONIC_I        = 5'd6;
+localparam [4:0] STATE_HARMONIC_U1        = 5'd5;
+localparam [4:0] STATE_HARMONIC_U2        = 5'd6;
 localparam [4:0] STATE_HARMONIC_PHASE    = 5'd7;
 localparam [4:0] STATE_HARMONIC_FLAGS    = 5'd8;
 localparam [4:0] STATE_HARMONIC_GEN      = 5'd9;
@@ -108,8 +108,8 @@ reg          harmonic_published;
 reg          harmonic_frame_active;
 reg          harmonic_target_bank;
 reg  [8:0]   harmonic_index_latched;
-reg  [31:0]  harmonic_u_latched;
-reg  [31:0]  harmonic_i_latched;
+reg  [31:0]  harmonic_u1_latched;
+reg  [31:0]  harmonic_u2_latched;
 reg  [31:0]  harmonic_phase_latched;
 reg  [31:0]  harmonic_flags_latched;
 // 命令确认路径：握手、端口归属与已受理序号（实现见 pqm_shm_command_capture）。
@@ -223,14 +223,14 @@ always @* begin
             bram_wrdata = snapshot_sequence + 1'b1;
             bram_we     = 4'b1111;
         end
-        STATE_HARMONIC_U: begin
+        STATE_HARMONIC_U1: begin
             bram_addr   = harmonic_entry_addr;
-            bram_wrdata = harmonic_u_latched;
+            bram_wrdata = harmonic_u1_latched;
             bram_we     = 4'b1111;
         end
-        STATE_HARMONIC_I: begin
+        STATE_HARMONIC_U2: begin
             bram_addr   = harmonic_entry_addr + 1'b1;
-            bram_wrdata = harmonic_i_latched;
+            bram_wrdata = harmonic_u2_latched;
             bram_we     = 4'b1111;
         end
         STATE_HARMONIC_PHASE: begin
@@ -280,9 +280,21 @@ always @* begin
         end
     endcase
 
-    // 命令确认期间把读地址让给捕获器；写使能保持 0（捕获器只读）。
+    // 命令确认期间把读地址让给捕获器，并显式保持写使能为 0（捕获器只读）。
     // 放在 case 之后，最后赋值优先，从而不必重排既有状态分支。
-    if (capture_busy) bram_addr = capture_addr;
+    //
+    // 只判 state == STATE_CAPTURE_WAIT，不要只判 capture_busy：
+    //   捕获器只在被 start 的那一轮占用读口，而桥只在 STATE_CAPTURE_WAIT 等它，
+    //   所以该状态是捕获器唯一合法占用读口的窗口（且它在 case 里没有分支，
+    //   bram_we 本来就是 0000）。若只判 capture_busy，一旦它在 STATE_RESPONSE_DATA
+    //   这类 bram_we=1111 的状态为高，地址就被劫持成 capture_addr 而写使能仍是
+    //   "写" → 命令响应会被写到命令区地址上（写飞），PS 侧再也读不到响应。
+    //   这里同时把 bram_we 显式置 0，把"捕获期间 PL 不写"这条不变式写成本地可检查的：
+    //   即使将来给 STATE_CAPTURE_WAIT 补了写分支，也不会写出非法写。
+    if (state == STATE_CAPTURE_WAIT) begin
+        bram_addr = capture_addr;
+        bram_we   = 4'b0000;
+    end
 end
 
 // 串行调度初始化、快照、谐波、命令读取和响应提交。
@@ -297,8 +309,8 @@ always @(posedge clk) begin
         harmonic_frame_active     <= 1'b0;
         harmonic_target_bank      <= 1'b1;
         harmonic_index_latched    <= 9'd0;
-        harmonic_u_latched        <= 32'd0;
-        harmonic_i_latched        <= 32'd0;
+        harmonic_u1_latched        <= 32'd0;
+        harmonic_u2_latched        <= 32'd0;
         harmonic_phase_latched    <= 32'd0;
         harmonic_flags_latched    <= 32'd0;
         // 命令序号的所有权在 pqm_shm_command_capture 内部（capture_last_sequence）。
@@ -329,11 +341,11 @@ always @(posedge clk) begin
                 if (harmonic_frame_active) begin
                     if (harmonic_valid) begin
                         harmonic_index_latched <= harmonic_index;
-                        harmonic_u_latched     <= harmonic_u_ratio;
-                        harmonic_i_latched     <= harmonic_i_ratio;
+                        harmonic_u1_latched     <= harmonic_u1_ratio;
+                        harmonic_u2_latched     <= harmonic_u2_ratio;
                         harmonic_phase_latched <= harmonic_phase;
                         harmonic_flags_latched <= harmonic_flags;
-                        state                  <= STATE_HARMONIC_U;
+                        state                  <= STATE_HARMONIC_U1;
                     end
                 end else if (snapshot_commit) begin
                     snapshot_latched <= snapshot_words;
@@ -365,10 +377,10 @@ always @(posedge clk) begin
                 snapshot_sequence <= snapshot_sequence + 1'b1;
                 state             <= STATE_IDLE;
             end
-            STATE_HARMONIC_U: begin
-                state <= STATE_HARMONIC_I;
+            STATE_HARMONIC_U1: begin
+                state <= STATE_HARMONIC_U2;
             end
-            STATE_HARMONIC_I: begin
+            STATE_HARMONIC_U2: begin
                 state <= STATE_HARMONIC_PHASE;
             end
             STATE_HARMONIC_PHASE: begin

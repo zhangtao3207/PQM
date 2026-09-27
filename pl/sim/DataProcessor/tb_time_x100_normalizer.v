@@ -14,20 +14,20 @@
  *
  *   三组用例（期望值由离线整数运算算出，脚本口径与 RTL 完全一致）：
  *
- *   第一组：u_rms=16384 i_rms=8192 pp_u=65536 pp_i=32768 freq_period=2000
+ *   第一组：u1_rms=16384 u2_rms=8192 pp_u1=65536 pp_u2=32768 freq_period=2000
  *           P=1000000 Q=-1000000 S=1500000 PF=9500 全有效
- *      u_rms_x100  = (16384*10000+16384)/32767 = 5000
- *      i_rms_x100  = ( 8192*10000+16384)/32767 = 2500
- *      u_pp_x100   = (65536*10000+16384)/32768 = 20000
- *      i_pp_x100   = (32768*10000+16384)/32768 = 10000
+ *      u1_rms_x100  = (16384*10000+16384)/32767 = 5000
+ *      u2_rms_x100  = ( 8192*10000+16384)/32767 = 2500
+ *      u1_pp_x100   = (65536*10000+16384)/32768 = 20000
+ *      u2_pp_x100   = (32768*10000+16384)/32768 = 10000
  *      freq_x100   = (100000000+1000)/2000      = 50000
  *      相位：|P|=|Q| -> 地址 (1000000*1024)/2000000 = 512 -> ROM[512]=4500；
  *            P>0、Q<0 -> 第四象限 -> -4500
  *      P/Q/S/PF 走 96 位除法（除数常量 107367628900）：931 / -931 / 1397 / 95
  *
- *   第二组：rms_valid=0、pp_u 越界钳位、i_pp_valid=0、freq_valid=0、
+ *   第二组：rms_valid=0、pp_u1 越界钳位、u2_pp_valid=0、freq_valid=0、
  *           P=Q=-1000000、S=0、PF=-9500
- *      u_rms=i_rms=0、u_pp=99999、i_pp=0、freq=0、
+ *      u1_rms=u2_rms=0、u1_pp=99999、u2_pp=0、freq=0、
  *      相位：P<0、Q<0 -> 第三象限 -> -18000+4500 = -13500
  *      P=-931、Q=-931、S=0、PF=-95
  *
@@ -44,13 +44,13 @@ module tb_time_x100_normalizer;
     reg clk = 1'b0;
     reg rst_n = 1'b0;
     reg start = 1'b0;
-    reg signed [31:0] u_rms_raw = 32'sd0;
-    reg signed [31:0] i_rms_raw = 32'sd0;
+    reg signed [31:0] u1_rms_raw = 32'sd0;
+    reg signed [31:0] u2_rms_raw = 32'sd0;
     reg rms_valid = 1'b0;
-    reg signed [31:0] u_pp_raw = 32'sd0;
-    reg signed [31:0] i_pp_raw = 32'sd0;
-    reg u_pp_valid = 1'b0;
-    reg i_pp_valid = 1'b0;
+    reg signed [31:0] u1_pp_raw = 32'sd0;
+    reg signed [31:0] u2_pp_raw = 32'sd0;
+    reg u1_pp_valid = 1'b0;
+    reg u2_pp_valid = 1'b0;
     reg signed [31:0] phase_offset_raw = 32'sd0;
     reg signed [31:0] phase_period_raw = 32'sd0;
     reg phase_valid = 1'b0;
@@ -60,15 +60,15 @@ module tb_time_x100_normalizer;
     reg signed [31:0] reactive_q_raw = 32'sd0;
     reg signed [31:0] apparent_s_raw = 32'sd0;
     reg signed [31:0] power_factor_raw = 32'sd0;
-    reg [31:0] u_full_scale_x100 = 32'd10000;
-    reg [31:0] i_full_scale_x100 = 32'd10000;
+    reg [31:0] u1_full_scale_x100 = 32'd10000;
+    reg [31:0] u2_full_scale_x100 = 32'd10000;
     reg power_metrics_valid = 1'b0;
 
     wire               done;
-    wire signed [31:0] u_rms_x100;
-    wire signed [31:0] i_rms_x100;
-    wire signed [31:0] u_pp_x100;
-    wire signed [31:0] i_pp_x100;
+    wire signed [31:0] u1_rms_x100;
+    wire signed [31:0] u2_rms_x100;
+    wire signed [31:0] u1_pp_x100;
+    wire signed [31:0] u2_pp_x100;
     wire signed [31:0] phase_x100;
     wire signed [31:0] freq_x100;
     wire signed [31:0] active_p_x100;
@@ -89,13 +89,13 @@ module tb_time_x100_normalizer;
         .clk                  (clk),
         .rst_n                (rst_n),
         .start                (start),
-        .u_rms_raw            (u_rms_raw),
-        .i_rms_raw            (i_rms_raw),
+        .u1_rms_raw            (u1_rms_raw),
+        .u2_rms_raw            (u2_rms_raw),
         .rms_valid            (rms_valid),
-        .u_pp_raw             (u_pp_raw),
-        .i_pp_raw             (i_pp_raw),
-        .u_pp_valid           (u_pp_valid),
-        .i_pp_valid           (i_pp_valid),
+        .u1_pp_raw             (u1_pp_raw),
+        .u2_pp_raw             (u2_pp_raw),
+        .u1_pp_valid           (u1_pp_valid),
+        .u2_pp_valid           (u2_pp_valid),
         .phase_offset_raw     (phase_offset_raw),
         .phase_period_raw     (phase_period_raw),
         .phase_valid          (phase_valid),
@@ -105,14 +105,14 @@ module tb_time_x100_normalizer;
         .reactive_q_raw       (reactive_q_raw),
         .apparent_s_raw       (apparent_s_raw),
         .power_factor_raw     (power_factor_raw),
-        .u_full_scale_x100    (u_full_scale_x100),
-        .i_full_scale_x100    (i_full_scale_x100),
+        .u1_full_scale_x100    (u1_full_scale_x100),
+        .u2_full_scale_x100    (u2_full_scale_x100),
         .power_metrics_valid  (power_metrics_valid),
         .done                 (done),
-        .u_rms_x100           (u_rms_x100),
-        .i_rms_x100           (i_rms_x100),
-        .u_pp_x100            (u_pp_x100),
-        .i_pp_x100            (i_pp_x100),
+        .u1_rms_x100           (u1_rms_x100),
+        .u2_rms_x100           (u2_rms_x100),
+        .u1_pp_x100            (u1_pp_x100),
+        .u2_pp_x100            (u2_pp_x100),
         .phase_x100           (phase_x100),
         .freq_x100            (freq_x100),
         .active_p_x100        (active_p_x100),
@@ -164,10 +164,10 @@ module tb_time_x100_normalizer;
                 errors = errors + 1;
             end else begin
                 @(negedge clk);
-                check32(u_rms_x100,        exp_urms,  tag, "u_rms_x100");
-                check32(i_rms_x100,        exp_irms,  tag, "i_rms_x100");
-                check32(u_pp_x100,         exp_upp,   tag, "u_pp_x100");
-                check32(i_pp_x100,         exp_ipp,   tag, "i_pp_x100");
+                check32(u1_rms_x100,        exp_urms,  tag, "u_rms_x100");
+                check32(u2_rms_x100,        exp_irms,  tag, "i_rms_x100");
+                check32(u1_pp_x100,         exp_upp,   tag, "u_pp_x100");
+                check32(u2_pp_x100,         exp_ipp,   tag, "i_pp_x100");
                 check32(freq_x100,         exp_freq,  tag, "freq_x100");
                 check32(phase_x100,        exp_phase, tag, "phase_x100");
                 check32(active_p_x100,     exp_p,     tag, "active_p_x100");
@@ -186,10 +186,10 @@ module tb_time_x100_normalizer;
         repeat (4) @(posedge clk);
 
         // ---------------- 第一组 ----------------
-        u_rms_raw = 32'sd16384;   i_rms_raw = 32'sd8192;
+        u1_rms_raw = 32'sd16384;   u2_rms_raw = 32'sd8192;
         rms_valid = 1'b1;
-        u_pp_raw = 32'sd65536;    i_pp_raw = 32'sd32768;
-        u_pp_valid = 1'b1;        i_pp_valid = 1'b1;
+        u1_pp_raw = 32'sd65536;    u2_pp_raw = 32'sd32768;
+        u1_pp_valid = 1'b1;        u2_pp_valid = 1'b1;
         freq_period_raw = 32'sd2000; freq_valid = 1'b1;
         phase_offset_raw = 32'sd0;   phase_period_raw = 32'sd2000;
         phase_valid = 1'b1;
@@ -201,10 +201,10 @@ module tb_time_x100_normalizer;
                  -32'sd4500, 32'sd931, -32'sd931, 32'sd1397, 32'sd95);
 
         // ---------------- 第二组 ----------------
-        u_rms_raw = -32'sd1000;   i_rms_raw = 32'sd100;
+        u1_rms_raw = -32'sd1000;   u2_rms_raw = 32'sd100;
         rms_valid = 1'b0;                       // RMS 无效 -> 两路都 0
-        u_pp_raw = 32'sd100000000; i_pp_raw = 32'sd32768;
-        u_pp_valid = 1'b1;        i_pp_valid = 1'b0;  // 电流峰峰值无效 -> 0
+        u1_pp_raw = 32'sd100000000; u2_pp_raw = 32'sd32768;
+        u1_pp_valid = 1'b1;        u2_pp_valid = 1'b0;  // U2峰峰值无效 -> 0
         freq_period_raw = 32'sd2000; freq_valid = 1'b0; // 频率无效 -> 0
         phase_valid = 1'b1;
         active_p_raw = -32'sd1000000; reactive_q_raw = -32'sd1000000;
@@ -215,10 +215,10 @@ module tb_time_x100_normalizer;
                  -32'sd13500, -32'sd931, -32'sd931, 32'sd0, -32'sd95);
 
         // ---------------- 第三组：全部无效 ----------------
-        u_rms_raw = 32'sd0;       i_rms_raw = 32'sd0;
+        u1_rms_raw = 32'sd0;       u2_rms_raw = 32'sd0;
         rms_valid = 1'b0;
-        u_pp_raw = 32'sd0;        i_pp_raw = 32'sd0;
-        u_pp_valid = 1'b0;        i_pp_valid = 1'b0;
+        u1_pp_raw = 32'sd0;        u2_pp_raw = 32'sd0;
+        u1_pp_valid = 1'b0;        u2_pp_valid = 1'b0;
         freq_period_raw = 32'sd0; freq_valid = 1'b0;
         phase_valid = 1'b0;
         active_p_raw = 32'sd0;    reactive_q_raw = 32'sd0;

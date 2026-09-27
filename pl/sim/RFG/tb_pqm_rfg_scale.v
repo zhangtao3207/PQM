@@ -35,15 +35,15 @@ module tb_pqm_rfg_scale;
 
     reg        i_start = 1'b0;
     reg        i_sample_valid = 1'b0;
-    reg [15:0] i_sample_u = 16'd0;
-    reg [15:0] i_sample_i = 16'd0;
+    reg [15:0] i_sample_u1 = 16'd0;
+    reg [15:0] i_sample_u2 = 16'd0;
     wire [15:0] i_zero_code = 16'd0;
 
     // frontend 的 32 位流
     wire        fe_item_valid;
     wire        fe_item_ready;
     wire [8:0]  fe_order;
-    wire signed [31:0] fe_u_real, fe_u_imag, fe_i_real, fe_i_imag;
+    wire signed [31:0] fe_u1_real, fe_u1_imag, fe_u2_real, fe_u2_imag;
     wire        fe_item_last;
     wire        fe_frame_done, fe_sample_ready, fe_overflow, fe_channel_error;
 
@@ -52,11 +52,11 @@ module tb_pqm_rfg_scale;
     reg         m_bin_ready = 1'b1;
     wire        m_bin_last;
     wire [10:0] m_bin_index;
-    wire signed [15:0] m_u_real, m_u_imag, m_i_real, m_i_imag;
+    wire signed [15:0] m_u1_real, m_u1_imag, m_u2_real, m_u2_imag;
     wire        sc_frame_done;
 
-    reg [15:0] u_tab [0:C_N-1];
-    reg [15:0] i_tab [0:C_N-1];
+    reg [15:0] u1_tab [0:C_N-1];
+    reg [15:0] u2_tab [0:C_N-1];
 
     integer errors = 0;
     integer i;
@@ -75,13 +75,13 @@ module tb_pqm_rfg_scale;
     ) u_fe (
         .clk(clk), .rst_n(rst_n),
         .i_start(i_start), .i_sample_valid(i_sample_valid),
-        .i_sample_u(i_sample_u), .i_sample_i(i_sample_i),
+        .i_sample_u1(i_sample_u1), .i_sample_u2(i_sample_u2),
         .i_zero_code(i_zero_code),
         .o_sample_ready(fe_sample_ready),
         .o_item_valid(fe_item_valid), .i_item_ready(fe_item_ready),
         .o_order(fe_order),
-        .o_u_real(fe_u_real), .o_u_imag(fe_u_imag),
-        .o_i_real(fe_i_real), .o_i_imag(fe_i_imag),
+        .o_u1_real(fe_u1_real), .o_u1_imag(fe_u1_imag),
+        .o_u2_real(fe_u2_real), .o_u2_imag(fe_u2_imag),
         .o_item_last(fe_item_last),
         .o_frame_done(fe_frame_done),
         .o_overflow(fe_overflow),
@@ -92,13 +92,13 @@ module tb_pqm_rfg_scale;
         .clk(clk), .rst_n(rst_n), .i_start(i_start),
         .i_item_valid(fe_item_valid), .o_item_ready(fe_item_ready),
         .i_order(fe_order),
-        .i_u_real(fe_u_real), .i_u_imag(fe_u_imag),
-        .i_i_real(fe_i_real), .i_i_imag(fe_i_imag),
+        .i_u1_real(fe_u1_real), .i_u1_imag(fe_u1_imag),
+        .i_u2_real(fe_u2_real), .i_u2_imag(fe_u2_imag),
         .i_item_last(fe_item_last),
         .m_bin_valid(m_bin_valid), .m_bin_ready(m_bin_ready),
         .m_bin_last(m_bin_last), .m_bin_index(m_bin_index),
-        .m_u_real(m_u_real), .m_u_imag(m_u_imag),
-        .m_i_real(m_i_real), .m_i_imag(m_i_imag),
+        .m_u1_real(m_u1_real), .m_u1_imag(m_u1_imag),
+        .m_u2_real(m_u2_real), .m_u2_imag(m_u2_imag),
         .o_frame_done(sc_frame_done)
     );
 
@@ -106,14 +106,14 @@ module tb_pqm_rfg_scale;
         if (rst_n && m_bin_valid && m_bin_ready) begin
             if (item_cnt < 3)
                 $display("diag item#%0d: fe_order=%b m_bin_index=%b fe_u_real=%b m_u_real=%b",
-                         item_cnt, fe_order, m_bin_index, fe_u_real, m_u_real);
+                         item_cnt, fe_order, m_bin_index, fe_u1_real, m_u1_real);
             if (item_cnt != 0 && m_bin_index[8:0] <= last_order) order_err = order_err + 1;
             last_order = m_bin_index[8:0];
             if (item_cnt < ITEMS) begin
-                ur[m_bin_index[8:0]] = $signed(m_u_real);
-                ui[m_bin_index[8:0]] = $signed(m_u_imag);
-                ir[m_bin_index[8:0]] = $signed(m_i_real);
-                ii[m_bin_index[8:0]] = $signed(m_i_imag);
+                ur[m_bin_index[8:0]] = $signed(m_u1_real);
+                ui[m_bin_index[8:0]] = $signed(m_u1_imag);
+                ir[m_bin_index[8:0]] = $signed(m_u2_real);
+                ii[m_bin_index[8:0]] = $signed(m_u2_imag);
             end
             if (m_bin_last) last_seen_at = item_cnt;
             item_cnt = item_cnt + 1;
@@ -145,8 +145,8 @@ module tb_pqm_rfg_scale;
                 i_start = 1'b0;
                 if (fe_sample_ready) begin
                     i_sample_valid = 1'b1;
-                    i_sample_u     = u_tab[k];
-                    i_sample_i     = i_tab[k];
+                    i_sample_u1     = u1_tab[k];
+                    i_sample_u2     = u2_tab[k];
                     k = k + 1;
                 end else begin
                     i_sample_valid = 1'b0;
@@ -174,8 +174,8 @@ module tb_pqm_rfg_scale;
     endtask
 
     initial begin
-        $readmemh("u_q14.hex", u_tab);
-        $readmemh("i_q14.hex", i_tab);
+        $readmemh("u_q14.hex", u1_tab);
+        $readmemh("i_q14.hex", u2_tab);
 
         repeat (10) @(posedge clk);
         rst_n = 1'b1;

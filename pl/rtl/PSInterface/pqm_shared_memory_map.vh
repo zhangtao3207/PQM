@@ -19,20 +19,20 @@
 
 // 标量快照固定 word 偏移。
 `define PQM_SHM_SCALAR_BASE_WORD             32'h00000010
-`define PQM_SHM_SCALAR_U_RMS_WORD            32'h00000010
-`define PQM_SHM_SCALAR_I_RMS_WORD            32'h00000011
-`define PQM_SHM_SCALAR_U_P2P_WORD            32'h00000012
-`define PQM_SHM_SCALAR_I_P2P_WORD            32'h00000013
+`define PQM_SHM_SCALAR_U1_RMS_WORD            32'h00000010
+`define PQM_SHM_SCALAR_U2_RMS_WORD            32'h00000011
+`define PQM_SHM_SCALAR_U1_P2P_WORD            32'h00000012
+`define PQM_SHM_SCALAR_U2_P2P_WORD            32'h00000013
 `define PQM_SHM_SCALAR_FREQUENCY_WORD        32'h00000014
 `define PQM_SHM_SCALAR_PHASE_WORD            32'h00000015
 `define PQM_SHM_SCALAR_ACTIVE_POWER_WORD     32'h00000016
 `define PQM_SHM_SCALAR_REACTIVE_POWER_WORD   32'h00000017
 `define PQM_SHM_SCALAR_APPARENT_POWER_WORD   32'h00000018
 `define PQM_SHM_SCALAR_POWER_FACTOR_WORD     32'h00000019
-`define PQM_SHM_SCALAR_THD_U_WORD            32'h0000001A
-`define PQM_SHM_SCALAR_THD_I_WORD            32'h0000001B
-`define PQM_SHM_SCALAR_DC_U_WORD              32'h0000001C
-`define PQM_SHM_SCALAR_DC_I_WORD              32'h0000001D
+`define PQM_SHM_SCALAR_THD_U1_WORD            32'h0000001A
+`define PQM_SHM_SCALAR_THD_U2_WORD            32'h0000001B
+`define PQM_SHM_SCALAR_DC_U1_WORD              32'h0000001C
+`define PQM_SHM_SCALAR_DC_U2_WORD              32'h0000001D
 `define PQM_SHM_SCALAR_ALARM_WORD             32'h0000001E
 `define PQM_SHM_SCALAR_VALIDITY_WORD          32'h0000001F
 
@@ -48,7 +48,7 @@
 `define PQM_SHM_COUNTER_BASE_WORD            32'h000000A0
 `define PQM_SHM_COUNTER_SAMPLE_DROP_WORD     32'h000000A0
 
-// 双 bank 谐波窗口，每项依次为 U、I、相位和标志四个 word。
+// 双 bank 谐波窗口，每项依次为 U1、U2、相位和标志四个 word。
 // ABI 条目数为 64 条（0..63）：帧尾 index = PQM_SHM_HARMONIC_LAST_INDEX = 63，
 // 与 harmonic_stats 的 MAX_ORDER、RFG 取点 C_K=64 一致。
 `define PQM_SHM_HARMONIC_BANK0_WORD          32'h00000400

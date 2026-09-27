@@ -6,7 +6,7 @@
  *   time_parameters_initiator 的单元测试平台：它把 p2p、相位、频率、RMS/平均有功
  *   这五路 raw 测量在同一采样窗口内并行启动，等 RMS 也稳定后再启动功率衍生模块。
  *
- *   本用例喂一路 64 点周期的整数正弦（幅度 10000、零点 32768，U/I 同相），
+ *   本用例喂一路 64 点周期的整数正弦（幅度 10000、零点 32768，U1/U2 同相），
  *   窗口取 256 点 = 4 个整周期。各子模块的数值行为已在各自用例里逐条验证过，
  *   这里验证的是**集成与调度**：
  *     - 五路子模块是否都被启动、六路 raw 结果是否都拿到 valid
@@ -19,7 +19,7 @@
  *     RMS         = sqrt(50000461.5) = 7071
  *     平均有功    = 50000461（同相，等于均方值）
  *     频率周期    = 64 个采样/时钟
- *     相位偏移    = 0（U/I 同相）
+ *     相位偏移    = 0（U1/U2 同相）
  */
 
 module tb_time_parameters_initiator;
@@ -33,24 +33,24 @@ module tb_time_parameters_initiator;
     reg clk = 1'b0;
     reg rst_n = 1'b0;
     reg start = 1'b0;
-    reg u_sample_valid = 1'b0;
-    reg [15:0] u_sample_code = 16'd0;
-    reg [15:0] u_zero_code = ZERO_CODE;
-    reg u_zero_valid = 1'b1;
-    reg i_sample_valid = 1'b0;
-    reg [15:0] i_sample_code = 16'd0;
-    reg [15:0] i_zero_code = ZERO_CODE;
-    reg i_zero_valid = 1'b1;
+    reg u1_sample_valid = 1'b0;
+    reg [15:0] u1_sample_code = 16'd0;
+    reg [15:0] u1_zero_code = ZERO_CODE;
+    reg u1_zero_valid = 1'b1;
+    reg u2_sample_valid = 1'b0;
+    reg [15:0] u2_sample_code = 16'd0;
+    reg [15:0] u2_zero_code = ZERO_CODE;
+    reg u2_zero_valid = 1'b1;
 
     wire               busy;
     wire               done;
-    wire signed [31:0] u_rms_raw;
-    wire signed [31:0] i_rms_raw;
+    wire signed [31:0] u1_rms_raw;
+    wire signed [31:0] u2_rms_raw;
     wire               rms_valid;
-    wire signed [31:0] u_pp_raw;
-    wire               u_pp_valid;
-    wire signed [31:0] i_pp_raw;
-    wire               i_pp_valid;
+    wire signed [31:0] u1_pp_raw;
+    wire               u1_pp_valid;
+    wire signed [31:0] u2_pp_raw;
+    wire               u2_pp_valid;
     wire signed [31:0] phase_offset_raw;
     wire signed [31:0] phase_period_raw;
     wire               phase_valid;
@@ -78,14 +78,14 @@ module tb_time_parameters_initiator;
         .MEASURE_FRAME_SAMPLES (FRAME)
     ) dut (
         .clk(clk), .rst_n(rst_n), .start(start),
-        .u_sample_valid(u_sample_valid), .u_sample_code(u_sample_code),
-        .u_zero_code(u_zero_code), .u_zero_valid(u_zero_valid),
-        .i_sample_valid(i_sample_valid), .i_sample_code(i_sample_code),
-        .i_zero_code(i_zero_code), .i_zero_valid(i_zero_valid),
+        .u1_sample_valid(u1_sample_valid), .u1_sample_code(u1_sample_code),
+        .u1_zero_code(u1_zero_code), .u1_zero_valid(u1_zero_valid),
+        .u2_sample_valid(u2_sample_valid), .u2_sample_code(u2_sample_code),
+        .u2_zero_code(u2_zero_code), .u2_zero_valid(u2_zero_valid),
         .busy(busy), .done(done),
-        .u_rms_raw(u_rms_raw), .i_rms_raw(i_rms_raw), .rms_valid(rms_valid),
-        .u_pp_raw(u_pp_raw), .u_pp_valid(u_pp_valid),
-        .i_pp_raw(i_pp_raw), .i_pp_valid(i_pp_valid),
+        .u1_rms_raw(u1_rms_raw), .u2_rms_raw(u2_rms_raw), .rms_valid(rms_valid),
+        .u1_pp_raw(u1_pp_raw), .u1_pp_valid(u1_pp_valid),
+        .u2_pp_raw(u2_pp_raw), .u2_pp_valid(u2_pp_valid),
         .phase_offset_raw(phase_offset_raw), .phase_period_raw(phase_period_raw),
         .phase_valid(phase_valid),
         .freq_period_raw(freq_period_raw), .freq_valid(freq_valid),
@@ -96,13 +96,13 @@ module tb_time_parameters_initiator;
 
     // 采样计数器：本用例里 sample_valid 恒为高，所以每拍推进一个采样点。
     always @(posedge clk) begin
-        if (u_sample_valid)
+        if (u1_sample_valid)
             n <= n + 1;
     end
 
     always @(*) begin
-        u_sample_code = sine_code[n[5:0]];
-        i_sample_code = sine_code[n[5:0]];   // U/I 同相
+        u1_sample_code = sine_code[n[5:0]];
+        u2_sample_code = sine_code[n[5:0]];   // U1/U2 同相
     end
 
     task init_sine;
@@ -162,8 +162,8 @@ module tb_time_parameters_initiator;
         repeat (4) @(posedge clk);
 
         // ---------------- 场景 1：正常窗口，六路 raw 都应有效 ----------------
-        u_sample_valid = 1'b1;
-        i_sample_valid = 1'b1;
+        u1_sample_valid = 1'b1;
+        u2_sample_valid = 1'b1;
 
         @(negedge clk);
         start = 1'b1;
@@ -185,8 +185,8 @@ module tb_time_parameters_initiator;
             $display("FAIL: 正常窗口下等不到 done");
             errors = errors + 1;
         end
-        u_sample_valid = 1'b0;
-        i_sample_valid = 1'b0;
+        u1_sample_valid = 1'b0;
+        u2_sample_valid = 1'b0;
         repeat (4) @(negedge clk);
 
         if (busy !== 1'b0) begin
@@ -195,16 +195,16 @@ module tb_time_parameters_initiator;
         end
 
         check_flag(rms_valid,           1'b1, "rms_valid");
-        check_flag(u_pp_valid,          1'b1, "u_pp_valid");
-        check_flag(i_pp_valid,          1'b1, "i_pp_valid");
+        check_flag(u1_pp_valid,          1'b1, "u_pp_valid");
+        check_flag(u2_pp_valid,          1'b1, "i_pp_valid");
         check_flag(phase_valid,         1'b1, "phase_valid");
         check_flag(freq_valid,          1'b1, "freq_valid");
         check_flag(power_metrics_valid, 1'b1, "power_metrics_valid");
 
-        check_range(u_rms_raw,      32'sd6900,    32'sd7250,    "u_rms_raw");
-        check_range(i_rms_raw,      32'sd6900,    32'sd7250,    "i_rms_raw");
-        check_range(u_pp_raw,       32'sd19500,   32'sd20500,   "u_pp_raw");
-        check_range(i_pp_raw,       32'sd19500,   32'sd20500,   "i_pp_raw");
+        check_range(u1_rms_raw,      32'sd6900,    32'sd7250,    "u_rms_raw");
+        check_range(u2_rms_raw,      32'sd6900,    32'sd7250,    "i_rms_raw");
+        check_range(u1_pp_raw,       32'sd19500,   32'sd20500,   "u_pp_raw");
+        check_range(u2_pp_raw,       32'sd19500,   32'sd20500,   "i_pp_raw");
         check_range(freq_period_raw,32'sd62,      32'sd66,      "freq_period_raw");
         check_range(phase_period_raw,32'sd62,     32'sd66,      "phase_period_raw");
         check_range(phase_offset_raw,-32'sd3,     32'sd3,       "phase_offset_raw");
@@ -219,8 +219,8 @@ module tb_time_parameters_initiator;
         rst_n = 1'b1;
         repeat (4) @(posedge clk);
 
-        u_sample_valid = 1'b0;
-        i_sample_valid = 1'b0;
+        u1_sample_valid = 1'b0;
+        u2_sample_valid = 1'b0;
 
         @(negedge clk);
         start = 1'b1;

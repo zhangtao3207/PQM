@@ -73,7 +73,7 @@ reg  [511:0] snapshot_words;
 reg          harmonic_frame_start;
 reg          harmonic_valid;
 reg  [8:0]   harmonic_index;
-reg  [31:0]  harmonic_u_ratio, harmonic_i_ratio, harmonic_phase, harmonic_flags;
+reg  [31:0]  harmonic_u1_ratio, harmonic_u2_ratio, harmonic_phase, harmonic_flags;
 reg          command_response_valid;
 reg  [31:0]  command_response;
 
@@ -105,8 +105,8 @@ pqm_shared_memory_bridge u_dut (
     .harmonic_valid         (harmonic_valid),
     .harmonic_ready         (harmonic_ready),
     .harmonic_index         (harmonic_index),
-    .harmonic_u_ratio       (harmonic_u_ratio),
-    .harmonic_i_ratio       (harmonic_i_ratio),
+    .harmonic_u1_ratio       (harmonic_u1_ratio),
+    .harmonic_u2_ratio       (harmonic_u2_ratio),
     .harmonic_phase         (harmonic_phase),
     .harmonic_flags         (harmonic_flags),
     .command_valid          (command_valid),
@@ -372,8 +372,8 @@ initial begin
     harmonic_frame_start   = 1'b0;
     harmonic_valid         = 1'b0;
     harmonic_index         = 9'd0;
-    harmonic_u_ratio       = 32'd0;
-    harmonic_i_ratio       = 32'd0;
+    harmonic_u1_ratio       = 32'd0;
+    harmonic_u2_ratio       = 32'd0;
     harmonic_phase         = 32'd0;
     harmonic_flags         = 32'd0;
     command_response_valid = 1'b0;

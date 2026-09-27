@@ -6,18 +6,18 @@
  *   freq_harmonic_iir_filter 的单元测试平台：对 0~500 次谐波流做 1/16 一阶 IIR 平滑。
  *
  *   每帧 4 项，谐波次数分别为 0、1、2、600：
- *     - order 0 只带 u_real（有符号，用来验证 delta 右移是算术右移/向下取整）
+ *     - order 0 只带 u1_real（有符号，用来验证 delta 右移是算术右移/向下取整）
  *     - order 1 只带 u_mag（无符号 17 bit）
- *     - order 2 只带 u_pct_x100（无符号 16 bit）与相位差（deg x100，带跨 ±180 的展开）
+ *     - order 2 只带 u1_pct_x100（无符号 16 bit）与相位差（deg x100，带跨 ±180 的展开）
  *     - order 600 超出 0~500 范围，应被当作"未捕获"（present=0、各数值归零、
  *       次数被钳到 500），用来验证 stage_in_range 与 input_index 的钳位
  *   各 order 只带一个字段、其余为 0，这样任何跨 order 的状态串扰都会被查出来。
  *
  *   三帧的手算期望：
- *     u_real  (有符号，算术右移向下取整)：100 -> 100+((-100)>>4)=93
+ *     u1_real  (有符号，算术右移向下取整)：100 -> 100+((-100)>>4)=93
  *                                          -> 93+((-1693)>>4)=93-106=-13
  *     u_mag   1600 -> 1600+(3200>>4)=1800 -> 1800+(3000>>4)=1987
- *     u_pct   1000 -> 1000+(17>>4)=1001  -> 1001+((-1)>>4)=1000
+ *     u1_pct   1000 -> 1000+(17>>4)=1001  -> 1001+((-1)>>4)=1000
  *     phase   17000 -> 展开到 19000 后 17000+(2000>>4)=17125
  *                    -> 再展开到 19000 后 17125+(1875>>4)=17242
  *
@@ -49,14 +49,14 @@ module tb_freq_harmonic_iir_filter;
     reg s_harmonic_last = 1'b0;
     reg [8:0] s_harmonic_order = 9'd0;
     reg s_harmonic_present = 1'b0;
-    reg signed [15:0] s_u_real = 16'sd0;
-    reg signed [15:0] s_u_imag = 16'sd0;
-    reg signed [15:0] s_i_real = 16'sd0;
-    reg signed [15:0] s_i_imag = 16'sd0;
-    reg [16:0] s_u_mag = 17'd0;
-    reg [16:0] s_i_mag = 17'd0;
-    reg [15:0] s_u_pct_x100 = 16'd0;
-    reg [15:0] s_i_pct_x100 = 16'd0;
+    reg signed [15:0] s_u1_real = 16'sd0;
+    reg signed [15:0] s_u1_imag = 16'sd0;
+    reg signed [15:0] s_u2_real = 16'sd0;
+    reg signed [15:0] s_u2_imag = 16'sd0;
+    reg [16:0] s_u1_mag = 17'd0;
+    reg [16:0] s_u2_mag = 17'd0;
+    reg [15:0] s_u1_pct_x100 = 16'd0;
+    reg [15:0] s_u2_pct_x100 = 16'd0;
     reg s_phase_vector_valid = 1'b0;
     reg signed [32:0] s_phase_dot = 33'sd0;
     reg signed [32:0] s_phase_cross = 33'sd0;
@@ -69,14 +69,14 @@ module tb_freq_harmonic_iir_filter;
     wire               m_harmonic_last;
     wire [8:0]         m_harmonic_order;
     wire               m_harmonic_present;
-    wire signed [15:0] m_u_real;
-    wire signed [15:0] m_u_imag;
-    wire signed [15:0] m_i_real;
-    wire signed [15:0] m_i_imag;
-    wire [16:0]        m_u_mag;
-    wire [16:0]        m_i_mag;
-    wire [15:0]        m_u_pct_x100;
-    wire [15:0]        m_i_pct_x100;
+    wire signed [15:0] m_u1_real;
+    wire signed [15:0] m_u1_imag;
+    wire signed [15:0] m_u2_real;
+    wire signed [15:0] m_u2_imag;
+    wire [16:0]        m_u1_mag;
+    wire [16:0]        m_u2_mag;
+    wire [15:0]        m_u1_pct_x100;
+    wire [15:0]        m_u2_pct_x100;
     wire               m_phase_vector_valid;
     wire signed [32:0] m_phase_dot;
     wire signed [32:0] m_phase_cross;
@@ -123,14 +123,14 @@ module tb_freq_harmonic_iir_filter;
         .s_harmonic_last          (s_harmonic_last),
         .s_harmonic_order         (s_harmonic_order),
         .s_harmonic_present       (s_harmonic_present),
-        .s_u_real                 (s_u_real),
-        .s_u_imag                 (s_u_imag),
-        .s_i_real                 (s_i_real),
-        .s_i_imag                 (s_i_imag),
-        .s_u_mag                  (s_u_mag),
-        .s_i_mag                  (s_i_mag),
-        .s_u_pct_x100             (s_u_pct_x100),
-        .s_i_pct_x100             (s_i_pct_x100),
+        .s_u1_real                 (s_u1_real),
+        .s_u1_imag                 (s_u1_imag),
+        .s_u2_real                 (s_u2_real),
+        .s_u2_imag                 (s_u2_imag),
+        .s_u1_mag                  (s_u1_mag),
+        .s_u2_mag                  (s_u2_mag),
+        .s_u1_pct_x100             (s_u1_pct_x100),
+        .s_u2_pct_x100             (s_u2_pct_x100),
         .s_phase_vector_valid     (s_phase_vector_valid),
         .s_phase_dot              (s_phase_dot),
         .s_phase_cross            (s_phase_cross),
@@ -141,14 +141,14 @@ module tb_freq_harmonic_iir_filter;
         .m_harmonic_last          (m_harmonic_last),
         .m_harmonic_order         (m_harmonic_order),
         .m_harmonic_present       (m_harmonic_present),
-        .m_u_real                 (m_u_real),
-        .m_u_imag                 (m_u_imag),
-        .m_i_real                 (m_i_real),
-        .m_i_imag                 (m_i_imag),
-        .m_u_mag                  (m_u_mag),
-        .m_i_mag                  (m_i_mag),
-        .m_u_pct_x100             (m_u_pct_x100),
-        .m_i_pct_x100             (m_i_pct_x100),
+        .m_u1_real                 (m_u1_real),
+        .m_u1_imag                 (m_u1_imag),
+        .m_u2_real                 (m_u2_real),
+        .m_u2_imag                 (m_u2_imag),
+        .m_u1_mag                  (m_u1_mag),
+        .m_u2_mag                  (m_u2_mag),
+        .m_u1_pct_x100             (m_u1_pct_x100),
+        .m_u2_pct_x100             (m_u2_pct_x100),
         .m_phase_vector_valid     (m_phase_vector_valid),
         .m_phase_dot              (m_phase_dot),
         .m_phase_cross            (m_phase_cross),
@@ -244,14 +244,14 @@ module tb_freq_harmonic_iir_filter;
                 s_harmonic_order        = in_order[m];
                 s_harmonic_last         = (m == ITEMS - 1);
                 s_harmonic_present      = in_present[idx_base + m];
-                s_u_real                = in_ureal[idx_base + m];
-                s_u_imag                = 16'sd0;
-                s_i_real                = 16'sd0;
-                s_i_imag                = 16'sd0;
-                s_u_mag                 = in_umag[idx_base + m];
-                s_i_mag                 = 17'd0;
-                s_u_pct_x100            = in_upct[idx_base + m];
-                s_i_pct_x100            = 16'd0;
+                s_u1_real                = in_ureal[idx_base + m];
+                s_u1_imag                = 16'sd0;
+                s_u2_real                = 16'sd0;
+                s_u2_imag                = 16'sd0;
+                s_u1_mag                 = in_umag[idx_base + m];
+                s_u2_mag                 = 17'd0;
+                s_u1_pct_x100            = in_upct[idx_base + m];
+                s_u2_pct_x100            = 16'd0;
                 s_phase_vector_valid    = in_pvec[idx_base + m];
                 s_phase_dot             = 33'sd0;
                 s_phase_cross           = 33'sd0;
@@ -293,19 +293,19 @@ module tb_freq_harmonic_iir_filter;
                                  tag, k, m_harmonic_present, exp_present[idx_base + k]);
                         errors = errors + 1;
                     end
-                    if (m_u_real !== exp_ureal[idx_base + k]) begin
+                    if (m_u1_real !== exp_ureal[idx_base + k]) begin
                         $display("FAIL: %0s 第 %0d 项 u_real=%0d，期望 %0d",
-                                 tag, k, m_u_real, exp_ureal[idx_base + k]);
+                                 tag, k, m_u1_real, exp_ureal[idx_base + k]);
                         errors = errors + 1;
                     end
-                    if (m_u_mag !== exp_umag[idx_base + k]) begin
+                    if (m_u1_mag !== exp_umag[idx_base + k]) begin
                         $display("FAIL: %0s 第 %0d 项 u_mag=%0d，期望 %0d",
-                                 tag, k, m_u_mag, exp_umag[idx_base + k]);
+                                 tag, k, m_u1_mag, exp_umag[idx_base + k]);
                         errors = errors + 1;
                     end
-                    if (m_u_pct_x100 !== exp_upct[idx_base + k]) begin
+                    if (m_u1_pct_x100 !== exp_upct[idx_base + k]) begin
                         $display("FAIL: %0s 第 %0d 项 u_pct_x100=%0d，期望 %0d",
-                                 tag, k, m_u_pct_x100, exp_upct[idx_base + k]);
+                                 tag, k, m_u1_pct_x100, exp_upct[idx_base + k]);
                         errors = errors + 1;
                     end
                     if (m_phase_diff_deg_x100 !== exp_phase[idx_base + k]) begin
@@ -324,11 +324,11 @@ module tb_freq_harmonic_iir_filter;
                         errors = errors + 1;
                     end
                     // 本用例里恒为 0 的字段：验证没有跨 order 的状态串扰、也没有残留旧值
-                    if (m_u_imag !== 16'sd0 || m_i_real !== 16'sd0 || m_i_imag !== 16'sd0 ||
-                        m_i_mag !== 17'd0 || m_i_pct_x100 !== 16'd0 ||
+                    if (m_u1_imag !== 16'sd0 || m_u2_real !== 16'sd0 || m_u2_imag !== 16'sd0 ||
+                        m_u2_mag !== 17'd0 || m_u2_pct_x100 !== 16'd0 ||
                         m_phase_dot !== 33'sd0 || m_phase_cross !== 33'sd0) begin
                         $display("FAIL: %0s 第 %0d 项出现非零的 i 通道/向量字段（u_imag=%0d i_real=%0d i_imag=%0d i_mag=%0d i_pct=%0d dot=%0d cross=%0d）",
-                                 tag, k, m_u_imag, m_i_real, m_i_imag, m_i_mag, m_i_pct_x100,
+                                 tag, k, m_u1_imag, m_u2_real, m_u2_imag, m_u2_mag, m_u2_pct_x100,
                                  m_phase_dot, m_phase_cross);
                         errors = errors + 1;
                     end

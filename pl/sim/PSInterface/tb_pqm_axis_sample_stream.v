@@ -12,8 +12,8 @@ module tb_pqm_axis_sample_stream;
 reg         clk;
 reg         rst_n;
 reg         sample_valid;
-reg  [15:0] u_sample;
-reg  [15:0] i_sample;
+reg  [15:0] u1_sample;
+reg  [15:0] u2_sample;
 wire [31:0] source_sequence;
 wire [31:0] drop_count;
 wire [63:0] m_axis_tdata;
@@ -55,15 +55,15 @@ always @(posedge clk) begin
     end
 end
 
-// 被测模块：将电压、电流和源序号打包为 64 位 AXI4-Stream。
+// 被测模块：将U1、U2和源序号打包为 64 位 AXI4-Stream。
 pqm_axis_sample_stream #(
     .FRAME_SAMPLES (2048)
 ) u_dut (
     .clk             (clk),
     .rst_n           (rst_n),
     .sample_valid    (sample_valid),
-    .u_sample        (u_sample),
-    .i_sample        (i_sample),
+    .u1_sample        (u1_sample),
+    .u2_sample        (u2_sample),
     .source_sequence (source_sequence),
     .drop_count      (drop_count),
     .m_axis_tdata    (m_axis_tdata),
@@ -77,8 +77,8 @@ initial begin
     clk            = 1'b0;
     rst_n          = 1'b0;
     sample_valid   = 1'b0;
-    u_sample       = 16'd0;
-    i_sample       = 16'd0;
+    u1_sample       = 16'd0;
+    u2_sample       = 16'd0;
     m_axis_tready  = 1'b1;
     source_index   = 0;
     accepted_count = 0;
@@ -94,8 +94,8 @@ initial begin
     for (source_index = 0; source_index < 2052; source_index = source_index + 1) begin
         @(negedge clk);
         sample_valid  = 1'b1;
-        u_sample      = source_index[15:0];
-        i_sample      = source_index[15:0] ^ 16'h5A5A;
+        u1_sample      = source_index[15:0];
+        u2_sample      = source_index[15:0] ^ 16'h5A5A;
         m_axis_tready = !((source_index >= 1000) && (source_index < 1004));
     end
 

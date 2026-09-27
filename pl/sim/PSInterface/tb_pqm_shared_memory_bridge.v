@@ -22,8 +22,8 @@ wire         harmonic_start_ready;
 reg          harmonic_valid;
 wire         harmonic_ready;
 reg    [8:0] harmonic_index;
-reg   [31:0] harmonic_u_ratio;
-reg   [31:0] harmonic_i_ratio;
+reg   [31:0] harmonic_u1_ratio;
+reg   [31:0] harmonic_u2_ratio;
 reg   [31:0] harmonic_phase;
 reg   [31:0] harmonic_flags;
 wire         command_valid;
@@ -86,8 +86,8 @@ task send_harmonic_entry;
     begin
         while (!harmonic_ready) @(negedge clk);
         harmonic_index   = entry_index;
-        harmonic_u_ratio = 32'h10000000 + entry_index;
-        harmonic_i_ratio = 32'h20000000 + entry_index;
+        harmonic_u1_ratio = 32'h10000000 + entry_index;
+        harmonic_u2_ratio = 32'h20000000 + entry_index;
         harmonic_phase   = 32'h30000000 + entry_index;
         harmonic_flags   = 32'h40000000 + entry_index;
         harmonic_valid   = 1'b1;
@@ -108,8 +108,8 @@ pqm_shared_memory_bridge u_dut (
     .harmonic_valid         (harmonic_valid),
     .harmonic_ready         (harmonic_ready),
     .harmonic_index         (harmonic_index),
-    .harmonic_u_ratio       (harmonic_u_ratio),
-    .harmonic_i_ratio       (harmonic_i_ratio),
+    .harmonic_u1_ratio       (harmonic_u1_ratio),
+    .harmonic_u2_ratio       (harmonic_u2_ratio),
     .harmonic_phase         (harmonic_phase),
     .harmonic_flags         (harmonic_flags),
     .command_valid          (command_valid),
@@ -138,8 +138,8 @@ initial begin
     harmonic_frame_start   = 1'b0;
     harmonic_valid         = 1'b0;
     harmonic_index         = 9'd0;
-    harmonic_u_ratio       = 32'd0;
-    harmonic_i_ratio       = 32'd0;
+    harmonic_u1_ratio       = 32'd0;
+    harmonic_u2_ratio       = 32'd0;
     harmonic_phase         = 32'd0;
     harmonic_flags         = 32'd0;
     command_response_valid = 1'b0;
@@ -216,6 +216,27 @@ initial begin
     @(negedge clk);
     command_response       = 32'hACCE0001;
     command_response_valid = 1'b1;
+
+    // ===== P0-1b 定向检查：捕获器占用读口时，不得劫持写状态的地址 =====
+    // 桥的 FSM 正常不会让 capture_busy 与 bram_we=1111 的状态重叠，所以这里用 force
+    // 人为造出重叠（这是唯一能定向验证该不变式的办法）：把捕获器的 state 强置为
+    // ST_SEQ_B(3'd6)，busy 变 1，捕获器给出的读地址变成命令序号字。
+    // 旧写法 if (capture_busy) bram_addr = capture_addr; 会在此把响应地址劫持成
+    // 命令序号字（而 we 仍是 1111）→ 响应写到 PS 独占的命令区上（写飞）。
+    // 用 negedge 判 state：negedge 在拍中间，此时本拍的 NBA 已落定，不会像在
+    // posedge 上读那样读到上一拍的值而与 FSM 错开一拍。
+    @(negedge clk);
+    while (u_dut.state !== 5'd15) @(negedge clk);   // 5'd15 = STATE_RESPONSE_DATA
+    force u_dut.u_command_capture.state = 3'd6;
+    #1;
+    if (u_dut.capture_busy !== 1'b1)
+        $fatal(1, "P0-1b 检查前提不成立：force 后 capture_busy 未拉高");
+    if (u_dut.bram_we !== 4'b1111)
+        $fatal(1, "P0-1b：响应写状态下写使能不是 1111");
+    if (u_dut.bram_addr !== `PQM_SHM_COMMAND_RESPONSE_WORD)
+        $fatal(1, "P0-1b：capture_busy 为高时响应地址被劫持，响应会被写飞到命令区");
+    release u_dut.u_command_capture.state;
+
     @(negedge clk);
     command_response_valid = 1'b0;
 
@@ -228,4 +249,17 @@ initial begin
     $finish;
 end
 
+// 全局不变式：PS 独占的命令请求区（REQUEST/ARGUMENT/SEQUENCE）绝不允许 PL 写。
+// 这是"响应写飞"的直接哨兵，覆盖面比单次地址比对更宽。
+// 用 $fatal 而非 $display：判据不靠日志扫描。
+always @(posedge clk) begin
+    if (rst_n && bram_en && (bram_we !== 4'b0000)) begin
+        if ((bram_addr == `PQM_SHM_COMMAND_REQUEST_WORD) ||
+            (bram_addr == `PQM_SHM_COMMAND_ARGUMENT_WORD) ||
+            (bram_addr == `PQM_SHM_COMMAND_SEQUENCE_WORD)) begin
+            $display("FAIL: PL 写了 PS 独占的命令请求区 addr=%0d we=%b", bram_addr, bram_we);
+            $fatal(1, "PL 写了 PS 独占的命令请求区（响应写飞）");
+        end
+    end
+end
 endmodule

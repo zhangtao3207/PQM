@@ -13,9 +13,9 @@
  *   第一帧（4 个失真项）：
  *     order:   0(DC)      1(基波)     2        3        4        5(帧尾)
  *     u_mag:   -          1000        300      400      100      200
- *     i_mag:   -          2000        50       700      20       900
- *     u_pct:   100        9000
- *     i_pct:   200        8000
+ *     u2_mag:   -          2000        50       700      20       900
+ *     u1_pct:   100        9000
+ *     u2_pct:   200        8000
  *     phase:               -3000
  *   失真项平方和 u = 90000+160000+10000+40000 = 300000 -> sqrt=547
  *               i = 2500+490000+400+810000   = 1302900 -> sqrt=1141
@@ -23,9 +23,9 @@
  *   前五大 U：400(3) > 300(2) > 200(5) > 100(4) -> 列表 3,2,5,4,0，共 4 项
  *   前五大 I：900(5) > 700(3) > 50(2)  > 20(4)  -> 列表 5,3,2,4,0，共 4 项
  *
- *   第二帧（含 present=0 的项、i_mag=0 的项、基波相位无效、不足 5 个失真项）：
- *     order 2 present=0（整项跳过）；order 3 u_mag=800 / i_mag=0；
- *     order 4 u_mag=100 / i_mag=300（帧尾）
+ *   第二帧（含 present=0 的项、u2_mag=0 的项、基波相位无效、不足 5 个失真项）：
+ *     order 2 present=0（整项跳过）；order 3 u_mag=800 / u2_mag=0；
+ *     order 4 u_mag=100 / u2_mag=300（帧尾）
  *   失真项平方和 u = 640000+10000 = 650000 -> sqrt=806；i = 90000 -> 300
  *   THD u = 806*10000/2000 = 4030；THD i = 300*10000/1000 = 3000
  *   前五大 U：800(3) > 100(4) -> 3,4,0,0,0，共 2 项
@@ -44,34 +44,34 @@ module tb_freq_metrics_raw_calc;
     reg s_harmonic_last = 1'b0;
     reg [8:0] s_harmonic_order = 9'd0;
     reg s_harmonic_present = 1'b0;
-    reg [16:0] s_u_mag = 17'd0;
-    reg [16:0] s_i_mag = 17'd0;
-    reg [15:0] s_u_pct_x100 = 16'd0;
-    reg [15:0] s_i_pct_x100 = 16'd0;
+    reg [16:0] s_u1_mag = 17'd0;
+    reg [16:0] s_u2_mag = 17'd0;
+    reg [15:0] s_u1_pct_x100 = 16'd0;
+    reg [15:0] s_u2_pct_x100 = 16'd0;
     reg s_phase_diff_valid = 1'b0;
     reg signed [15:0] s_phase_diff_deg_x100 = 16'sd0;
 
     wire               raw_result_commit_toggle;
-    wire [31:0]        thd_u_raw_x100;
-    wire [31:0]        thd_i_raw_x100;
-    wire               thd_u_valid;
-    wire               thd_i_valid;
+    wire [31:0]        thd_u1_raw_x100;
+    wire [31:0]        thd_u2_raw_x100;
+    wire               thd_u1_valid;
+    wire               thd_u2_valid;
     wire [31:0]        u1_mag_raw_x100;
-    wire [31:0]        i1_mag_raw_x100;
+    wire [31:0]        u2_mag_raw_x100;
     wire               u1_mag_valid;
-    wire               i1_mag_valid;
+    wire               u2_mag_valid;
     wire signed [31:0] phase1_raw_x100;
     wire               phase1_valid;
-    wire [31:0]        dc_u_raw_x100;
-    wire [31:0]        dc_i_raw_x100;
-    wire               dc_u_valid;
-    wire               dc_i_valid;
-    wire               dh_order_u_valid;
-    wire               dh_order_i_valid;
-    wire [44:0]        dh_order_u_list_raw;
-    wire [44:0]        dh_order_i_list_raw;
-    wire [2:0]         dh_order_u_count_raw;
-    wire [2:0]         dh_order_i_count_raw;
+    wire [31:0]        dc_u1_raw_x100;
+    wire [31:0]        dc_u2_raw_x100;
+    wire               dc_u1_valid;
+    wire               dc_u2_valid;
+    wire               dh_order_u1_valid;
+    wire               dh_order_u2_valid;
+    wire [44:0]        dh_order_u1_list_raw;
+    wire [44:0]        dh_order_u2_list_raw;
+    wire [2:0]         dh_order_u1_count_raw;
+    wire [2:0]         dh_order_u2_count_raw;
     wire               metrics_valid;
 
     integer errors = 0;
@@ -89,33 +89,33 @@ module tb_freq_metrics_raw_calc;
         .s_harmonic_last         (s_harmonic_last),
         .s_harmonic_order        (s_harmonic_order),
         .s_harmonic_present      (s_harmonic_present),
-        .s_u_mag                 (s_u_mag),
-        .s_i_mag                 (s_i_mag),
-        .s_u_pct_x100            (s_u_pct_x100),
-        .s_i_pct_x100            (s_i_pct_x100),
+        .s_u1_mag                 (s_u1_mag),
+        .s_u2_mag                 (s_u2_mag),
+        .s_u1_pct_x100            (s_u1_pct_x100),
+        .s_u2_pct_x100            (s_u2_pct_x100),
         .s_phase_diff_valid      (s_phase_diff_valid),
         .s_phase_diff_deg_x100   (s_phase_diff_deg_x100),
         .raw_result_commit_toggle(raw_result_commit_toggle),
-        .thd_u_raw_x100          (thd_u_raw_x100),
-        .thd_i_raw_x100          (thd_i_raw_x100),
-        .thd_u_valid             (thd_u_valid),
-        .thd_i_valid             (thd_i_valid),
+        .thd_u1_raw_x100          (thd_u1_raw_x100),
+        .thd_u2_raw_x100          (thd_u2_raw_x100),
+        .thd_u1_valid             (thd_u1_valid),
+        .thd_u2_valid             (thd_u2_valid),
         .u1_mag_raw_x100         (u1_mag_raw_x100),
-        .i1_mag_raw_x100         (i1_mag_raw_x100),
+        .u2_mag_raw_x100         (u2_mag_raw_x100),
         .u1_mag_valid            (u1_mag_valid),
-        .i1_mag_valid            (i1_mag_valid),
+        .u2_mag_valid            (u2_mag_valid),
         .phase1_raw_x100         (phase1_raw_x100),
         .phase1_valid            (phase1_valid),
-        .dc_u_raw_x100           (dc_u_raw_x100),
-        .dc_i_raw_x100           (dc_i_raw_x100),
-        .dc_u_valid              (dc_u_valid),
-        .dc_i_valid              (dc_i_valid),
-        .dh_order_u_valid        (dh_order_u_valid),
-        .dh_order_i_valid        (dh_order_i_valid),
-        .dh_order_u_list_raw     (dh_order_u_list_raw),
-        .dh_order_i_list_raw     (dh_order_i_list_raw),
-        .dh_order_u_count_raw    (dh_order_u_count_raw),
-        .dh_order_i_count_raw    (dh_order_i_count_raw),
+        .dc_u1_raw_x100           (dc_u1_raw_x100),
+        .dc_u2_raw_x100           (dc_u2_raw_x100),
+        .dc_u1_valid              (dc_u1_valid),
+        .dc_u2_valid              (dc_u2_valid),
+        .dh_order_u1_valid        (dh_order_u1_valid),
+        .dh_order_u2_valid        (dh_order_u2_valid),
+        .dh_order_u1_list_raw     (dh_order_u1_list_raw),
+        .dh_order_u2_list_raw     (dh_order_u2_list_raw),
+        .dh_order_u1_count_raw    (dh_order_u1_count_raw),
+        .dh_order_u2_count_raw    (dh_order_u2_count_raw),
         .metrics_valid           (metrics_valid)
     );
 
@@ -123,9 +123,9 @@ module tb_freq_metrics_raw_calc;
         input [8:0]         order;
         input               present;
         input [16:0]        u_mag;
-        input [16:0]        i_mag;
-        input [15:0]        u_pct;
-        input [15:0]        i_pct;
+        input [16:0]        u2_mag;
+        input [15:0]        u1_pct;
+        input [15:0]        u2_pct;
         input               phase_valid;
         input signed [15:0] phase;
         input               last;
@@ -133,10 +133,10 @@ module tb_freq_metrics_raw_calc;
             @(negedge clk);
             s_harmonic_order      = order;
             s_harmonic_present    = present;
-            s_u_mag               = u_mag;
-            s_i_mag               = i_mag;
-            s_u_pct_x100          = u_pct;
-            s_i_pct_x100          = i_pct;
+            s_u1_mag               = u_mag;
+            s_u2_mag               = u2_mag;
+            s_u1_pct_x100          = u1_pct;
+            s_u2_pct_x100          = u2_pct;
             s_phase_diff_valid    = phase_valid;
             s_phase_diff_deg_x100 = phase;
             s_harmonic_last       = last;
@@ -194,7 +194,7 @@ module tb_freq_metrics_raw_calc;
             send_item(9'd1, 1'b1, 17'd2000, 17'd1000, 16'd9500, 16'd9000, 1'b0, 16'sd0, 1'b0);
             // present=0：整项不参与统计，也不算失真项
             send_item(9'd2, 1'b0, 17'd7777, 17'd7777, 16'd0,    16'd0,    1'b0, 16'sd0, 1'b0);
-            // i_mag=0：i 路平方和为 0、也不进电流前五列表
+            // u2_mag=0：i 路平方和为 0、也不进U2前五列表
             send_item(9'd3, 1'b1, 17'd800,  17'd0,    16'd0,    16'd0,    1'b0, 16'sd0, 1'b0);
             send_item(9'd4, 1'b1, 17'd100,  17'd300,  16'd0,    16'd0,    1'b0, 16'sd0, 1'b1);
         end
@@ -207,53 +207,53 @@ module tb_freq_metrics_raw_calc;
                 errors = errors + 1;
             end
 
-            check32(thd_u_raw_x100, 32'd5470, "第一帧 thd_u_raw_x100");
-            check32(thd_i_raw_x100, 32'd5705, "第一帧 thd_i_raw_x100");
+            check32(thd_u1_raw_x100, 32'd5470, "第一帧 thd_u_raw_x100");
+            check32(thd_u2_raw_x100, 32'd5705, "第一帧 thd_i_raw_x100");
             check32(u1_mag_raw_x100, 32'd9000, "第一帧 u1_mag_raw_x100");
-            check32(i1_mag_raw_x100, 32'd8000, "第一帧 i1_mag_raw_x100");
-            check32(dc_u_raw_x100, 32'd100, "第一帧 dc_u_raw_x100");
-            check32(dc_i_raw_x100, 32'd200, "第一帧 dc_i_raw_x100");
+            check32(u2_mag_raw_x100, 32'd8000, "第一帧 i1_mag_raw_x100");
+            check32(dc_u1_raw_x100, 32'd100, "第一帧 dc_u_raw_x100");
+            check32(dc_u2_raw_x100, 32'd200, "第一帧 dc_i_raw_x100");
             if (phase1_raw_x100 !== -32'sd3000) begin
                 $display("FAIL: 第一帧 phase1_raw_x100=%0d，期望 -3000", phase1_raw_x100);
                 errors = errors + 1;
             end
-            if (thd_u_valid !== 1'b1 || thd_i_valid !== 1'b1) begin
-                $display("FAIL: 第一帧 thd_u_valid=%0b thd_i_valid=%0b，均应为 1", thd_u_valid, thd_i_valid);
+            if (thd_u1_valid !== 1'b1 || thd_u2_valid !== 1'b1) begin
+                $display("FAIL: 第一帧 thd_u_valid=%0b thd_i_valid=%0b，均应为 1", thd_u1_valid, thd_u2_valid);
                 errors = errors + 1;
             end
-            if (u1_mag_valid !== 1'b1 || i1_mag_valid !== 1'b1 || phase1_valid !== 1'b1 ||
-                dc_u_valid !== 1'b1 || dc_i_valid !== 1'b1 ||
-                dh_order_u_valid !== 1'b1 || dh_order_i_valid !== 1'b1) begin
+            if (u1_mag_valid !== 1'b1 || u2_mag_valid !== 1'b1 || phase1_valid !== 1'b1 ||
+                dc_u1_valid !== 1'b1 || dc_u2_valid !== 1'b1 ||
+                dh_order_u1_valid !== 1'b1 || dh_order_u2_valid !== 1'b1) begin
                 $display("FAIL: 第一帧有效标志不符（u1=%0b i1=%0b ph=%0b dcu=%0b dci=%0b dhu=%0b dhi=%0b）",
-                         u1_mag_valid, i1_mag_valid, phase1_valid, dc_u_valid, dc_i_valid,
-                         dh_order_u_valid, dh_order_i_valid);
+                         u1_mag_valid, u2_mag_valid, phase1_valid, dc_u1_valid, dc_u2_valid,
+                         dh_order_u1_valid, dh_order_u2_valid);
                 errors = errors + 1;
             end
 
-            if (dh_order_u_count_raw !== 3'd4) begin
-                $display("FAIL: 第一帧 dh_order_u_count_raw=%0d，期望 4", dh_order_u_count_raw);
+            if (dh_order_u1_count_raw !== 3'd4) begin
+                $display("FAIL: 第一帧 dh_order_u_count_raw=%0d，期望 4", dh_order_u1_count_raw);
                 errors = errors + 1;
             end
-            if (dh_order_i_count_raw !== 3'd4) begin
-                $display("FAIL: 第一帧 dh_order_i_count_raw=%0d，期望 4", dh_order_i_count_raw);
+            if (dh_order_u2_count_raw !== 3'd4) begin
+                $display("FAIL: 第一帧 dh_order_i_count_raw=%0d，期望 4", dh_order_u2_count_raw);
                 errors = errors + 1;
             end
-            if (dh_order_u_list_raw[44:36] !== 9'd3 || dh_order_u_list_raw[35:27] !== 9'd2 ||
-                dh_order_u_list_raw[26:18] !== 9'd5 || dh_order_u_list_raw[17:9]  !== 9'd4 ||
-                dh_order_u_list_raw[8:0]   !== 9'd0) begin
+            if (dh_order_u1_list_raw[44:36] !== 9'd3 || dh_order_u1_list_raw[35:27] !== 9'd2 ||
+                dh_order_u1_list_raw[26:18] !== 9'd5 || dh_order_u1_list_raw[17:9]  !== 9'd4 ||
+                dh_order_u1_list_raw[8:0]   !== 9'd0) begin
                 $display("FAIL: 第一帧 U 前五列表= %0d,%0d,%0d,%0d,%0d，期望 3,2,5,4,0",
-                         dh_order_u_list_raw[44:36], dh_order_u_list_raw[35:27],
-                         dh_order_u_list_raw[26:18], dh_order_u_list_raw[17:9],
-                         dh_order_u_list_raw[8:0]);
+                         dh_order_u1_list_raw[44:36], dh_order_u1_list_raw[35:27],
+                         dh_order_u1_list_raw[26:18], dh_order_u1_list_raw[17:9],
+                         dh_order_u1_list_raw[8:0]);
                 errors = errors + 1;
             end
-            if (dh_order_i_list_raw[44:36] !== 9'd5 || dh_order_i_list_raw[35:27] !== 9'd3 ||
-                dh_order_i_list_raw[26:18] !== 9'd2 || dh_order_i_list_raw[17:9]  !== 9'd4 ||
-                dh_order_i_list_raw[8:0]   !== 9'd0) begin
+            if (dh_order_u2_list_raw[44:36] !== 9'd5 || dh_order_u2_list_raw[35:27] !== 9'd3 ||
+                dh_order_u2_list_raw[26:18] !== 9'd2 || dh_order_u2_list_raw[17:9]  !== 9'd4 ||
+                dh_order_u2_list_raw[8:0]   !== 9'd0) begin
                 $display("FAIL: 第一帧 I 前五列表= %0d,%0d,%0d,%0d,%0d，期望 5,3,2,4,0",
-                         dh_order_i_list_raw[44:36], dh_order_i_list_raw[35:27],
-                         dh_order_i_list_raw[26:18], dh_order_i_list_raw[17:9],
-                         dh_order_i_list_raw[8:0]);
+                         dh_order_u2_list_raw[44:36], dh_order_u2_list_raw[35:27],
+                         dh_order_u2_list_raw[26:18], dh_order_u2_list_raw[17:9],
+                         dh_order_u2_list_raw[8:0]);
                 errors = errors + 1;
             end
         end
@@ -261,12 +261,12 @@ module tb_freq_metrics_raw_calc;
 
     task check_frame2;
         begin
-            check32(thd_u_raw_x100, 32'd4030, "第二帧 thd_u_raw_x100");
-            check32(thd_i_raw_x100, 32'd3000, "第二帧 thd_i_raw_x100");
+            check32(thd_u1_raw_x100, 32'd4030, "第二帧 thd_u_raw_x100");
+            check32(thd_u2_raw_x100, 32'd3000, "第二帧 thd_i_raw_x100");
             check32(u1_mag_raw_x100, 32'd9500, "第二帧 u1_mag_raw_x100");
-            check32(i1_mag_raw_x100, 32'd9000, "第二帧 i1_mag_raw_x100");
-            check32(dc_u_raw_x100, 32'd50, "第二帧 dc_u_raw_x100");
-            check32(dc_i_raw_x100, 32'd60, "第二帧 dc_i_raw_x100");
+            check32(u2_mag_raw_x100, 32'd9000, "第二帧 i1_mag_raw_x100");
+            check32(dc_u1_raw_x100, 32'd50, "第二帧 dc_u_raw_x100");
+            check32(dc_u2_raw_x100, 32'd60, "第二帧 dc_i_raw_x100");
             if (phase1_raw_x100 !== 32'sd0) begin
                 $display("FAIL: 第二帧 phase1_raw_x100=%0d，期望 0", phase1_raw_x100);
                 errors = errors + 1;
@@ -275,30 +275,30 @@ module tb_freq_metrics_raw_calc;
                 $display("FAIL: 第二帧基波相位无效，phase1_valid 应为 0");
                 errors = errors + 1;
             end
-            if (dh_order_u_count_raw !== 3'd2) begin
-                $display("FAIL: 第二帧 dh_order_u_count_raw=%0d，期望 2", dh_order_u_count_raw);
+            if (dh_order_u1_count_raw !== 3'd2) begin
+                $display("FAIL: 第二帧 dh_order_u_count_raw=%0d，期望 2", dh_order_u1_count_raw);
                 errors = errors + 1;
             end
-            if (dh_order_i_count_raw !== 3'd1) begin
-                $display("FAIL: 第二帧 dh_order_i_count_raw=%0d，期望 1", dh_order_i_count_raw);
+            if (dh_order_u2_count_raw !== 3'd1) begin
+                $display("FAIL: 第二帧 dh_order_i_count_raw=%0d，期望 1", dh_order_u2_count_raw);
                 errors = errors + 1;
             end
-            if (dh_order_u_list_raw[44:36] !== 9'd3 || dh_order_u_list_raw[35:27] !== 9'd4 ||
-                dh_order_u_list_raw[26:18] !== 9'd0 || dh_order_u_list_raw[17:9]  !== 9'd0 ||
-                dh_order_u_list_raw[8:0]   !== 9'd0) begin
+            if (dh_order_u1_list_raw[44:36] !== 9'd3 || dh_order_u1_list_raw[35:27] !== 9'd4 ||
+                dh_order_u1_list_raw[26:18] !== 9'd0 || dh_order_u1_list_raw[17:9]  !== 9'd0 ||
+                dh_order_u1_list_raw[8:0]   !== 9'd0) begin
                 $display("FAIL: 第二帧 U 前五列表= %0d,%0d,%0d,%0d,%0d，期望 3,4,0,0,0",
-                         dh_order_u_list_raw[44:36], dh_order_u_list_raw[35:27],
-                         dh_order_u_list_raw[26:18], dh_order_u_list_raw[17:9],
-                         dh_order_u_list_raw[8:0]);
+                         dh_order_u1_list_raw[44:36], dh_order_u1_list_raw[35:27],
+                         dh_order_u1_list_raw[26:18], dh_order_u1_list_raw[17:9],
+                         dh_order_u1_list_raw[8:0]);
                 errors = errors + 1;
             end
-            if (dh_order_i_list_raw[44:36] !== 9'd4 || dh_order_i_list_raw[35:27] !== 9'd0 ||
-                dh_order_i_list_raw[26:18] !== 9'd0 || dh_order_i_list_raw[17:9]  !== 9'd0 ||
-                dh_order_i_list_raw[8:0]   !== 9'd0) begin
+            if (dh_order_u2_list_raw[44:36] !== 9'd4 || dh_order_u2_list_raw[35:27] !== 9'd0 ||
+                dh_order_u2_list_raw[26:18] !== 9'd0 || dh_order_u2_list_raw[17:9]  !== 9'd0 ||
+                dh_order_u2_list_raw[8:0]   !== 9'd0) begin
                 $display("FAIL: 第二帧 I 前五列表= %0d,%0d,%0d,%0d,%0d，期望 4,0,0,0,0",
-                         dh_order_i_list_raw[44:36], dh_order_i_list_raw[35:27],
-                         dh_order_i_list_raw[26:18], dh_order_i_list_raw[17:9],
-                         dh_order_i_list_raw[8:0]);
+                         dh_order_u2_list_raw[44:36], dh_order_u2_list_raw[35:27],
+                         dh_order_u2_list_raw[26:18], dh_order_u2_list_raw[17:9],
+                         dh_order_u2_list_raw[8:0]);
                 errors = errors + 1;
             end
         end
@@ -322,10 +322,10 @@ module tb_freq_metrics_raw_calc;
         // ---------------- enable=0 时有效标志清空 ----------------
         enable = 1'b0;
         repeat (20) @(posedge clk);
-        if (metrics_valid !== 1'b0 || thd_u_valid !== 1'b0 || thd_i_valid !== 1'b0 ||
-            u1_mag_valid !== 1'b0 || i1_mag_valid !== 1'b0 || phase1_valid !== 1'b0 ||
-            dc_u_valid !== 1'b0 || dc_i_valid !== 1'b0 ||
-            dh_order_u_valid !== 1'b0 || dh_order_i_valid !== 1'b0) begin
+        if (metrics_valid !== 1'b0 || thd_u1_valid !== 1'b0 || thd_u2_valid !== 1'b0 ||
+            u1_mag_valid !== 1'b0 || u2_mag_valid !== 1'b0 || phase1_valid !== 1'b0 ||
+            dc_u1_valid !== 1'b0 || dc_u2_valid !== 1'b0 ||
+            dh_order_u1_valid !== 1'b0 || dh_order_u2_valid !== 1'b0) begin
             $display("FAIL: enable=0 时各有效标志应全部清空");
             errors = errors + 1;
         end

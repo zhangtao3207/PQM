@@ -3,7 +3,7 @@
 /*
  * 模块: phase_deg_lut_calc
  * 功能:
- *   接收 U-I 相位差的 dot/cross 向量，通过 atan 查表 ROM 输出带两位小数的角度结果。
+ *   接收 U1-U2 相位差的 dot/cross 向量，通过 atan 查表 ROM 输出带两位小数的角度结果。
  *   角度输出格式为 deg_x100，例如 3025 表示 30.25 度，-1550 表示 -15.50 度。
  *
  * 输入:
@@ -14,17 +14,17 @@
  *   s_harmonic_last: 上游 0~500 次谐波结果的最后一项标志。
  *   s_harmonic_order: 上游谐波次数。
  *   s_harmonic_present: 当前谐波在本帧中是否被捕获。
- *   s_u_real: 当前谐波电压通道实部。
- *   s_u_imag: 当前谐波电压通道虚部。
- *   s_i_real: 当前谐波电流通道实部。
- *   s_i_imag: 当前谐波电流通道虚部。
- *   s_u_mag: 当前谐波电压通道幅值。
- *   s_i_mag: 当前谐波电流通道幅值。
- *   s_u_pct_x100: 当前谐波电压幅值占比。
- *   s_i_pct_x100: 当前谐波电流幅值占比。
+ *   s_u1_real: 当前谐波U1通道实部。
+ *   s_u1_imag: 当前谐波U1通道虚部。
+ *   s_u2_real: 当前谐波U2通道实部。
+ *   s_u2_imag: 当前谐波U2通道虚部。
+ *   s_u1_mag: 当前谐波U1通道幅值。
+ *   s_u2_mag: 当前谐波U2通道幅值。
+ *   s_u1_pct_x100: 当前谐波U1幅值占比。
+ *   s_u2_pct_x100: 当前谐波U2幅值占比。
  *   s_phase_vector_valid: 当前 dot/cross 是否可用于相位角计算。
- *   s_phase_dot: U-I 相位差 atan2 的同相投影输入。
- *   s_phase_cross: U-I 相位差 atan2 的正交投影输入。
+ *   s_phase_dot: U1-U2 相位差 atan2 的同相投影输入。
+ *   s_phase_cross: U1-U2 相位差 atan2 的正交投影输入。
  *   m_harmonic_ready: 下游带相位角的谐波结果接收就绪标志。
  *
  * 输出:
@@ -33,19 +33,19 @@
  *   m_harmonic_last: 带相位角结果的最后一项标志。
  *   m_harmonic_order: 当前输出的谐波次数。
  *   m_harmonic_present: 当前谐波在本帧中是否被捕获。
- *   m_u_real: 当前谐波电压通道实部。
- *   m_u_imag: 当前谐波电压通道虚部。
- *   m_i_real: 当前谐波电流通道实部。
- *   m_i_imag: 当前谐波电流通道虚部。
- *   m_u_mag: 当前谐波电压通道幅值。
- *   m_i_mag: 当前谐波电流通道幅值。
- *   m_u_pct_x100: 当前谐波电压幅值占比。
- *   m_i_pct_x100: 当前谐波电流幅值占比。
+ *   m_u1_real: 当前谐波U1通道实部。
+ *   m_u1_imag: 当前谐波U1通道虚部。
+ *   m_u2_real: 当前谐波U2通道实部。
+ *   m_u2_imag: 当前谐波U2通道虚部。
+ *   m_u1_mag: 当前谐波U1通道幅值。
+ *   m_u2_mag: 当前谐波U2通道幅值。
+ *   m_u1_pct_x100: 当前谐波U1幅值占比。
+ *   m_u2_pct_x100: 当前谐波U2幅值占比。
  *   m_phase_vector_valid: 当前 dot/cross 是否有效。
  *   m_phase_dot: 与角度结果对齐的 dot。
  *   m_phase_cross: 与角度结果对齐的 cross。
  *   m_phase_diff_valid: 当前相位差角度是否有效。
- *   m_phase_diff_deg_x100: U-I 相位差角度，范围约为 -18000 到 +18000。
+ *   m_phase_diff_deg_x100: U1-U2 相位差角度，范围约为 -18000 到 +18000。
  *   phase_deg_busy: 当前正在计算或等待输出相位角结果。
  *   phase_deg_frame_done: 一帧 0~500 次谐波相位角结果已输出完毕的单周期脉冲。
  *   phase_deg_frame_count: 已完整输出的相位角结果帧计数。
@@ -59,14 +59,14 @@ module phase_deg_lut_calc (
     input  wire               s_harmonic_last,
     input  wire [8:0]         s_harmonic_order,
     input  wire               s_harmonic_present,
-    input  wire signed [15:0] s_u_real,
-    input  wire signed [15:0] s_u_imag,
-    input  wire signed [15:0] s_i_real,
-    input  wire signed [15:0] s_i_imag,
-    input  wire [16:0]        s_u_mag,
-    input  wire [16:0]        s_i_mag,
-    input  wire [15:0]        s_u_pct_x100,
-    input  wire [15:0]        s_i_pct_x100,
+    input  wire signed [15:0] s_u1_real,
+    input  wire signed [15:0] s_u1_imag,
+    input  wire signed [15:0] s_u2_real,
+    input  wire signed [15:0] s_u2_imag,
+    input  wire [16:0]        s_u1_mag,
+    input  wire [16:0]        s_u2_mag,
+    input  wire [15:0]        s_u1_pct_x100,
+    input  wire [15:0]        s_u2_pct_x100,
     input  wire               s_phase_vector_valid,
     input  wire signed [32:0] s_phase_dot,
     input  wire signed [32:0] s_phase_cross,
@@ -75,14 +75,14 @@ module phase_deg_lut_calc (
     output wire               m_harmonic_last,
     output wire [8:0]         m_harmonic_order,
     output wire               m_harmonic_present,
-    output wire signed [15:0] m_u_real,
-    output wire signed [15:0] m_u_imag,
-    output wire signed [15:0] m_i_real,
-    output wire signed [15:0] m_i_imag,
-    output wire [16:0]        m_u_mag,
-    output wire [16:0]        m_i_mag,
-    output wire [15:0]        m_u_pct_x100,
-    output wire [15:0]        m_i_pct_x100,
+    output wire signed [15:0] m_u1_real,
+    output wire signed [15:0] m_u1_imag,
+    output wire signed [15:0] m_u2_real,
+    output wire signed [15:0] m_u2_imag,
+    output wire [16:0]        m_u1_mag,
+    output wire [16:0]        m_u2_mag,
+    output wire [15:0]        m_u1_pct_x100,
+    output wire [15:0]        m_u2_pct_x100,
     output wire               m_phase_vector_valid,
     output wire signed [32:0] m_phase_dot,
     output wire signed [32:0] m_phase_cross,
@@ -108,14 +108,14 @@ reg                m_harmonic_valid_reg;
 reg                m_harmonic_last_reg;
 reg [8:0]          m_harmonic_order_reg;
 reg                m_harmonic_present_reg;
-reg signed [15:0]  m_u_real_reg;
-reg signed [15:0]  m_u_imag_reg;
-reg signed [15:0]  m_i_real_reg;
-reg signed [15:0]  m_i_imag_reg;
-reg [16:0]         m_u_mag_reg;
-reg [16:0]         m_i_mag_reg;
-reg [15:0]         m_u_pct_x100_reg;
-reg [15:0]         m_i_pct_x100_reg;
+reg signed [15:0]  m_u1_real_reg;
+reg signed [15:0]  m_u1_imag_reg;
+reg signed [15:0]  m_u2_real_reg;
+reg signed [15:0]  m_u2_imag_reg;
+reg [16:0]         m_u1_mag_reg;
+reg [16:0]         m_u2_mag_reg;
+reg [15:0]         m_u1_pct_x100_reg;
+reg [15:0]         m_u2_pct_x100_reg;
 reg                m_phase_vector_valid_reg;
 reg signed [32:0]  m_phase_dot_reg;
 reg signed [32:0]  m_phase_cross_reg;
@@ -184,14 +184,14 @@ assign m_harmonic_valid      = m_harmonic_valid_reg;
 assign m_harmonic_last       = m_harmonic_last_reg;
 assign m_harmonic_order      = m_harmonic_order_reg;
 assign m_harmonic_present    = m_harmonic_present_reg;
-assign m_u_real              = m_u_real_reg;
-assign m_u_imag              = m_u_imag_reg;
-assign m_i_real              = m_i_real_reg;
-assign m_i_imag              = m_i_imag_reg;
-assign m_u_mag               = m_u_mag_reg;
-assign m_i_mag               = m_i_mag_reg;
-assign m_u_pct_x100          = m_u_pct_x100_reg;
-assign m_i_pct_x100          = m_i_pct_x100_reg;
+assign m_u1_real              = m_u1_real_reg;
+assign m_u1_imag              = m_u1_imag_reg;
+assign m_u2_real              = m_u2_real_reg;
+assign m_u2_imag              = m_u2_imag_reg;
+assign m_u1_mag               = m_u1_mag_reg;
+assign m_u2_mag               = m_u2_mag_reg;
+assign m_u1_pct_x100          = m_u1_pct_x100_reg;
+assign m_u2_pct_x100          = m_u2_pct_x100_reg;
 assign m_phase_vector_valid  = m_phase_vector_valid_reg;
 assign m_phase_dot           = m_phase_dot_reg;
 assign m_phase_cross         = m_phase_cross_reg;
@@ -230,14 +230,14 @@ always @(posedge clk or negedge rst_n) begin
         m_harmonic_last_reg       <= 1'b0;
         m_harmonic_order_reg      <= 9'd0;
         m_harmonic_present_reg    <= 1'b0;
-        m_u_real_reg              <= 16'sd0;
-        m_u_imag_reg              <= 16'sd0;
-        m_i_real_reg              <= 16'sd0;
-        m_i_imag_reg              <= 16'sd0;
-        m_u_mag_reg               <= 17'd0;
-        m_i_mag_reg               <= 17'd0;
-        m_u_pct_x100_reg          <= 16'd0;
-        m_i_pct_x100_reg          <= 16'd0;
+        m_u1_real_reg              <= 16'sd0;
+        m_u1_imag_reg              <= 16'sd0;
+        m_u2_real_reg              <= 16'sd0;
+        m_u2_imag_reg              <= 16'sd0;
+        m_u1_mag_reg               <= 17'd0;
+        m_u2_mag_reg               <= 17'd0;
+        m_u1_pct_x100_reg          <= 16'd0;
+        m_u2_pct_x100_reg          <= 16'd0;
         m_phase_vector_valid_reg  <= 1'b0;
         m_phase_dot_reg           <= 33'sd0;
         m_phase_cross_reg         <= 33'sd0;
@@ -267,14 +267,14 @@ always @(posedge clk or negedge rst_n) begin
                         m_harmonic_last_reg      <= s_harmonic_last;
                         m_harmonic_order_reg     <= s_harmonic_order;
                         m_harmonic_present_reg   <= s_harmonic_present;
-                        m_u_real_reg             <= s_u_real;
-                        m_u_imag_reg             <= s_u_imag;
-                        m_i_real_reg             <= s_i_real;
-                        m_i_imag_reg             <= s_i_imag;
-                        m_u_mag_reg              <= s_u_mag;
-                        m_i_mag_reg              <= s_i_mag;
-                        m_u_pct_x100_reg         <= s_u_pct_x100;
-                        m_i_pct_x100_reg         <= s_i_pct_x100;
+                        m_u1_real_reg             <= s_u1_real;
+                        m_u1_imag_reg             <= s_u1_imag;
+                        m_u2_real_reg             <= s_u2_real;
+                        m_u2_imag_reg             <= s_u2_imag;
+                        m_u1_mag_reg              <= s_u1_mag;
+                        m_u2_mag_reg              <= s_u2_mag;
+                        m_u1_pct_x100_reg         <= s_u1_pct_x100;
+                        m_u2_pct_x100_reg         <= s_u2_pct_x100;
                         m_phase_vector_valid_reg <= s_phase_vector_valid;
                         m_phase_dot_reg          <= s_phase_dot;
                         m_phase_cross_reg        <= s_phase_cross;

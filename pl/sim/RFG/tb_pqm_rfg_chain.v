@@ -38,29 +38,29 @@ module tb_pqm_rfg_chain;
 
     reg        i_start = 1'b0;
     reg        i_sample_valid = 1'b0;
-    reg [15:0] i_sample_u = 16'd0;
-    reg [15:0] i_sample_i = 16'd0;
+    reg [15:0] i_sample_u1 = 16'd0;
+    reg [15:0] i_sample_u2 = 16'd0;
     wire [15:0] i_zero_code = 16'd0;
 
     // frontend
     wire        fe_item_valid, fe_item_ready;
     wire [8:0]  fe_order;
-    wire signed [31:0] fe_u_real, fe_u_imag, fe_i_real, fe_i_imag;
+    wire signed [31:0] fe_u1_real, fe_u1_imag, fe_u2_real, fe_u2_imag;
     wire        fe_item_last, fe_frame_done, fe_sample_ready, fe_overflow, fe_channel_error;
 
     // scale（形状与 fft_result_receiver 一致）
     wire        sc_bin_valid, sc_bin_ready, sc_bin_last;
     wire [10:0] sc_bin_index;
-    wire signed [15:0] sc_u_real, sc_u_imag, sc_i_real, sc_i_imag;
+    wire signed [15:0] sc_u1_real, sc_u1_imag, sc_u2_real, sc_u2_imag;
     wire        sc_frame_done;
 
     // magnitude
     wire        mag_valid, mag_last;
     wire        hs_s_mag_ready;      // harmonic_stats 的 s_mag_ready -> 幅值模块的 m_mag_ready
     wire [10:0] mag_bin_index;
-    wire signed [15:0] mag_u_real, mag_u_imag, mag_i_real, mag_i_imag;
-    wire [32:0] mag_u_mag_sq, mag_i_mag_sq;
-    wire [16:0] mag_u_mag, mag_i_mag;
+    wire signed [15:0] mag_u1_real, mag_u1_imag, mag_u2_real, mag_u2_imag;
+    wire [32:0] mag_u1_mag_sq, mag_u2_mag_sq;
+    wire [16:0] mag_u1_mag, mag_u2_mag;
     wire        mag_busy, mag_frame_done;
     wire [15:0] mag_frame_count;
 
@@ -70,15 +70,15 @@ module tb_pqm_rfg_chain;
     wire        hs_last;
     wire [8:0]  hs_order;
     wire        hs_present;
-    wire signed [15:0] hs_u_real, hs_u_imag, hs_i_real, hs_i_imag;
-    wire [16:0] hs_u_mag, hs_i_mag;
-    wire [15:0] hs_u_pct, hs_i_pct;
+    wire signed [15:0] hs_u1_real, hs_u1_imag, hs_u2_real, hs_u2_imag;
+    wire [16:0] hs_u1_mag, hs_u2_mag;
+    wire [15:0] hs_u1_pct, hs_u2_pct;
     wire        hs_busy, hs_capture_done, hs_frame_done;
     wire [15:0] hs_frame_count;
-    wire [31:0] hs_u_total, hs_i_total;
+    wire [31:0] hs_u1_total, hs_u2_total;
 
-    reg [15:0] u_tab [0:C_N-1];
-    reg [15:0] i_tab [0:C_N-1];
+    reg [15:0] u1_tab [0:C_N-1];
+    reg [15:0] u2_tab [0:C_N-1];
 
     integer errors = 0;
     integer i;
@@ -92,11 +92,11 @@ module tb_pqm_rfg_chain;
     pqm_rfg_frontend #(.C_N(C_N), .C_K(C_K), .C_L(C_L), .C_D(C_D)) u_fe (
         .clk(clk), .rst_n(rst_n),
         .i_start(i_start), .i_sample_valid(i_sample_valid),
-        .i_sample_u(i_sample_u), .i_sample_i(i_sample_i), .i_zero_code(i_zero_code),
+        .i_sample_u1(i_sample_u1), .i_sample_u2(i_sample_u2), .i_zero_code(i_zero_code),
         .o_sample_ready(fe_sample_ready),
         .o_item_valid(fe_item_valid), .i_item_ready(fe_item_ready), .o_order(fe_order),
-        .o_u_real(fe_u_real), .o_u_imag(fe_u_imag),
-        .o_i_real(fe_i_real), .o_i_imag(fe_i_imag),
+        .o_u1_real(fe_u1_real), .o_u1_imag(fe_u1_imag),
+        .o_u2_real(fe_u2_real), .o_u2_imag(fe_u2_imag),
         .o_item_last(fe_item_last), .o_frame_done(fe_frame_done),
         .o_overflow(fe_overflow), .o_channel_error(fe_channel_error)
     );
@@ -104,12 +104,12 @@ module tb_pqm_rfg_chain;
     pqm_rfg_scale #(.C_K(C_K), .SHIFT(SHIFT)) u_sc (
         .clk(clk), .rst_n(rst_n), .i_start(i_start),
         .i_item_valid(fe_item_valid), .o_item_ready(fe_item_ready), .i_order(fe_order),
-        .i_u_real(fe_u_real), .i_u_imag(fe_u_imag),
-        .i_i_real(fe_i_real), .i_i_imag(fe_i_imag), .i_item_last(fe_item_last),
+        .i_u1_real(fe_u1_real), .i_u1_imag(fe_u1_imag),
+        .i_u2_real(fe_u2_real), .i_u2_imag(fe_u2_imag), .i_item_last(fe_item_last),
         .m_bin_valid(sc_bin_valid), .m_bin_ready(sc_bin_ready),
         .m_bin_last(sc_bin_last), .m_bin_index(sc_bin_index),
-        .m_u_real(sc_u_real), .m_u_imag(sc_u_imag),
-        .m_i_real(sc_i_real), .m_i_imag(sc_i_imag),
+        .m_u1_real(sc_u1_real), .m_u1_imag(sc_u1_imag),
+        .m_u2_real(sc_u2_real), .m_u2_imag(sc_u2_imag),
         .o_frame_done(sc_frame_done)
     );
 
@@ -117,14 +117,14 @@ module tb_pqm_rfg_chain;
         .clk(clk), .rst_n(rst_n), .enable(1'b1),
         .s_bin_valid(sc_bin_valid), .s_bin_ready(sc_bin_ready),
         .s_bin_last(sc_bin_last), .s_bin_index(sc_bin_index),
-        .s_u_real(sc_u_real), .s_u_imag(sc_u_imag),
-        .s_i_real(sc_i_real), .s_i_imag(sc_i_imag),
+        .s_u1_real(sc_u1_real), .s_u1_imag(sc_u1_imag),
+        .s_u2_real(sc_u2_real), .s_u2_imag(sc_u2_imag),
         .m_mag_ready(hs_s_mag_ready), .m_mag_valid(mag_valid), .m_mag_last(mag_last),
         .m_bin_index(mag_bin_index),
-        .m_u_real(mag_u_real), .m_u_imag(mag_u_imag),
-        .m_i_real(mag_i_real), .m_i_imag(mag_i_imag),
-        .m_u_mag_sq(mag_u_mag_sq), .m_u_mag(mag_u_mag),
-        .m_i_mag_sq(mag_i_mag_sq), .m_i_mag(mag_i_mag),
+        .m_u1_real(mag_u1_real), .m_u1_imag(mag_u1_imag),
+        .m_u2_real(mag_u2_real), .m_u2_imag(mag_u2_imag),
+        .m_u1_mag_sq(mag_u1_mag_sq), .m_u1_mag(mag_u1_mag),
+        .m_u2_mag_sq(mag_u2_mag_sq), .m_u2_mag(mag_u2_mag),
         .calc_busy(mag_busy), .mag_frame_done(mag_frame_done),
         .mag_frame_count(mag_frame_count)
     );
@@ -133,19 +133,19 @@ module tb_pqm_rfg_chain;
         .clk(clk), .rst_n(rst_n), .enable(1'b1),
         .s_mag_valid(mag_valid), .s_mag_ready(hs_s_mag_ready),
         .s_mag_last(mag_last), .s_bin_index(mag_bin_index),
-        .s_u_real(mag_u_real), .s_u_imag(mag_u_imag),
-        .s_i_real(mag_i_real), .s_i_imag(mag_i_imag),
-        .s_u_mag(mag_u_mag), .s_i_mag(mag_i_mag),
+        .s_u1_real(mag_u1_real), .s_u1_imag(mag_u1_imag),
+        .s_u2_real(mag_u2_real), .s_u2_imag(mag_u2_imag),
+        .s_u1_mag(mag_u1_mag), .s_u2_mag(mag_u2_mag),
         .m_harmonic_ready(hs_ready),
         .m_harmonic_valid(hs_valid), .m_harmonic_last(hs_last),
         .m_harmonic_order(hs_order), .m_harmonic_present(hs_present),
-        .m_u_real(hs_u_real), .m_u_imag(hs_u_imag),
-        .m_i_real(hs_i_real), .m_i_imag(hs_i_imag),
-        .m_u_mag(hs_u_mag), .m_i_mag(hs_i_mag),
-        .m_u_pct_x100(hs_u_pct), .m_i_pct_x100(hs_i_pct),
+        .m_u1_real(hs_u1_real), .m_u1_imag(hs_u1_imag),
+        .m_u2_real(hs_u2_real), .m_u2_imag(hs_u2_imag),
+        .m_u1_mag(hs_u1_mag), .m_u2_mag(hs_u2_mag),
+        .m_u1_pct_x100(hs_u1_pct), .m_u2_pct_x100(hs_u2_pct),
         .stats_busy(hs_busy), .capture_frame_done(hs_capture_done),
         .harmonic_frame_done(hs_frame_done), .harmonic_frame_count(hs_frame_count),
-        .u_total_mag(hs_u_total), .i_total_mag(hs_i_total)
+        .u1_total_mag(hs_u1_total), .u2_total_mag(hs_u2_total)
     );
 
     always @(posedge clk) begin
@@ -154,8 +154,8 @@ module tb_pqm_rfg_chain;
                 $display("FAIL: 谐波次数 %0d 超出 ABI 窗口 0..%0d", hs_order, HARM_ORDERS - 1);
                 errors = errors + 1;
             end else if (hs_cnt < HARM_ORDERS) begin
-                upct[hs_order] = $signed(hs_u_pct);
-                ipct[hs_order] = $signed(hs_i_pct);
+                upct[hs_order] = $signed(hs_u1_pct);
+                ipct[hs_order] = $signed(hs_u2_pct);
                 upres[hs_order] = {31'd0, hs_present};
             end
             if (hs_last) hs_last_order = hs_order;
@@ -188,8 +188,8 @@ module tb_pqm_rfg_chain;
                 i_start = 1'b0;
                 if (fe_sample_ready) begin
                     i_sample_valid = 1'b1;
-                    i_sample_u     = u_tab[k];
-                    i_sample_i     = i_tab[k];
+                    i_sample_u1     = u1_tab[k];
+                    i_sample_u2     = u2_tab[k];
                     k = k + 1;
                 end else begin
                     i_sample_valid = 1'b0;
@@ -217,8 +217,8 @@ module tb_pqm_rfg_chain;
     endtask
 
     initial begin
-        $readmemh("u_q14.hex", u_tab);
-        $readmemh("i_q14.hex", i_tab);
+        $readmemh("u_q14.hex", u1_tab);
+        $readmemh("i_q14.hex", u2_tab);
 
         repeat (10) @(posedge clk);
         rst_n = 1'b1;
@@ -243,7 +243,7 @@ module tb_pqm_rfg_chain;
             $display("  %0d  : %6d %6d     %0d", i, upct[i], ipct[i], upres[i]);
         $display("  63 : %6d %6d     %0d", upct[63], ipct[63], upres[63]);
         $display("  帧尾 order = %0d（期望 63）", hs_last_order);
-        $display("u_total_mag = %0d，i_total_mag = %0d", hs_u_total, hs_i_total);
+        $display("u_total_mag = %0d，i_total_mag = %0d", hs_u1_total, hs_u2_total);
 
         // 结构
         if (hs_cnt != HARM_ORDERS) begin

@@ -10,10 +10,10 @@
  *   clk: 工作时钟。
  *   rst_n: 低有效复位。
  *   start: 启动一次功率 raw 计算。
- *   rms_valid: U/I RMS raw 是否有效。
+ *   rms_valid: U1/U2 RMS raw 是否有效。
  *   active_p_valid: 同窗口平均有功功率 raw 是否有效。
- *   u_rms_code: 电压 RMS 原始补码值。
- *   i_rms_code: 电流 RMS 原始补码值。
+ *   u1_rms_code: U1 RMS 原始补码值。
+ *   u2_rms_code: U2 RMS 原始补码值。
  *   active_p_input_raw: 同窗口平均有功功率原始补码值。
  *   phase_offset_raw: 相位偏移 raw 计数，仅用于无功符号判定。
  *   phase_period_raw: 相位周期 raw 计数，仅用于无功符号判定。
@@ -35,8 +35,8 @@ module power_metrics_calc #(
     input  wire                    start,
     input  wire                    rms_valid,
     input  wire                    active_p_valid,
-    input  wire signed [WIDTH-1:0] u_rms_code,
-    input  wire signed [WIDTH-1:0] i_rms_code,
+    input  wire signed [WIDTH-1:0] u1_rms_code,
+    input  wire signed [WIDTH-1:0] u2_rms_code,
     input  wire signed [31:0]      active_p_input_raw,
     input  wire signed [31:0]      phase_offset_raw,
     input  wire signed [31:0]      phase_period_raw,
@@ -63,8 +63,8 @@ localparam [15:0] PF_SCALE_NUM      = 16'd10000;
 localparam [15:0] PF_SCALE_NUM_CLIP = 16'd10000;
 
 reg  [2:0]               state;
-reg  signed [WIDTH-1:0]  work_u_rms_code;
-reg  signed [WIDTH-1:0]  work_i_rms_code;
+reg  signed [WIDTH-1:0]  work_u1_rms_code;
+reg  signed [WIDTH-1:0]  work_u2_rms_code;
 reg  signed [31:0]       work_active_p_raw;
 reg  signed [31:0]       work_phase_offset_raw;
 reg  signed [31:0]       work_phase_period_raw;
@@ -74,8 +74,8 @@ reg  [31:0]              apparent_s_raw_reg;
 reg  signed [31:0]       active_p_raw_reg;
 reg                      reactive_q_neg_reg;
 
-wire [WIDTH-1:0]         u_rms_mag_work;
-wire [WIDTH-1:0]         i_rms_mag_work;
+wire [WIDTH-1:0]         u1_rms_mag_work;
+wire [WIDTH-1:0]         u2_rms_mag_work;
 wire signed [APPARENT_RAW_BITS-1:0] rms_code_prod_signed;
 wire [31:0]              apparent_raw_unsigned;
 
@@ -102,16 +102,16 @@ wire [31:0]              reactive_sqrt_root;
 assign busy = (state != ST_IDLE);
 
 // 将 RMS raw 统一按正幅值处理，负值输入视为无效并按 0 处理。
-assign u_rms_mag_work = work_u_rms_code[WIDTH-1] ? {WIDTH{1'b0}} : work_u_rms_code[WIDTH-1:0];
-assign i_rms_mag_work = work_i_rms_code[WIDTH-1] ? {WIDTH{1'b0}} : work_i_rms_code[WIDTH-1:0];
+assign u1_rms_mag_work = work_u1_rms_code[WIDTH-1] ? {WIDTH{1'b0}} : work_u1_rms_code[WIDTH-1:0];
+assign u2_rms_mag_work = work_u2_rms_code[WIDTH-1] ? {WIDTH{1'b0}} : work_u2_rms_code[WIDTH-1:0];
 
 // 直接计算视在功率 raw = Urms_raw * Irms_raw。
 multiplier_signed #(
     .A_WIDTH(WIDTH),
     .B_WIDTH(WIDTH)
 ) u_rms_code_multiplier (
-    .multiplicand({1'b0, u_rms_mag_work[WIDTH-2:0]}),
-    .multiplier  ({1'b0, i_rms_mag_work[WIDTH-2:0]}),
+    .multiplicand({1'b0, u1_rms_mag_work[WIDTH-2:0]}),
+    .multiplier  ({1'b0, u2_rms_mag_work[WIDTH-2:0]}),
     .product     (rms_code_prod_signed)
 );
 
@@ -200,8 +200,8 @@ sqrt_unsigned #(
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         state               <= ST_IDLE;
-        work_u_rms_code     <= {WIDTH{1'b0}};
-        work_i_rms_code     <= {WIDTH{1'b0}};
+        work_u1_rms_code     <= {WIDTH{1'b0}};
+        work_u2_rms_code     <= {WIDTH{1'b0}};
         work_active_p_raw   <= 32'sd0;
         work_phase_offset_raw <= 32'sd0;
         work_phase_period_raw <= 32'sd0;
@@ -226,8 +226,8 @@ always @(posedge clk or negedge rst_n) begin
             ST_IDLE: begin
                 if (start) begin
                     if (rms_valid && active_p_valid && phase_valid) begin
-                        work_u_rms_code       <= u_rms_code;
-                        work_i_rms_code       <= i_rms_code;
+                        work_u1_rms_code       <= u1_rms_code;
+                        work_u2_rms_code       <= u2_rms_code;
                         work_active_p_raw     <= active_p_input_raw;
                         work_phase_offset_raw <= phase_offset_raw;
                         work_phase_period_raw <= phase_period_raw;

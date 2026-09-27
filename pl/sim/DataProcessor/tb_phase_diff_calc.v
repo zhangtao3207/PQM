@@ -3,12 +3,12 @@
 /*
  * 模块: tb_phase_diff_calc
  * 功能:
- *   phase_diff_calc 的单元测试平台：在采样窗口内检测 U/I 的同向过零，
- *   输出电流过零相对电压过零的偏移计数与电压过零周期计数。
+ *   phase_diff_calc 的单元测试平台：在采样窗口内检测 U1/U2 的同向过零，
+ *   输出U2过零相对U1过零的偏移计数与U1过零周期计数。
  *
  *   计数约定（按实现，用例照此断言）：两个计数器都在各自过零的那一拍清零，
  *   而同拍的自增被清零覆盖，所以读出的是"两次过零之间的拍数**减一**"。
- *   实测：过零间隔 5 拍时 period=4；电流比电压晚 3 拍过零时 offset=2。
+ *   实测：过零间隔 5 拍时 period=4；U2比U1晚 3 拍过零时 offset=2。
  *
  *   这个减一不影响任何输出数值，原因已核实：
  *     1) time_x100_normalizer 把 phase_offset_raw/phase_period_raw 锁存后从未读取，
@@ -23,8 +23,8 @@
  *   过零门限带迟滞：先要采到 <= ref-512 才算"武装"，之后采到 >= ref+512 才判为过零。
  *
  *   五个场景（每拍一个有效采样，窗口 16 拍）：
- *     1) 同相：U/I 都在第 5、10 拍过零        -> offset=0,  period=4
- *     2) 电流晚 3 拍过零（第 7 拍）            -> offset=2,  period=4
+ *     1) 同相：U1/U2 都在第 5、10 拍过零        -> offset=0,  period=4
+ *     2) U2晚 3 拍过零（第 7 拍）            -> offset=2,  period=4
  *     3) 窗口内只有一次 U 过零                -> 只给 done，不给 valid
  *     4) 零点参考无效 -> 退回中心码 0x8000     -> 同场景 2
  *     5) 码值只在迟滞带内抖动，不构成过零      -> 只给 done，不给 valid
@@ -46,12 +46,12 @@ module tb_phase_diff_calc;
     reg start = 1'b0;
     reg [N_WIDTH-1:0] sample_count_n = {N_WIDTH{1'b0}};
     reg sample_valid = 1'b0;
-    reg [15:0] u_sample_code = MID_CODE;
-    reg [15:0] u_zero_code = MID_CODE;
-    reg u_zero_valid = 1'b1;
-    reg [15:0] i_sample_code = MID_CODE;
-    reg [15:0] i_zero_code = MID_CODE;
-    reg i_zero_valid = 1'b1;
+    reg [15:0] u1_sample_code = MID_CODE;
+    reg [15:0] u1_zero_code = MID_CODE;
+    reg u1_zero_valid = 1'b1;
+    reg [15:0] u2_sample_code = MID_CODE;
+    reg [15:0] u2_zero_code = MID_CODE;
+    reg u2_zero_valid = 1'b1;
 
     wire               busy;
     wire               done;
@@ -75,12 +75,12 @@ module tb_phase_diff_calc;
         .start(start),
         .sample_count_n(sample_count_n),
         .sample_valid(sample_valid),
-        .u_sample_code(u_sample_code),
-        .u_zero_code(u_zero_code),
-        .u_zero_valid(u_zero_valid),
-        .i_sample_code(i_sample_code),
-        .i_zero_code(i_zero_code),
-        .i_zero_valid(i_zero_valid),
+        .u1_sample_code(u1_sample_code),
+        .u1_zero_code(u1_zero_code),
+        .u1_zero_valid(u1_zero_valid),
+        .u2_sample_code(u2_sample_code),
+        .u2_zero_code(u2_zero_code),
+        .u2_zero_valid(u2_zero_valid),
         .busy(busy),
         .done(done),
         .phase_offset_raw(phase_offset_raw),
@@ -118,12 +118,12 @@ module tb_phase_diff_calc;
 
     // 送一个有效采样；调用一次推进一拍
     task send;
-        input [15:0] u_code;
-        input [15:0] i_code;
+        input [15:0] u1_code;
+        input [15:0] u2_code;
         begin
             @(negedge clk);
-            u_sample_code = u_code;
-            i_sample_code = i_code;
+            u1_sample_code = u1_code;
+            u2_sample_code = u2_code;
             sample_valid  = 1'b1;
         end
     endtask
@@ -163,8 +163,8 @@ module tb_phase_diff_calc;
         end
     endtask
 
-    // 送 16 拍采样：u_seq 用位选决定，避免写十六行
-    task run_window_no_u_cross;
+    // 送 16 拍采样：u1_seq 用位选决定，避免写十六行
+    task run_window_no_u1_cross;
         begin
             send(LOW_CODE,  LOW_CODE);
             send(LOW_CODE,  LOW_CODE);
@@ -204,12 +204,12 @@ module tb_phase_diff_calc;
         send(LOW_CODE,  LOW_CODE);    // 2
         send(LOW_CODE,  LOW_CODE);    // 3
         send(LOW_CODE,  LOW_CODE);    // 4
-        send(HIGH_CODE, HIGH_CODE);   // 5  U/I 同时过零
+        send(HIGH_CODE, HIGH_CODE);   // 5  U1/U2 同时过零
         send(LOW_CODE,  LOW_CODE);    // 6
         send(LOW_CODE,  LOW_CODE);    // 7
         send(LOW_CODE,  LOW_CODE);    // 8
         send(LOW_CODE,  LOW_CODE);    // 9
-        send(HIGH_CODE, HIGH_CODE);   // 10 U/I 再次同时过零 -> 锁存
+        send(HIGH_CODE, HIGH_CODE);   // 10 U1/U2 再次同时过零 -> 锁存
         send(MID_CODE,  MID_CODE);    // 11
         send(MID_CODE,  MID_CODE);    // 12
         send(MID_CODE,  MID_CODE);    // 13
@@ -227,7 +227,7 @@ module tb_phase_diff_calc;
         check_value(period_at_done, 32'sd4, "场景1 phase_period_raw");
         settle;
 
-        // ---------------- 场景 2：电流晚 3 拍过零 ----------------
+        // ---------------- 场景 2：U2晚 3 拍过零 ----------------
         issue_start(12'd16);
         send(LOW_CODE,  LOW_CODE);    // 1
         send(LOW_CODE,  LOW_CODE);    // 2
@@ -258,7 +258,7 @@ module tb_phase_diff_calc;
 
         // ---------------- 场景 3：窗口内只有一次 U 过零 ----------------
         issue_start(12'd16);
-        run_window_no_u_cross;
+        run_window_no_u1_cross;
         end_window;
         settle;
         expect_done_once("场景3");
@@ -269,8 +269,8 @@ module tb_phase_diff_calc;
         settle;
 
         // ---------------- 场景 4：零点参考无效，退回中心码 ----------------
-        u_zero_valid = 1'b0;
-        i_zero_valid = 1'b0;
+        u1_zero_valid = 1'b0;
+        u2_zero_valid = 1'b0;
         issue_start(12'd16);
         send(LOW_CODE,  LOW_CODE);    // 1
         send(LOW_CODE,  LOW_CODE);    // 2
@@ -293,8 +293,8 @@ module tb_phase_diff_calc;
         expect_done_once("场景4");
         check_value(offset_at_done, 32'sd2, "场景4 phase_offset_raw");
         check_value(period_at_done, 32'sd4, "场景4 phase_period_raw");
-        u_zero_valid = 1'b1;
-        i_zero_valid = 1'b1;
+        u1_zero_valid = 1'b1;
+        u2_zero_valid = 1'b1;
         settle;
 
         // ---------------- 场景 5：码值只在迟滞带内抖动 ----------------

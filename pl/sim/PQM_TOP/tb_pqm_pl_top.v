@@ -20,7 +20,7 @@
  *     3c 1 次谐波 present，u 占比落在解析值 7142 附近
  *   第 4 环 时域链 + 快照
  *     4a 快照提交 toggle 翻转
- *     4b u_rms 字段非零且量级合理（正弦幅值已知，可比对）
+ *     4b u1_rms 字段非零且量级合理（正弦幅值已知，可比对）
  *   第 5 环 共享内存桥
  *     5a 桥写 BRAM；5b 谐波 bank 有写入
  *
@@ -40,9 +40,9 @@ module tb_pqm_pl_top;
     localparam integer CLK_PERIOD  = 20;      // 50 MHz
     localparam integer CONV_CYCLES = 400;     // 模拟 4 us 转换时间
     localparam integer LUT_N       = 2048;
-    localparam integer U_1ST       = 1000;
-    localparam integer U_3RD       = 400;
-    localparam integer I_1ST       = 800;
+    localparam integer U1_1ST       = 1000;
+    localparam integer U1_3RD       = 400;
+    localparam integer U2_1ST       = 800;
     localparam integer CENTER      = 32768;
     localparam integer C_N         = 512;
     localparam integer C_K         = 64;
@@ -54,9 +54,14 @@ module tb_pqm_pl_top;
     localparam integer MEAS_INTERVAL = 3_400_000;
     localparam integer MEAS_SAMPLES  = 1024;
 
-    // 期望的 u 有效值（x100 工程量）：u 只有 1、3 次谐波，RMS = sqrt((1000^2+400^2)/2)
-    // = 761.577... 以中心的码值计，RMS 码值约 762。
-    localparam integer U_RMS_EXPECT = 762;
+    // 期望的 U1 有效值（x100 工程量）：U1 只有 1、3 次谐波，
+    // 交流 RMS 码值 = sqrt((1000^2+400^2)/2) = 761.577...
+    // PL 固定使用真实（小量程）满量程 10.00 V（U1_FULL_SCALE_X100 = 1000），
+    // signed_code_to_x100 的满码为 32767，故 x100 = 761.577 * 1000 / 32767 = 23.2 -> 23。
+    // （本常量原先写作 762，是把码域 RMS 当成了 x100 工程量；当时量程 mux 落在
+    //   350 V 档（761.577*35000/32767 = 813.9），恰好落在 ±20% 内才一直 PASS。）
+    // 容差仍为 ±20%，未放宽。
+    localparam integer U1_RMS_EXPECT = 23;
     // 零点跟踪预热样本数 = pqm_pl_top 两个 tracker 实例的 WARMUP_SAMPLES；
     // 阶段 1 必须至少跑这么多个样本，否则 zero_valid 判据本身就不成立。
     localparam integer ZERO_WARMUP    = 4096;
@@ -74,8 +79,8 @@ module tb_pqm_pl_top;
     integer k;
     real    ang;
     integer sample_idx = 0;
-    integer ph_u, ph_3rd, ph_i;
-    integer u_code_c, i_code_c;
+    integer ph_u1, ph_3rd, ph_u2;
+    integer u1_code_c, u2_code_c;
 
     reg  [15:0] ad7606_ch_data [0:7];
     reg  [15:0] ad_data_m;
@@ -113,7 +118,7 @@ module tb_pqm_pl_top;
     integer frame_gap_max = 0;
     integer last_frame_cyc = 0;
     integer frame_gap_cur = 0;
-    integer last_u_code   = -1;
+    integer last_u1_code   = -1;
     integer code_changed  = 0;
     reg     gap_armed     = 1'b0;
 
@@ -135,8 +140,8 @@ module tb_pqm_pl_top;
     integer in_n = 0;
     integer in_bad = 0;
     integer rb_bank, rb_k, rb_base;
-    integer rb_h1_u, rb_h3_u, rb_h1_p, rb_max_idx, rb_h1_ph;
-    reg [31:0] rb_u, rb_i, rb_ph, rb_fl;
+    integer rb_h1_u1, rb_h3_u1, rb_h1_p, rb_max_idx, rb_h1_ph;
+    reg [31:0] rb_u1, rb_u2, rb_ph, rb_fl;
     reg signed [31:0] rb_h1_ph_s;
     integer in_got [0:23];
     integer in_exp [0:23];
@@ -150,22 +155,22 @@ module tb_pqm_pl_top;
     task build_stimulus;
         input integer idx;
         begin
-            ph_u   = (idx * (LUT_N / C_N)) % LUT_N;
+            ph_u1   = (idx * (LUT_N / C_N)) % LUT_N;
             ph_3rd = (idx * 3 * (LUT_N / C_N)) % LUT_N;
-            ph_i   = (ph_u + (LUT_N / 4)) % LUT_N;
+            ph_u2   = (ph_u1 + (LUT_N / 4)) % LUT_N;
 
             // 两音激励：u = 1000*cos(w n) + 400*cos(3w n)，i = 800*sin(w n)
-            u_code_c = (U_1ST * sine_lut[ph_u] + U_3RD * sine_lut[ph_3rd]) / 1000;
-            i_code_c = (I_1ST * sine_lut[ph_i]) / 1000;
+            u1_code_c = (U1_1ST * sine_lut[ph_u1] + U1_3RD * sine_lut[ph_3rd]) / 1000;
+            u2_code_c = (U2_1ST * sine_lut[ph_u2]) / 1000;
 
             // AD7606 引脚是**二进制补码**（见 pl/README.md「喂数据的约定」）：
             // 引脚给补码，RTL 里 XOR 0x8000 之后才是测量核心要的偏移二进制（0x8000=零点）。
-            // 这里原来写成 CENTER + u_code_c（= 偏移二进制）直接加在引脚上，被 RTL 的
-            // XOR 再翻一次，送进核心的就成了 u_code_c - 32768*sign(u_code_c) 的 ±32768
+            // 这里原来写成 CENTER + u1_code_c（= 偏移二进制）直接加在引脚上，被 RTL 的
+            // XOR 再翻一次，送进核心的就成了 u1_code_c - 32768*sign(u1_code_c) 的 ±32768
             // 方波：时域 RMS 变成 3.4 万、频域出 1/n 奇次伪分量，h1_ratio 掉到 3400。
-            ad7606_ch_data[0] = u_code_c;
+            ad7606_ch_data[0] = u1_code_c;
             ad7606_ch_data[1] = 16'd0;
-            ad7606_ch_data[2] = i_code_c;
+            ad7606_ch_data[2] = u2_code_c;
             ad7606_ch_data[3] = 16'd0;
             ad7606_ch_data[4] = 16'd0;
             ad7606_ch_data[5] = 16'd0;
@@ -235,7 +240,8 @@ module tb_pqm_pl_top;
         .clk(clk), .rst_n(rst_n),
         .ad_busy(ad_busy_m), .ad_frstdata(ad_frstdata_m), .ad_data(ad_data_m),
         .ad_reset(ad_reset), .ad_convst(ad_convst), .ad_cs_n(ad_cs_n), .ad_rd_n(ad_rd_n),
-        .command_response_valid(1'b0),
+        // command_response_valid 已不再是 pqm_pl_top 的端口（P0-01：它改成内部 wire），
+        // 由模块内的 pqm_range_command_controller.response_valid 直接驱动。
         .bram_rddata(32'd0),
         .bram_addr(bram_addr), .bram_wrdata(bram_wrdata),
         .bram_we(bram_we), .bram_en(bram_en),
@@ -288,9 +294,9 @@ module tb_pqm_pl_top;
 
         if (dut.sample_valid_q) begin
             sample_count = sample_count + 1;
-            if ((last_u_code >= 0) && (dut.u_wave_code_q !== last_u_code[15:0]))
+            if ((last_u1_code >= 0) && (dut.u1_wave_code_q !== last_u1_code[15:0]))
                 code_changed = code_changed + 1;
-            last_u_code = dut.u_wave_code_q;
+            last_u1_code = dut.u1_wave_code_q;
         end
 
         // 周期性快照：看采集进度与流水线卡在哪一级
@@ -304,7 +310,7 @@ module tb_pqm_pl_top;
                 harm_max_index = dut.ps_harmonic_index;
             if (dut.ps_harmonic_index == 9'd1) begin
                 harm_h1_present = dut.ps_harmonic_flags[0];
-                harm_h1_ratio   = dut.ps_harmonic_u_ratio[15:0];
+                harm_h1_ratio   = dut.ps_harmonic_u1_ratio[15:0];
             end
             if (dut.ps_harmonic_last) begin
                 harm_frames          = harm_frames + 1;
@@ -315,19 +321,19 @@ module tb_pqm_pl_top;
         end
 
         // 第 3 环输入侧断言：真正送进 RFG 的样本必须等于解析激励（前 24 点逐点比对）。
-        // 取样点是 u_measurement_core.freq_sample_u（核心去直流之后的中心化样本），
+        // 取样点是 u_measurement_core.freq_sample_u1（核心去直流之后的中心化样本），
         // 这才是 RFG 真正拿到的东西；取泵输出或在去直流之前取样都验不到问题（踩过）。
         if (dut.u_measurement_core.freq_sample_valid && (in_n < 24)) begin
-            in_got[in_n]  = $signed(dut.u_measurement_core.freq_sample_u);
-            in_exp[in_n]  = (U_1ST * sine_lut[(in_n * (LUT_N / C_N)) % LUT_N]
-                           + U_3RD * sine_lut[(in_n * 3 * (LUT_N / C_N)) % LUT_N]) / 1000;
+            in_got[in_n]  = $signed(dut.u_measurement_core.freq_sample_u1);
+            in_exp[in_n]  = (U1_1ST * sine_lut[(in_n * (LUT_N / C_N)) % LUT_N]
+                           + U1_3RD * sine_lut[(in_n * 3 * (LUT_N / C_N)) % LUT_N]) / 1000;
             if (in_got[in_n] !== in_exp[in_n])
                 in_bad = in_bad + 1;
             in_n = in_n + 1;
         end
 
         // 边沿检测必须先比较、再更新影子寄存器：原来的写法 d 刚被赋成 snap_toggle，
-        // 异或恒为 0，于是无论 DUT 提交多少次 commit 都读成 0（实测 commit=0 而 u_rms 非零）。
+        // 异或恒为 0，于是无论 DUT 提交多少次 commit 都读成 0（实测 commit=0 而 u1_rms 非零）。
         if (snap_toggle ^ snap_toggle_d) snap_commit_count = snap_commit_count + 1;
         snap_toggle_d = snap_toggle;
         if (bram_en && (bram_we != 4'd0)) begin
@@ -339,7 +345,7 @@ module tb_pqm_pl_top;
     // ------------------------------------------------------------------
     // 主流程
     // ------------------------------------------------------------------
-    integer u_rms_now;
+    integer u1_rms_now;
 
     initial begin
         for (k = 0; k < LUT_N; k = k + 1) begin
@@ -350,7 +356,7 @@ module tb_pqm_pl_top;
         // ---------------- 阶段 0：复位 ----------------
         rst_n = 1'b0;
         // 关键：先把 ADC 模型的 8 个通道码值初始化。否则复位后第一帧的码值是 X，
-        // 会被 u_wave_code 锁存并污染零点跟踪器（zero_code 永久为 X），再经频域
+        // 会被 u1_wave_code 锁存并污染零点跟踪器（zero_code 永久为 X），再经频域
         // DC 累加器 → bin0 → magnitude_calc → harmonic_stats 毒死整条频域链。
         // ADC 模型的 8 个通道先初始化到中心码，避免复位后第一个转换拿到 X 或 0；
         // 否则零点跟踪器首个样本就是一个 32768 量级的跳变，会把估计带偏离（踩过）。
@@ -379,8 +385,8 @@ module tb_pqm_pl_top;
         $display("INFO: 1c pending=%0d sample=%0d ready=%0d",
                  pending_seen, sample_count, ready_seen);
         $display("INFO: 2b zero_valid=%b/%b zero_code=%h/%h code_changed=%0d",
-                 dut.u_zero_valid, dut.i_zero_valid,
-                 dut.u_zero_code, dut.i_zero_code, code_changed);
+                 dut.u1_zero_valid, dut.u2_zero_valid,
+                 dut.u1_zero_code, dut.u2_zero_code, code_changed);
 
         if (frame_count < WARMUP_FRAMES) begin
             $display("FAIL: 1c 只收到 %0d 帧，期望 %0d", frame_count, WARMUP_FRAMES);
@@ -402,12 +408,12 @@ module tb_pqm_pl_top;
             $display("FAIL: 2a 采样码值几乎不变（changed=%0d）", code_changed);
             err = err + 1;
         end
-        if (dut.u_zero_valid !== 1'b1) begin
+        if (dut.u1_zero_valid !== 1'b1) begin
             $display("FAIL: 2b u_zero_valid 未拉高（预热 %0d 样本未完）", ZERO_WARMUP);
             err = err + 1;
         end
-        if ((dut.u_zero_code < 16'h8000 - 16'd64) || (dut.u_zero_code > 16'h8000 + 16'd64)) begin
-            $display("FAIL: 2b u_zero_code=%h 未收敛到 8000 附近", dut.u_zero_code);
+        if ((dut.u1_zero_code < 16'h8000 - 16'd64) || (dut.u1_zero_code > 16'h8000 + 16'd64)) begin
+            $display("FAIL: 2b u_zero_code=%h 未收敛到 8000 附近", dut.u1_zero_code);
             err = err + 1;
         end
 
@@ -421,6 +427,20 @@ module tb_pqm_pl_top;
         $display("INFO: 3 harm_frames=%0d items=%0d max_index=%0d last=%0d h1_present=%0d h1_ratio=%0d",
                  harm_frames, harm_total_items, harm_max_index,
                  harm_last_index_seen, harm_h1_present, harm_h1_ratio);
+        // 3e 频域直流有效性的端到端判据（P0-03）：快照有效位 word 里
+        //    bit9 = freq_dc_u1_valid、bit10 = freq_dc_u2_valid，两者都必须为 1。
+        //    板上实测这两位恒为 0（validity = 0x9FF，界面 DC-U1/DC-U2 恒显示 "--"）；
+        //    根因是帧 FSM 在帧边界连发两个 i_start，把只以 i_start 为帧边界的
+        //    pqm_rfg_dc_sum 提前清零 → 直流项永不产出 → present=0 → 有效位=0。
+        //    修好 A 之后这两位应变为 1（validity 应为 0xFFF）。
+        if (snap_words[489] !== 1'b1) begin
+            $display("FAIL: 3e DC-U1 有效位=0（界面会显示 --），快照有效位=%b", snap_words[491:480]);
+            err = err + 1;
+        end
+        if (snap_words[490] !== 1'b1) begin
+            $display("FAIL: 3e DC-U2 有效位=0（界面会显示 --），快照有效位=%b", snap_words[491:480]);
+            err = err + 1;
+        end
         // 输入侧：送进 RFG 的前 24 点必须与解析激励逐点相等
         $display("INFO: 3in  RFG 输入前 %0d 点不符 %0d 个", in_n, in_bad);
         if (in_bad != 0) begin
@@ -448,53 +468,53 @@ module tb_pqm_pl_top;
 
         // ---------------- 阶段 4/5：快照与共享内存 ----------------
         // ps_snapshot_commit_toggle 有两路来源：时域 x100 完成，以及频域指标提交沿。
-        // 只等 commit 计数非 0 会被频域提交提前满足，此时时域字段尚未写入，故等 u_rms 非零。
+        // 只等 commit 计数非 0 会被频域提交提前满足，此时时域字段尚未写入，故等 u1_rms 非零。
         wait_i = 0;
         while (($signed(snap_words[31:0]) == 0) && (wait_i < 45_000_000)) begin
             @(posedge clk);
             wait_i = wait_i + 1;
         end
-        u_rms_now = $signed(snap_words[31:0]);
+        u1_rms_now = $signed(snap_words[31:0]);
         $display("INFO: 4 commit=%0d u_rms=%0d（期望约 %0d）bram_wr=%0d harm_wr=%0d",
-                 snap_commit_count, u_rms_now, U_RMS_EXPECT, bram_wr_count, bram_harm_wr);
+                 snap_commit_count, u1_rms_now, U1_RMS_EXPECT, bram_wr_count, bram_harm_wr);
 
         // ---------------- PS 侧回读：按 ABI 从共享内存解出谐波 ----------------
-        rb_h1_u = -1; rb_h3_u = -1; rb_h1_p = -1; rb_max_idx = -1; rb_h1_ph = 0;
+        rb_h1_u1 = -1; rb_h3_u1 = -1; rb_h1_p = -1; rb_max_idx = -1; rb_h1_ph = 0;
         for (rb_bank = 0; rb_bank < 2; rb_bank = rb_bank + 1) begin
             for (rb_k = 0; rb_k <= 500; rb_k = rb_k + 1) begin
                 rb_base = 14'h400 + rb_bank * 14'h800 + rb_k * 4;
-                rb_u  = ps_bram[rb_base];
-                rb_i  = ps_bram[rb_base + 14'd1];
+                rb_u1  = ps_bram[rb_base];
+                rb_u2  = ps_bram[rb_base + 14'd1];
                 rb_ph = ps_bram[rb_base + 14'd2];
                 rb_fl = ps_bram[rb_base + 14'd3];
                 if ((rb_k == 1) && (rb_fl[0] === 1'b1) && (rb_bank == 1)) begin
                     rb_h1_ph = rb_ph;
                 end
                 if ((rb_k == 1) && (rb_fl[0] === 1'b1)) begin
-                    rb_h1_u = rb_u[15:0];
+                    rb_h1_u1 = rb_u1[15:0];
                     rb_h1_p = rb_fl[0];
                 end
                 if ((rb_k == 3) && (rb_fl[0] === 1'b1))
-                    rb_h3_u = rb_u[15:0];
+                    rb_h3_u1 = rb_u1[15:0];
                 if ((rb_fl[0] === 1'b1) && (rb_k > rb_max_idx))
                     rb_max_idx = rb_k;
                 if ((rb_k <= 3) && (rb_bank == 1) && (rb_fl[0] === 1'b1))
                     $display("INFO: 5abin bank1 k=%0d u=%0d i=%0d ph=%0d(有符号 %0d) fl=%0d",
-                             rb_k, rb_u, rb_i, rb_ph, $signed(rb_ph), rb_fl);
+                             rb_k, rb_u1, rb_u2, rb_ph, $signed(rb_ph), rb_fl);
             end
         end
         // rb_h1_ph 已在扫描中锁存，这里先转成有符号视图，供显示与断言共用。
         rb_h1_ph_s = rb_h1_ph;
         $display("INFO: 5abi  从共享内存解出：1次u=%0d 3次u=%0d present=%0d 最大index=%0d 1次相位=%0d(x100)",
-                 rb_h1_u, rb_h3_u, rb_h1_p, rb_max_idx, rb_h1_ph_s);
+                 rb_h1_u1, rb_h3_u1, rb_h1_p, rb_max_idx, rb_h1_ph_s);
 
         if (snap_commit_count < 1) begin
             $display("FAIL: 4a 没有出现快照提交");
             err = err + 1;
         end
-        if ((u_rms_now < U_RMS_EXPECT - U_RMS_EXPECT / 5) ||
-            (u_rms_now > U_RMS_EXPECT + U_RMS_EXPECT / 5)) begin
-            $display("FAIL: 4b u_rms=%0d 偏离期望 %0d 超过 20%%", u_rms_now, U_RMS_EXPECT);
+        if ((u1_rms_now < U1_RMS_EXPECT - U1_RMS_EXPECT / 5) ||
+            (u1_rms_now > U1_RMS_EXPECT + U1_RMS_EXPECT / 5)) begin
+            $display("FAIL: 4b u_rms=%0d 偏离期望 %0d 超过 20%%", u1_rms_now, U1_RMS_EXPECT);
             err = err + 1;
         end
         if (bram_wr_count < 1) begin
@@ -508,12 +528,12 @@ module tb_pqm_pl_top;
 
         // ---------------- 判定 ----------------
         // ---------------- 第 5 环 ABI 回读判定 ----------------
-        if (rb_h1_u < 7000 || rb_h1_u > 7300) begin
-            $display("FAIL: 5abi 从共享内存解出的 1 次 u 占比=%0d，期望 7138 附近", rb_h1_u);
+        if (rb_h1_u1 < 7000 || rb_h1_u1 > 7300) begin
+            $display("FAIL: 5abi 从共享内存解出的 1 次 u 占比=%0d，期望 7138 附近", rb_h1_u1);
             err = err + 1;
         end
-        if (rb_h3_u < 2750 || rb_h3_u > 2960) begin
-            $display("FAIL: 5abi 从共享内存解出的 3 次 u 占比=%0d，期望 2861 附近", rb_h3_u);
+        if (rb_h3_u1 < 2750 || rb_h3_u1 > 2960) begin
+            $display("FAIL: 5abi 从共享内存解出的 3 次 u 占比=%0d，期望 2861 附近", rb_h3_u1);
             err = err + 1;
         end
         if (rb_h1_p !== 1) begin
@@ -527,7 +547,7 @@ module tb_pqm_pl_top;
             err = err + 1;
         end
 
-        // ---------------- 第 5 环 ABI 回读判定：1 次谐波 U-I 相位差 ----------------
+        // ---------------- 第 5 环 ABI 回读判定：1 次谐波 U1-U2 相位差 ----------------
         // 覆盖范围（已实测确认）：本断言读的是共享内存 ABI 里谐波条目的 phase 字段，
         // 该字段只由**频域链**产生：RFG(bin k) -> harmonic_stats -> phase_vector_calc
         // -> phase_deg_lut_calc（内部的 rom_atan_lut_1024）-> freq_harmonic_iir_filter

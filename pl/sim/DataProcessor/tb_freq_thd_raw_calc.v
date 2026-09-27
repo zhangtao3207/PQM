@@ -4,19 +4,19 @@
  * 模块: tb_freq_thd_raw_calc
  * 功能:
  *   freq_thd_raw_calc 的单元测试平台：由 2 次及以上谐波幅值平方和与基波幅值算出
- *   U/I 总谐波畸变率 THD，输出单位是 % x100。
+ *   U1/U2 总谐波畸变率 THD，输出单位是 % x100。
  *
  *   计算链：sqrt(平方和) -> *10000 -> /基波幅值，最后钳位到 99999。
  *
  *   用例：
  *     1) 正常：u sqrt=3、基波 100 -> 300；i sqrt=4、基波 200 -> 200
- *     2) 电压基波无效（有效标志应跟着为 0、结果旁路为 0），电流正常 -> 1000
- *     3) 基波幅值为 0 -> 旁路为 0 但 valid 仍跟随基波有效标志；电流平方和为 0
+ *     2) U1基波无效（有效标志应跟着为 0、结果旁路为 0），U2正常 -> 1000
+ *     3) 基波幅值为 0 -> 旁路为 0 但 valid 仍跟随基波有效标志；U2平方和为 0
  *        （开方根为 0）同样旁路为 0
  *     4) 溢出钳位：u sqrt=1000、基波 1 -> 10,000,000 应被钳到 99999；
- *        同时给一个刚低于钳位门限的电流值 90000，确认没被误钳
+ *        同时给一个刚低于钳位门限的U2值 90000，确认没被误钳
  *
- *   U/I 两路各自独立判断旁路与有效标志，用例 2、3 专门覆盖这种不对称。
+ *   U1/U2 两路各自独立判断旁路与有效标志，用例 2、3 专门覆盖这种不对称。
  */
 
 module tb_freq_thd_raw_calc;
@@ -28,19 +28,19 @@ module tb_freq_thd_raw_calc;
     reg clk = 1'b0;
     reg rst_n = 1'b0;
     reg start = 1'b0;
-    reg [45:0] u_harmonic_square_sum = 46'd0;
-    reg [45:0] i_harmonic_square_sum = 46'd0;
-    reg [16:0] u_fund_mag = 17'd0;
-    reg [16:0] i_fund_mag = 17'd0;
-    reg u_fund_valid = 1'b0;
-    reg i_fund_valid = 1'b0;
+    reg [45:0] u1_harmonic_square_sum = 46'd0;
+    reg [45:0] u2_harmonic_square_sum = 46'd0;
+    reg [16:0] u1_fund_mag = 17'd0;
+    reg [16:0] u2_fund_mag = 17'd0;
+    reg u1_fund_valid = 1'b0;
+    reg u2_fund_valid = 1'b0;
 
     wire        busy;
     wire        done;
-    wire [31:0] thd_u_raw_x100;
-    wire [31:0] thd_i_raw_x100;
-    wire        thd_u_valid;
-    wire        thd_i_valid;
+    wire [31:0] thd_u1_raw_x100;
+    wire [31:0] thd_u2_raw_x100;
+    wire        thd_u1_valid;
+    wire        thd_u2_valid;
 
     integer errors = 0;
     integer i;
@@ -52,40 +52,40 @@ module tb_freq_thd_raw_calc;
         .clk                  (clk),
         .rst_n                (rst_n),
         .start                (start),
-        .u_harmonic_square_sum(u_harmonic_square_sum),
-        .i_harmonic_square_sum(i_harmonic_square_sum),
-        .u_fund_mag           (u_fund_mag),
-        .i_fund_mag           (i_fund_mag),
-        .u_fund_valid         (u_fund_valid),
-        .i_fund_valid         (i_fund_valid),
+        .u1_harmonic_square_sum(u1_harmonic_square_sum),
+        .u2_harmonic_square_sum(u2_harmonic_square_sum),
+        .u1_fund_mag           (u1_fund_mag),
+        .u2_fund_mag           (u2_fund_mag),
+        .u1_fund_valid         (u1_fund_valid),
+        .u2_fund_valid         (u2_fund_valid),
         .busy                 (busy),
         .done                 (done),
-        .thd_u_raw_x100       (thd_u_raw_x100),
-        .thd_i_raw_x100       (thd_i_raw_x100),
-        .thd_u_valid          (thd_u_valid),
-        .thd_i_valid          (thd_i_valid)
+        .thd_u1_raw_x100       (thd_u1_raw_x100),
+        .thd_u2_raw_x100       (thd_u2_raw_x100),
+        .thd_u1_valid          (thd_u1_valid),
+        .thd_u2_valid          (thd_u2_valid)
     );
 
     task run_case;
-        input [45:0]   u_sum;
-        input [45:0]   i_sum;
-        input [16:0]   u_fund;
-        input [16:0]   i_fund;
-        input          u_fv;
-        input          i_fv;
-        input [31:0]   exp_u;
-        input [31:0]   exp_i;
+        input [45:0]   u1_sum;
+        input [45:0]   u2_sum;
+        input [16:0]   u1_fund;
+        input [16:0]   u2_fund;
+        input          u1_fv;
+        input          u2_fv;
+        input [31:0]   exp_u1;
+        input [31:0]   exp_u2;
         input          exp_uv;
         input          exp_iv;
         input [255:0]  tag;
         begin
             @(negedge clk);
-            u_harmonic_square_sum = u_sum;
-            i_harmonic_square_sum = i_sum;
-            u_fund_mag            = u_fund;
-            i_fund_mag            = i_fund;
-            u_fund_valid          = u_fv;
-            i_fund_valid          = i_fv;
+            u1_harmonic_square_sum = u1_sum;
+            u2_harmonic_square_sum = u2_sum;
+            u1_fund_mag            = u1_fund;
+            u2_fund_mag            = u2_fund;
+            u1_fund_valid          = u1_fv;
+            u2_fund_valid          = u2_fv;
             start                 = 1'b1;
             @(negedge clk);
             start                 = 1'b0;
@@ -107,20 +107,20 @@ module tb_freq_thd_raw_calc;
                 errors = errors + 1;
             end else begin
                 @(negedge clk);
-                if (thd_u_raw_x100 !== exp_u) begin
-                    $display("FAIL: %0s thd_u_raw_x100=%0d，期望 %0d", tag, thd_u_raw_x100, exp_u);
+                if (thd_u1_raw_x100 !== exp_u1) begin
+                    $display("FAIL: %0s thd_u_raw_x100=%0d，期望 %0d", tag, thd_u1_raw_x100, exp_u1);
                     errors = errors + 1;
                 end
-                if (thd_i_raw_x100 !== exp_i) begin
-                    $display("FAIL: %0s thd_i_raw_x100=%0d，期望 %0d", tag, thd_i_raw_x100, exp_i);
+                if (thd_u2_raw_x100 !== exp_u2) begin
+                    $display("FAIL: %0s thd_i_raw_x100=%0d，期望 %0d", tag, thd_u2_raw_x100, exp_u2);
                     errors = errors + 1;
                 end
-                if (thd_u_valid !== exp_uv) begin
-                    $display("FAIL: %0s thd_u_valid=%0b，期望 %0b", tag, thd_u_valid, exp_uv);
+                if (thd_u1_valid !== exp_uv) begin
+                    $display("FAIL: %0s thd_u_valid=%0b，期望 %0b", tag, thd_u1_valid, exp_uv);
                     errors = errors + 1;
                 end
-                if (thd_i_valid !== exp_iv) begin
-                    $display("FAIL: %0s thd_i_valid=%0b，期望 %0b", tag, thd_i_valid, exp_iv);
+                if (thd_u2_valid !== exp_iv) begin
+                    $display("FAIL: %0s thd_i_valid=%0b，期望 %0b", tag, thd_u2_valid, exp_iv);
                     errors = errors + 1;
                 end
             end
@@ -142,11 +142,11 @@ module tb_freq_thd_raw_calc;
         run_case(46'd9, 46'd16, 17'd100, 17'd200, 1'b1, 1'b1,
                  32'd300, 32'd200, 1'b1, 1'b1, "正常");
 
-        // 2) 电压基波无效 -> 旁路为 0 且 valid=0；电流 5/50 -> 1000
+        // 2) U1基波无效 -> 旁路为 0 且 valid=0；U2 5/50 -> 1000
         run_case(46'd100, 46'd25, 17'd50, 17'd50, 1'b0, 1'b1,
-                 32'd0, 32'd1000, 1'b0, 1'b1, "电压基波无效");
+                 32'd0, 32'd1000, 1'b0, 1'b1, "U1基波无效");
 
-        // 3) 基波幅值为 0 -> 旁路为 0、valid 跟随基波有效标志；电流根为 0 同样旁路
+        // 3) 基波幅值为 0 -> 旁路为 0、valid 跟随基波有效标志；U2根为 0 同样旁路
         run_case(46'd9, 46'd0, 17'd0, 17'd100, 1'b1, 1'b1,
                  32'd0, 32'd0, 1'b1, 1'b1, "基波为 0 / 根为 0");
 

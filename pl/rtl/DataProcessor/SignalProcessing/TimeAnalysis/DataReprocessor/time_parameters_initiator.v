@@ -10,28 +10,28 @@
  *   clk: 原始测量调度工作时钟。
  *   rst_n: 低有效异步复位。
  *   start: 启动一次文字参数 raw 测量批次。
- *   u_sample_valid: 电压采样码当前周期是否有效。
- *   u_sample_code: 电压通道 ADC 采样码。
- *   u_zero_code: 电压通道零点参考码。
- *   u_zero_valid: 电压通道零点参考码是否有效。
- *   i_sample_valid: 电流采样码当前周期是否有效。
- *   i_sample_code: 电流通道 ADC 采样码。
- *   i_zero_code: 电流通道零点参考码。
- *   i_zero_valid: 电流通道零点参考码是否有效。
+ *   u1_sample_valid: U1采样码当前周期是否有效。
+ *   u1_sample_code: U1通道 ADC 采样码。
+ *   u1_zero_code: U1通道零点参考码。
+ *   u1_zero_valid: U1通道零点参考码是否有效。
+ *   u2_sample_valid: U2采样码当前周期是否有效。
+ *   u2_sample_code: U2通道 ADC 采样码。
+ *   u2_zero_code: U2通道零点参考码。
+ *   u2_zero_valid: U2通道零点参考码是否有效。
  * 输出:
  *   busy: 当前 raw 测量批次是否仍在进行。
  *   done: 本次 raw 测量批次结束脉冲。
- *   u_rms_raw: 电压 RMS 的 32 位补码 raw 结果。
- *   i_rms_raw: 电流 RMS 的 32 位补码 raw 结果。
- *   rms_valid: U/I RMS raw 是否有效。
- *   u_pp_raw: 电压峰峰值 32 位补码 raw 结果。
- *   u_pp_valid: 电压峰峰值 raw 是否有效。
- *   i_pp_raw: 电流峰峰值 32 位补码 raw 结果。
- *   i_pp_valid: 电流峰峰值 raw 是否有效。
- *   phase_offset_raw: 电流过零相对电压过零的偏移 raw 计数。
- *   phase_period_raw: 电压相邻过零周期 raw 计数。
+ *   u1_rms_raw: U1 RMS 的 32 位补码 raw 结果。
+ *   u2_rms_raw: U2 RMS 的 32 位补码 raw 结果。
+ *   rms_valid: U1/U2 RMS raw 是否有效。
+ *   u1_pp_raw: U1峰峰值 32 位补码 raw 结果。
+ *   u1_pp_valid: U1峰峰值 raw 是否有效。
+ *   u2_pp_raw: U2峰峰值 32 位补码 raw 结果。
+ *   u2_pp_valid: U2峰峰值 raw 是否有效。
+ *   phase_offset_raw: U2过零相对U1过零的偏移 raw 计数。
+ *   phase_period_raw: U1相邻过零周期 raw 计数。
  *   phase_valid: 相位 raw 是否有效。
- *   freq_period_raw: 电压频率周期 raw 计数。
+ *   freq_period_raw: U1频率周期 raw 计数。
  *   freq_valid: 频率 raw 是否有效。
  *   active_p_raw: 有功功率 32 位补码 raw 结果。
  *   reactive_q_raw: 无功功率 32 位补码 raw 结果。
@@ -48,23 +48,23 @@ module time_parameters_initiator #(
     input  wire                         clk,
     input  wire                         rst_n,
     input  wire                         start,
-    input  wire                         u_sample_valid,
-    input  wire [SAMPLE_WIDTH-1:0]      u_sample_code,
-    input  wire [SAMPLE_WIDTH-1:0]      u_zero_code,
-    input  wire                         u_zero_valid,
-    input  wire                         i_sample_valid,
-    input  wire [SAMPLE_WIDTH-1:0]      i_sample_code,
-    input  wire [SAMPLE_WIDTH-1:0]      i_zero_code,
-    input  wire                         i_zero_valid,
+    input  wire                         u1_sample_valid,
+    input  wire [SAMPLE_WIDTH-1:0]      u1_sample_code,
+    input  wire [SAMPLE_WIDTH-1:0]      u1_zero_code,
+    input  wire                         u1_zero_valid,
+    input  wire                         u2_sample_valid,
+    input  wire [SAMPLE_WIDTH-1:0]      u2_sample_code,
+    input  wire [SAMPLE_WIDTH-1:0]      u2_zero_code,
+    input  wire                         u2_zero_valid,
     output wire                         busy,
     output reg                          done,
-    output reg  signed [31:0]           u_rms_raw,
-    output reg  signed [31:0]           i_rms_raw,
+    output reg  signed [31:0]           u1_rms_raw,
+    output reg  signed [31:0]           u2_rms_raw,
     output reg                          rms_valid,
-    output reg  signed [31:0]           u_pp_raw,
-    output reg                          u_pp_valid,
-    output reg  signed [31:0]           i_pp_raw,
-    output reg                          i_pp_valid,
+    output reg  signed [31:0]           u1_pp_raw,
+    output reg                          u1_pp_valid,
+    output reg  signed [31:0]           u2_pp_raw,
+    output reg                          u2_pp_valid,
     output reg  signed [31:0]           phase_offset_raw,
     output reg  signed [31:0]           phase_period_raw,
     output reg                          phase_valid,
@@ -86,14 +86,14 @@ localparam [2:0] ST_DONE         = 3'd4;
 localparam [N_WIDTH-1:0] MEASURE_FRAME_SAMPLES_VALUE = MEASURE_FRAME_SAMPLES;
 
 reg [2:0] state;
-reg       u_p2p_start;
-reg       i_p2p_start;
+reg       u1_p2p_start;
+reg       u2_p2p_start;
 reg       phase_start;
 reg       freq_start;
 reg       rms_start;
 reg       power_start;
-reg       u_p2p_done_seen;
-reg       i_p2p_done_seen;
+reg       u1_p2p_done_seen;
+reg       u2_p2p_done_seen;
 reg       phase_done_seen;
 reg       freq_done_seen;
 reg       rms_done_seen;
@@ -101,12 +101,12 @@ reg  signed [31:0] active_p_mean_raw_reg;
 reg                active_p_mean_valid_reg;
 
 wire                         ui_sample_valid;
-wire                         u_p2p_done;
-wire signed [31:0]           u_pp_raw_wire;
-wire                         u_pp_valid_wire;
-wire                         i_p2p_done;
-wire signed [31:0]           i_pp_raw_wire;
-wire                         i_pp_valid_wire;
+wire                         u1_p2p_done;
+wire signed [31:0]           u1_pp_raw_wire;
+wire                         u1_pp_valid_wire;
+wire                         u2_p2p_done;
+wire signed [31:0]           u2_pp_raw_wire;
+wire                         u2_pp_valid_wire;
 wire                         phase_done;
 wire signed [31:0]           phase_offset_raw_wire;
 wire signed [31:0]           phase_period_raw_wire;
@@ -118,8 +118,8 @@ wire                         primary_raw_done;
 wire                         rms_done;
 wire                         rms_valid_wire;
 wire                         active_p_mean_valid_wire;
-wire signed [31:0]           u_rms_raw_wire;
-wire signed [31:0]           i_rms_raw_wire;
+wire signed [31:0]           u1_rms_raw_wire;
+wire signed [31:0]           u2_rms_raw_wire;
 wire signed [31:0]           active_p_mean_raw_wire;
 wire                         measure_raw_done;
 wire                         power_done;
@@ -129,57 +129,57 @@ wire signed [31:0]           apparent_s_raw_wire;
 wire signed [31:0]           power_factor_raw_wire;
 wire                         power_metrics_valid_wire;
 
-// 只在 U/I 两路采样同时有效时推进 raw 测量窗口，保证同一批结果来自同一组联合采样点。
-assign ui_sample_valid = u_sample_valid && i_sample_valid;
+// 只在 U1/U2 两路采样同时有效时推进 raw 测量窗口，保证同一批结果来自同一组联合采样点。
+assign ui_sample_valid = u1_sample_valid && u2_sample_valid;
 
 assign busy = (state != ST_IDLE);
 
 // p2p、相位、频率与同窗口 RMS/平均有功全部完成后，才允许进入功率衍生阶段。
-assign primary_raw_done = (u_p2p_done_seen || u_p2p_done) &&
-                          (i_p2p_done_seen || i_p2p_done) &&
+assign primary_raw_done = (u1_p2p_done_seen || u1_p2p_done) &&
+                          (u2_p2p_done_seen || u2_p2p_done) &&
                           (phase_done_seen || phase_done) &&
                           (freq_done_seen || freq_done);
 
 assign measure_raw_done = primary_raw_done &&
                           (rms_done_seen || rms_done);
 
-// 电压峰峰值 raw 测量实例。
+// U1峰峰值 raw 测量实例。
 p2p_measure #(
     .WIDTH(SAMPLE_WIDTH),
     .MAX_FRAME_SAMPLES(MAX_FRAME_SAMPLES),
     .N_WIDTH(N_WIDTH)
-) u_u_p2p_measure (
+) u_u1_p2p_measure (
     .clk           (clk),
     .rst_n         (rst_n),
-    .start         (u_p2p_start),
+    .start         (u1_p2p_start),
     .sample_count_n(MEASURE_FRAME_SAMPLES_VALUE),
     .sample_valid  (ui_sample_valid),
-    .sample_code   (u_sample_code),
+    .sample_code   (u1_sample_code),
     .busy          (),
-    .done          (u_p2p_done),
-    .p2p_raw       (u_pp_raw_wire),
-    .p2p_valid     (u_pp_valid_wire)
+    .done          (u1_p2p_done),
+    .p2p_raw       (u1_pp_raw_wire),
+    .p2p_valid     (u1_pp_valid_wire)
 );
 
-// 电流峰峰值 raw 测量实例。
+// U2峰峰值 raw 测量实例。
 p2p_measure #(
     .WIDTH(SAMPLE_WIDTH),
     .MAX_FRAME_SAMPLES(MAX_FRAME_SAMPLES),
     .N_WIDTH(N_WIDTH)
-) u_i_p2p_measure (
+) u_u2_p2p_measure (
     .clk           (clk),
     .rst_n         (rst_n),
-    .start         (i_p2p_start),
+    .start         (u2_p2p_start),
     .sample_count_n(MEASURE_FRAME_SAMPLES_VALUE),
     .sample_valid  (ui_sample_valid),
-    .sample_code   (i_sample_code),
+    .sample_code   (u2_sample_code),
     .busy          (),
-    .done          (i_p2p_done),
-    .p2p_raw       (i_pp_raw_wire),
-    .p2p_valid     (i_pp_valid_wire)
+    .done          (u2_p2p_done),
+    .p2p_raw       (u2_pp_raw_wire),
+    .p2p_valid     (u2_pp_valid_wire)
 );
 
-// U/I 相位差 raw 测量实例。
+// U1/U2 相位差 raw 测量实例。
 phase_diff_calc #(
     .WIDTH(SAMPLE_WIDTH),
     .MAX_FRAME_SAMPLES(MAX_FRAME_SAMPLES),
@@ -190,12 +190,12 @@ phase_diff_calc #(
     .start           (phase_start),
     .sample_count_n  (MEASURE_FRAME_SAMPLES_VALUE),
     .sample_valid    (ui_sample_valid),
-    .u_sample_code   (u_sample_code),
-    .u_zero_code     (u_zero_code),
-    .u_zero_valid    (u_zero_valid),
-    .i_sample_code   (i_sample_code),
-    .i_zero_code     (i_zero_code),
-    .i_zero_valid    (i_zero_valid),
+    .u1_sample_code   (u1_sample_code),
+    .u1_zero_code     (u1_zero_code),
+    .u1_zero_valid    (u1_zero_valid),
+    .u2_sample_code   (u2_sample_code),
+    .u2_zero_code     (u2_zero_code),
+    .u2_zero_valid    (u2_zero_valid),
     .busy            (),
     .done            (phase_done),
     .phase_offset_raw(phase_offset_raw_wire),
@@ -203,7 +203,7 @@ phase_diff_calc #(
     .phase_valid     (phase_valid_wire)
 );
 
-// 电压频率 raw 测量实例。
+// U1频率 raw 测量实例。
 frequency_measure #(
     .WIDTH(SAMPLE_WIDTH),
     .MAX_FRAME_SAMPLES(MAX_FRAME_SAMPLES),
@@ -214,9 +214,9 @@ frequency_measure #(
     .start          (freq_start),
     .sample_count_n (MEASURE_FRAME_SAMPLES_VALUE),
     .sample_valid   (ui_sample_valid),
-    .sample_code    (u_sample_code),
-    .zero_code      (u_zero_code),
-    .zero_valid     (u_zero_valid),
+    .sample_code    (u1_sample_code),
+    .zero_code      (u1_zero_code),
+    .zero_valid     (u1_zero_valid),
     .busy           (),
     .done           (freq_done),
     .freq_period_raw(freq_period_raw_wire),
@@ -234,20 +234,20 @@ ui_rms_measure #(
     .start          (rms_start),
     .sample_count_n (MEASURE_FRAME_SAMPLES_VALUE),
     .sample_valid   (ui_sample_valid),
-    .u_sample_code  (u_sample_code),
-    .u_zero_code    (u_zero_code),
-    .u_zero_valid   (u_zero_valid),
-    .i_sample_code  (i_sample_code),
-    .i_zero_code    (i_zero_code),
-    .i_zero_valid   (i_zero_valid),
+    .u1_sample_code  (u1_sample_code),
+    .u1_zero_code    (u1_zero_code),
+    .u1_zero_valid   (u1_zero_valid),
+    .u2_sample_code  (u2_sample_code),
+    .u2_zero_code    (u2_zero_code),
+    .u2_zero_valid   (u2_zero_valid),
     .busy           (),
     .done           (rms_done),
     .rms_valid      (rms_valid_wire),
     .active_p_valid (active_p_mean_valid_wire),
     .config_error   (),
     .frame_overflow (),
-    .u_rms_raw      (u_rms_raw_wire),
-    .i_rms_raw      (i_rms_raw_wire),
+    .u1_rms_raw      (u1_rms_raw_wire),
+    .u2_rms_raw      (u2_rms_raw_wire),
     .active_p_raw   (active_p_mean_raw_wire)
 );
 
@@ -260,8 +260,8 @@ power_metrics_calc #(
     .start              (power_start),
     .rms_valid          (rms_valid),
     .active_p_valid     (active_p_mean_valid_reg),
-    .u_rms_code         (u_rms_raw[SAMPLE_WIDTH-1:0]),
-    .i_rms_code         (i_rms_raw[SAMPLE_WIDTH-1:0]),
+    .u1_rms_code         (u1_rms_raw[SAMPLE_WIDTH-1:0]),
+    .u2_rms_code         (u2_rms_raw[SAMPLE_WIDTH-1:0]),
     .active_p_input_raw (active_p_mean_raw_reg),
     .phase_offset_raw   (phase_offset_raw),
     .phase_period_raw   (phase_period_raw),
@@ -279,27 +279,27 @@ power_metrics_calc #(
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         state                 <= ST_IDLE;
-        u_p2p_start           <= 1'b0;
-        i_p2p_start           <= 1'b0;
+        u1_p2p_start           <= 1'b0;
+        u2_p2p_start           <= 1'b0;
         phase_start           <= 1'b0;
         freq_start            <= 1'b0;
         rms_start             <= 1'b0;
         power_start           <= 1'b0;
-        u_p2p_done_seen       <= 1'b0;
-        i_p2p_done_seen       <= 1'b0;
+        u1_p2p_done_seen       <= 1'b0;
+        u2_p2p_done_seen       <= 1'b0;
         phase_done_seen       <= 1'b0;
         freq_done_seen        <= 1'b0;
         rms_done_seen         <= 1'b0;
         active_p_mean_raw_reg <= 32'sd0;
         active_p_mean_valid_reg <= 1'b0;
         done                  <= 1'b0;
-        u_rms_raw             <= 32'sd0;
-        i_rms_raw             <= 32'sd0;
+        u1_rms_raw             <= 32'sd0;
+        u2_rms_raw             <= 32'sd0;
         rms_valid             <= 1'b0;
-        u_pp_raw              <= 32'sd0;
-        u_pp_valid            <= 1'b0;
-        i_pp_raw              <= 32'sd0;
-        i_pp_valid            <= 1'b0;
+        u1_pp_raw              <= 32'sd0;
+        u1_pp_valid            <= 1'b0;
+        u2_pp_raw              <= 32'sd0;
+        u2_pp_valid            <= 1'b0;
         phase_offset_raw      <= 32'sd0;
         phase_period_raw      <= 32'sd0;
         phase_valid           <= 1'b0;
@@ -312,17 +312,17 @@ always @(posedge clk or negedge rst_n) begin
         power_metrics_valid   <= 1'b0;
     end else begin
         done        <= 1'b0;
-        u_p2p_start <= 1'b0;
-        i_p2p_start <= 1'b0;
+        u1_p2p_start <= 1'b0;
+        u2_p2p_start <= 1'b0;
         phase_start <= 1'b0;
         freq_start  <= 1'b0;
         rms_start   <= 1'b0;
         power_start <= 1'b0;
 
-        if (u_p2p_done)
-            u_p2p_done_seen <= 1'b1;
-        if (i_p2p_done)
-            i_p2p_done_seen <= 1'b1;
+        if (u1_p2p_done)
+            u1_p2p_done_seen <= 1'b1;
+        if (u2_p2p_done)
+            u2_p2p_done_seen <= 1'b1;
         if (phase_done)
             phase_done_seen <= 1'b1;
         if (freq_done)
@@ -330,14 +330,14 @@ always @(posedge clk or negedge rst_n) begin
         if (rms_done)
             rms_done_seen <= 1'b1;
 
-        if (u_pp_valid_wire) begin
-            u_pp_raw   <= u_pp_raw_wire;
-            u_pp_valid <= 1'b1;
+        if (u1_pp_valid_wire) begin
+            u1_pp_raw   <= u1_pp_raw_wire;
+            u1_pp_valid <= 1'b1;
         end
 
-        if (i_pp_valid_wire) begin
-            i_pp_raw   <= i_pp_raw_wire;
-            i_pp_valid <= 1'b1;
+        if (u2_pp_valid_wire) begin
+            u2_pp_raw   <= u2_pp_raw_wire;
+            u2_pp_valid <= 1'b1;
         end
 
         if (phase_valid_wire) begin
@@ -352,8 +352,8 @@ always @(posedge clk or negedge rst_n) begin
         end
 
         if (rms_valid_wire) begin
-            u_rms_raw             <= u_rms_raw_wire;
-            i_rms_raw             <= i_rms_raw_wire;
+            u1_rms_raw             <= u1_rms_raw_wire;
+            u2_rms_raw             <= u2_rms_raw_wire;
             active_p_mean_raw_reg <= active_p_mean_raw_wire;
             active_p_mean_valid_reg <= active_p_mean_valid_wire;
             rms_valid             <= 1'b1;
@@ -370,25 +370,25 @@ always @(posedge clk or negedge rst_n) begin
         case (state)
             ST_IDLE: begin
                 if (start) begin
-                    u_p2p_start           <= 1'b1;
-                    i_p2p_start           <= 1'b1;
+                    u1_p2p_start           <= 1'b1;
+                    u2_p2p_start           <= 1'b1;
                     phase_start           <= 1'b1;
                     freq_start            <= 1'b1;
                     rms_start             <= 1'b1;
-                    u_p2p_done_seen       <= 1'b0;
-                    i_p2p_done_seen       <= 1'b0;
+                    u1_p2p_done_seen       <= 1'b0;
+                    u2_p2p_done_seen       <= 1'b0;
                     phase_done_seen       <= 1'b0;
                     freq_done_seen        <= 1'b0;
                     rms_done_seen         <= 1'b0;
                     active_p_mean_raw_reg <= 32'sd0;
                     active_p_mean_valid_reg <= 1'b0;
-                    u_rms_raw             <= 32'sd0;
-                    i_rms_raw             <= 32'sd0;
+                    u1_rms_raw             <= 32'sd0;
+                    u2_rms_raw             <= 32'sd0;
                     rms_valid             <= 1'b0;
-                    u_pp_raw              <= 32'sd0;
-                    u_pp_valid            <= 1'b0;
-                    i_pp_raw              <= 32'sd0;
-                    i_pp_valid            <= 1'b0;
+                    u1_pp_raw              <= 32'sd0;
+                    u1_pp_valid            <= 1'b0;
+                    u2_pp_raw              <= 32'sd0;
+                    u2_pp_valid            <= 1'b0;
                     phase_offset_raw      <= 32'sd0;
                     phase_period_raw      <= 32'sd0;
                     phase_valid           <= 1'b0;

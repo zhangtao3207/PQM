@@ -30,24 +30,24 @@ module tb_magnitude_calc;
     reg s_bin_valid = 1'b0;
     reg s_bin_last = 1'b0;
     reg [10:0] s_bin_index = 11'd0;
-    reg signed [15:0] s_u_real = 16'sd0;
-    reg signed [15:0] s_u_imag = 16'sd0;
-    reg signed [15:0] s_i_real = 16'sd0;
-    reg signed [15:0] s_i_imag = 16'sd0;
+    reg signed [15:0] s_u1_real = 16'sd0;
+    reg signed [15:0] s_u1_imag = 16'sd0;
+    reg signed [15:0] s_u2_real = 16'sd0;
+    reg signed [15:0] s_u2_imag = 16'sd0;
     reg m_mag_ready = 1'b0;
 
     wire               s_bin_ready;
     wire               m_mag_valid;
     wire               m_mag_last;
     wire [10:0]        m_bin_index;
-    wire signed [15:0] m_u_real;
-    wire signed [15:0] m_u_imag;
-    wire signed [15:0] m_i_real;
-    wire signed [15:0] m_i_imag;
-    wire [32:0]        m_u_mag_sq;
-    wire [16:0]        m_u_mag;
-    wire [32:0]        m_i_mag_sq;
-    wire [16:0]        m_i_mag;
+    wire signed [15:0] m_u1_real;
+    wire signed [15:0] m_u1_imag;
+    wire signed [15:0] m_u2_real;
+    wire signed [15:0] m_u2_imag;
+    wire [32:0]        m_u1_mag_sq;
+    wire [16:0]        m_u1_mag;
+    wire [32:0]        m_u2_mag_sq;
+    wire [16:0]        m_u2_mag;
     wire               calc_busy;
     wire               mag_frame_done;
     wire [15:0]        mag_frame_count;
@@ -67,22 +67,22 @@ module tb_magnitude_calc;
         .s_bin_ready(s_bin_ready),
         .s_bin_last(s_bin_last),
         .s_bin_index(s_bin_index),
-        .s_u_real(s_u_real),
-        .s_u_imag(s_u_imag),
-        .s_i_real(s_i_real),
-        .s_i_imag(s_i_imag),
+        .s_u1_real(s_u1_real),
+        .s_u1_imag(s_u1_imag),
+        .s_u2_real(s_u2_real),
+        .s_u2_imag(s_u2_imag),
         .m_mag_ready(m_mag_ready),
         .m_mag_valid(m_mag_valid),
         .m_mag_last(m_mag_last),
         .m_bin_index(m_bin_index),
-        .m_u_real(m_u_real),
-        .m_u_imag(m_u_imag),
-        .m_i_real(m_i_real),
-        .m_i_imag(m_i_imag),
-        .m_u_mag_sq(m_u_mag_sq),
-        .m_u_mag(m_u_mag),
-        .m_i_mag_sq(m_i_mag_sq),
-        .m_i_mag(m_i_mag),
+        .m_u1_real(m_u1_real),
+        .m_u1_imag(m_u1_imag),
+        .m_u2_real(m_u2_real),
+        .m_u2_imag(m_u2_imag),
+        .m_u1_mag_sq(m_u1_mag_sq),
+        .m_u1_mag(m_u1_mag),
+        .m_u2_mag_sq(m_u2_mag_sq),
+        .m_u2_mag(m_u2_mag),
         .calc_busy(calc_busy),
         .mag_frame_done(mag_frame_done),
         .mag_frame_count(mag_frame_count)
@@ -125,10 +125,10 @@ module tb_magnitude_calc;
         input signed [15:0] ui;
         input signed [15:0] ir;
         input signed [15:0] ii;
-        input [32:0]        exp_u_sq;
-        input [16:0]        exp_u_mag;
-        input [32:0]        exp_i_sq;
-        input [16:0]        exp_i_mag;
+        input [32:0]        exp_u1_sq;
+        input [16:0]        exp_u1_mag;
+        input [32:0]        exp_u2_sq;
+        input [16:0]        exp_u2_mag;
         begin
             // 等本模块可以接收（在时钟低电平期间采样组合就绪）
             ok = 1'b0;
@@ -144,10 +144,10 @@ module tb_magnitude_calc;
             // 同一拍把输入摆上，下一个 posedge 完成握手
             s_bin_index = index;
             s_bin_last  = last;
-            s_u_real    = ur;
-            s_u_imag    = ui;
-            s_i_real    = ir;
-            s_i_imag    = ii;
+            s_u1_real    = ur;
+            s_u1_imag    = ui;
+            s_u2_real    = ir;
+            s_u2_imag    = ii;
             s_bin_valid = 1'b1;
             @(negedge clk);
             s_bin_valid = 1'b0;
@@ -170,20 +170,20 @@ module tb_magnitude_calc;
                     $display("FAIL: m_mag_last=%b，期望 %b", m_mag_last, last);
                     errors = errors + 1;
                 end
-                if (m_u_real !== ur || m_u_imag !== ui) begin
-                    $display("FAIL: 电压 real/imag 透传不符：%0d/%0d，期望 %0d/%0d",
-                             m_u_real, m_u_imag, ur, ui);
+                if (m_u1_real !== ur || m_u1_imag !== ui) begin
+                    $display("FAIL: U1 real/imag 透传不符：%0d/%0d，期望 %0d/%0d",
+                             m_u1_real, m_u1_imag, ur, ui);
                     errors = errors + 1;
                 end
-                if (m_i_real !== ir || m_i_imag !== ii) begin
-                    $display("FAIL: 电流 real/imag 透传不符：%0d/%0d，期望 %0d/%0d",
-                             m_i_real, m_i_imag, ir, ii);
+                if (m_u2_real !== ir || m_u2_imag !== ii) begin
+                    $display("FAIL: U2 real/imag 透传不符：%0d/%0d，期望 %0d/%0d",
+                             m_u2_real, m_u2_imag, ir, ii);
                     errors = errors + 1;
                 end
-                check_eq32(m_u_mag_sq, exp_u_sq,  "电压幅值平方和");
-                check_eq17(m_u_mag,    exp_u_mag, "电压幅值");
-                check_eq32(m_i_mag_sq, exp_i_sq,  "电流幅值平方和");
-                check_eq17(m_i_mag,    exp_i_mag, "电流幅值");
+                check_eq32(m_u1_mag_sq, exp_u1_sq,  "U1幅值平方和");
+                check_eq17(m_u1_mag,    exp_u1_mag, "U1幅值");
+                check_eq32(m_u2_mag_sq, exp_u2_sq,  "U2幅值平方和");
+                check_eq17(m_u2_mag,    exp_u2_mag, "U2幅值");
             end
 
             // 消费掉这条输出
@@ -230,10 +230,10 @@ module tb_magnitude_calc;
         end
         s_bin_index = 11'd7;
         s_bin_last  = 1'b0;
-        s_u_real    = 16'sd6;
-        s_u_imag    = 16'sd8;
-        s_i_real    = 16'sd6;
-        s_i_imag    = 16'sd8;
+        s_u1_real    = 16'sd6;
+        s_u1_imag    = 16'sd8;
+        s_u2_real    = 16'sd6;
+        s_u2_imag    = 16'sd8;
         s_bin_valid = 1'b1;
         @(negedge clk);
         s_bin_valid = 1'b0;

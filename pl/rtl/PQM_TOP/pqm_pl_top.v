@@ -10,7 +10,7 @@
  *   AD7606 引脚
  *     -> AD7606_Parallel_DRIVER（一帧 8 通道）
  *     -> 补码 XOR 0x8000 转偏移二进制
- *     -> time_zero_code_tracker x2（U/I 各自跟踪零点）
+ *     -> time_zero_code_tracker x2（U1/U2 各自跟踪零点）
  *     -> pqm_measurement_core
  *          ├─ 时域链：time_parameters_initiator -> time_x100_normalizer
  *          └─ 频域链：pqm_freq_analysis_rfg（内部自带 64 深取样 FIFO）
@@ -26,7 +26,11 @@
  * 输入:
  *   clk / rst_n        : 50 MHz 工作时钟（与 AD7606 通路同域）与低有效复位。
  *   ad_busy/frstdata/data : AD7606 引脚输入。
- *   command_response_valid / bram_rddata : 共享内存桥的 PS 侧回应与读数据。
+ *   bram_rddata        : 共享内存桥的 PS 侧读数据。
+ *   （command_response_valid 不再是端口：它是 pqm_range_command_controller 的响应
+ *     有效标志，只在模块内部使用。旧版把它声明成 input，而 vivado 顶层故意不接该
+ *     端口 → 悬空 input 被综合成 0 → 桥永远收不到命令响应 → PS 侧 2 s 超时、界面
+ *     RANGE ERROR（已上板实测）。）
  *
  * 输出:
  *   ad_reset/convst/cs_n/rd_n : AD7606 控制引脚。
@@ -59,7 +63,6 @@ module pqm_pl_top #(
     output wire         ad_rd_n,
 
     // ---------------- 共享内存桥（PS 侧） ----------------
-    input  wire         command_response_valid,
     input  wire [31:0]  bram_rddata,
     output wire [13:0]  bram_addr,
     output wire [31:0]  bram_wrdata,
@@ -162,54 +165,54 @@ module pqm_pl_top #(
     //                      同一级寄存，保证下游拿到的三者严格同拍。
     // 为什么这样做：同步电路里每个寄存器都在同一时钟沿并行锁存，任何"用寄存器
     // 做组合运算"的地方读到的是上一拍的值。之前把码值、零码、valid 分在不同 always
-    // 块里打不同级数的拍，于是核心的组合减法 u_sample_code - u_zero_code 拿到的是
-    // 不同格的两个量，恒差 0x8000（实测 freq_sample_u = 真值 - 32768）。
+    // 块里打不同级数的拍，于是核心的组合减法 u1_sample_code - u1_zero_code 拿到的是
+    // 不同格的两个量，恒差 0x8000（实测 freq_sample_u1 = 真值 - 32768）。
     // 把三者放进同一个 always 块后，它们必然同格，该错位在结构上不可能再出现。
-    reg  [15:0] u_wave_code;        // stage-1
-    reg  [15:0] i_wave_code;        // stage-1
+    reg  [15:0] u1_wave_code;        // stage-1
+    reg  [15:0] u2_wave_code;        // stage-1
     reg         wave_sample_valid;  // stage-1
-    reg  [15:0] u_wave_code_q;      // stage-2（送下游的码值）
-    reg  [15:0] i_wave_code_q;      // stage-2
-    reg  [15:0] u_zero_code;        // stage-2（送下游的零码）
-    reg  [15:0] i_zero_code;        // stage-2
+    reg  [15:0] u1_wave_code_q;      // stage-2（送下游的码值）
+    reg  [15:0] u2_wave_code_q;      // stage-2
+    reg  [15:0] u1_zero_code;        // stage-2（送下游的零码）
+    reg  [15:0] u2_zero_code;        // stage-2
     reg         sample_valid_q;     // stage-2（送下游的 valid）
 
     // ---- 零点跟踪（用 stage-1 的码值与 valid，输出在 stage-2 与码值同拍寄存）----
-    wire [15:0] u_zero_code_raw, i_zero_code_raw;
-    wire        u_zero_valid, i_zero_valid;
+    wire [15:0] u1_zero_code_raw, u2_zero_code_raw;
+    wire        u1_zero_valid, u2_zero_valid;
 
     time_zero_code_tracker #(
         .WIDTH(16), .EST_SHIFT(14), .WARMUP_SHIFT(10), .WARMUP_SAMPLES(4096)
-    ) u_zero_tracker_u (
+    ) u_zero_tracker_u1 (
         .clk(clk), .rst_n(rst_n),
-        .sample_valid(wave_sample_valid), .sample_code(u_wave_code),
-        .zero_code(u_zero_code_raw), .zero_valid(u_zero_valid)
+        .sample_valid(wave_sample_valid), .sample_code(u1_wave_code),
+        .zero_code(u1_zero_code_raw), .zero_valid(u1_zero_valid)
     );
 
     time_zero_code_tracker #(
         .WIDTH(16), .EST_SHIFT(14), .WARMUP_SHIFT(10), .WARMUP_SAMPLES(4096)
-    ) u_zero_tracker_i (
+    ) u_zero_tracker_u2 (
         .clk(clk), .rst_n(rst_n),
-        .sample_valid(wave_sample_valid), .sample_code(i_wave_code),
-        .zero_code(i_zero_code_raw), .zero_valid(i_zero_valid)
+        .sample_valid(wave_sample_valid), .sample_code(u2_wave_code),
+        .zero_code(u2_zero_code_raw), .zero_valid(u2_zero_valid)
     );
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            u_wave_code       <= 16'h8000;
-            i_wave_code       <= 16'h8000;
+            u1_wave_code       <= 16'h8000;
+            u2_wave_code       <= 16'h8000;
             wave_sample_valid <= 1'b0;
-            u_wave_code_q     <= 16'h8000;
-            i_wave_code_q     <= 16'h8000;
-            u_zero_code       <= 16'h8000;
-            i_zero_code       <= 16'h8000;
+            u1_wave_code_q     <= 16'h8000;
+            u2_wave_code_q     <= 16'h8000;
+            u1_zero_code       <= 16'h8000;
+            u2_zero_code       <= 16'h8000;
             sample_valid_q    <= 1'b0;
         end else begin
             // ---- stage-1 ----
             // 码值只在 frame_valid 那一拍锁存：那一拍 ad_ch1/ad_ch3 恰好是本帧值。
             if (ad_frame_valid) begin
-                u_wave_code <= ad_ch1 ^ 16'h8000;
-                i_wave_code <= ad_ch3 ^ 16'h8000;
+                u1_wave_code <= ad_ch1 ^ 16'h8000;
+                u2_wave_code <= ad_ch3 ^ 16'h8000;
             end
             // （首帧不再特殊抑制：TB 已在复位期把 ADC 模型初始化到中心码，
             //   首帧码值本身就是有效的；之前抑制首帧反而给跟踪器造出一个
@@ -217,10 +220,10 @@ module pqm_pl_top #(
             wave_sample_valid <= ad_frame_valid;
 
             // ---- stage-2 ----
-            u_wave_code_q <= u_wave_code;
-            i_wave_code_q <= i_wave_code;
-            u_zero_code   <= FORCE_ZERO_CENTER ? 16'h8000 : u_zero_code_raw;
-            i_zero_code   <= FORCE_ZERO_CENTER ? 16'h8000 : i_zero_code_raw;
+            u1_wave_code_q <= u1_wave_code;
+            u2_wave_code_q <= u2_wave_code;
+            u1_zero_code   <= FORCE_ZERO_CENTER ? 16'h8000 : u1_zero_code_raw;
+            u2_zero_code   <= FORCE_ZERO_CENTER ? 16'h8000 : u2_zero_code_raw;
             sample_valid_q <= wave_sample_valid;
         end
     end
@@ -231,7 +234,7 @@ module pqm_pl_top #(
     //   pqm_measurement_core 内部把去直流后的样本直接喂给 pqm_freq_analysis_rfg，
     //   RFG 自带 64 深取样 FIFO（pqm_sample_fifo，DEPTH=64），实测从未写满，够用。
     //   核心前方原先还挂了一级 pqm_rfg_sample_pump(128 深)，但它的 o_sample_valid/
-    //   o_sample_u/o_sample_i 在本链里没有任何消费者（纯死逻辑，综合会优化掉），已删除。
+    //   o_sample_u1/o_sample_u2 在本链里没有任何消费者（纯死逻辑，综合会优化掉），已删除。
     // ------------------------------------------------------------------
     wire        rfg_sample_ready;
 
@@ -240,7 +243,7 @@ module pqm_pl_top #(
     // ------------------------------------------------------------------
     wire         ps_harmonic_valid, ps_harmonic_last;
     wire [8:0]   ps_harmonic_index;
-    wire [31:0]  ps_harmonic_u_ratio, ps_harmonic_i_ratio;
+    wire [31:0]  ps_harmonic_u1_ratio, ps_harmonic_u2_ratio;
     wire [31:0]  ps_harmonic_phase, ps_harmonic_flags;
     wire         harmonic_ready;
 
@@ -250,15 +253,17 @@ module pqm_pl_top #(
     ) u_measurement_core (
         .clk                        (clk),
         .rst_n                      (rst_n),
+        // 阶段 1 起测量核心固定使用真实（小量程）满量程，本连接不再影响换算；
+        // 端口保留仅为不牵动顶层与 BD 端口表（low_range_active 仍对外输出作监测）。
         .full_scale_low_range_active(low_range_active),
-        .u_sample_valid             (sample_valid_q),
-        .u_sample_code              (u_wave_code_q),
-        .u_zero_code                (u_zero_code),
-        .u_zero_valid               (u_zero_valid),
-        .i_sample_valid             (sample_valid_q),
-        .i_sample_code              (i_wave_code_q),
-        .i_zero_code                (i_zero_code),
-        .i_zero_valid               (i_zero_valid),
+        .u1_sample_valid             (sample_valid_q),
+        .u1_sample_code              (u1_wave_code_q),
+        .u1_zero_code                (u1_zero_code),
+        .u1_zero_valid               (u1_zero_valid),
+        .u2_sample_valid             (sample_valid_q),
+        .u2_sample_code              (u2_wave_code_q),
+        .u2_zero_code                (u2_zero_code),
+        .u2_zero_valid               (u2_zero_valid),
         .ps_harmonic_ready          (harmonic_ready),
         .alarm_active               (alarm_active),
         .ps_snapshot_words          (ps_snapshot_words),
@@ -266,8 +271,8 @@ module pqm_pl_top #(
         .ps_harmonic_valid          (ps_harmonic_valid),
         .ps_harmonic_last           (ps_harmonic_last),
         .ps_harmonic_index          (ps_harmonic_index),
-        .ps_harmonic_u_ratio        (ps_harmonic_u_ratio),
-        .ps_harmonic_i_ratio        (ps_harmonic_i_ratio),
+        .ps_harmonic_u1_ratio        (ps_harmonic_u1_ratio),
+        .ps_harmonic_u2_ratio        (ps_harmonic_u2_ratio),
         .ps_harmonic_phase          (ps_harmonic_phase),
         .ps_harmonic_flags          (ps_harmonic_flags),
         .freq_sample_ready          (rfg_sample_ready)
@@ -293,7 +298,7 @@ module pqm_pl_top #(
     reg        hrm_hold;
     reg        hrm_valid_d;
     reg [8:0]  hrm_index_d;
-    reg [31:0] hrm_u_d, hrm_i_d, hrm_phase_d, hrm_flags_d;
+    reg [31:0] hrm_u1_d, hrm_u2_d, hrm_phase_d, hrm_flags_d;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -301,8 +306,8 @@ module pqm_pl_top #(
             hrm_start_pulse_ff <= 1'b0;
             hrm_valid_d        <= 1'b0;
             hrm_index_d        <= 9'd0;
-            hrm_u_d            <= 32'd0;
-            hrm_i_d            <= 32'd0;
+            hrm_u1_d            <= 32'd0;
+            hrm_u2_d            <= 32'd0;
             hrm_phase_d        <= 32'd0;
             hrm_flags_d        <= 32'd0;
         end else begin
@@ -316,16 +321,16 @@ module pqm_pl_top #(
                 hrm_hold    <= 1'b1;
 
                 hrm_index_d <= 9'd0;
-                hrm_u_d     <= ps_harmonic_u_ratio;
-                hrm_i_d     <= ps_harmonic_i_ratio;
+                hrm_u1_d     <= ps_harmonic_u1_ratio;
+                hrm_u2_d     <= ps_harmonic_u2_ratio;
                 hrm_phase_d <= ps_harmonic_phase;
                 hrm_flags_d <= ps_harmonic_flags;
             end else begin
                 // 常规：整条流打一拍
                 hrm_valid_d <= ps_harmonic_valid;
                 hrm_index_d <= ps_harmonic_index;
-                hrm_u_d     <= ps_harmonic_u_ratio;
-                hrm_i_d     <= ps_harmonic_i_ratio;
+                hrm_u1_d     <= ps_harmonic_u1_ratio;
+                hrm_u2_d     <= ps_harmonic_u2_ratio;
                 hrm_phase_d <= ps_harmonic_phase;
                 hrm_flags_d <= ps_harmonic_flags;
             end
@@ -364,6 +369,8 @@ module pqm_pl_top #(
     wire [31:0] command_code, command_argument, command_sequence;
     wire        command_response_ready;
     wire [31:0] command_response;
+    // 量程控制器的响应有效标志。内部使用：本模块不再把它做成 input 端口（见文件头）。
+    wire        command_response_valid;
     wire [31:0] snapshot_sequence, harmonic_generation;
     wire        active_harmonic_bank;
 
@@ -377,8 +384,8 @@ module pqm_pl_top #(
         .harmonic_valid(hrm_valid_d),
         .harmonic_ready(harmonic_ready),
         .harmonic_index(hrm_index_d),
-        .harmonic_u_ratio(hrm_u_d),
-        .harmonic_i_ratio(hrm_i_d),
+        .harmonic_u1_ratio(hrm_u1_d),
+        .harmonic_u2_ratio(hrm_u2_d),
         .harmonic_phase(hrm_phase_d),
         .harmonic_flags(hrm_flags_d),
         .command_valid(command_valid),
@@ -418,6 +425,6 @@ module pqm_pl_top #(
     wire _unused = &{1'b0, ad_sample_active, ad_timeout, ad_channal,
                      snapshot_ready, harmonic_start_ready, command_sequence,
                      snapshot_sequence, harmonic_generation, active_harmonic_bank,
-                     u_zero_valid, i_zero_valid, ad_frame};
+                     u1_zero_valid, u2_zero_valid, ad_frame};
 
 endmodule

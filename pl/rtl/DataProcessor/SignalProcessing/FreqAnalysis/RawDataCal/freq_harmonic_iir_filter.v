@@ -13,19 +13,19 @@
  *   s_harmonic_last: 当前输入是否为一帧谐波结果的最后一项。
  *   s_harmonic_order: 当前输入谐波次数。
  *   s_harmonic_present: 当前谐波在本帧中是否有效。
- *   s_u_real: 当前谐波电压通道实部。
- *   s_u_imag: 当前谐波电压通道虚部。
- *   s_i_real: 当前谐波电流通道实部。
- *   s_i_imag: 当前谐波电流通道虚部。
- *   s_u_mag: 当前谐波电压幅值。
- *   s_i_mag: 当前谐波电流幅值。
- *   s_u_pct_x100: 当前谐波电压幅值占比，单位为百分比 x100。
- *   s_i_pct_x100: 当前谐波电流幅值占比，单位为百分比 x100。
+ *   s_u1_real: 当前谐波U1通道实部。
+ *   s_u1_imag: 当前谐波U1通道虚部。
+ *   s_u2_real: 当前谐波U2通道实部。
+ *   s_u2_imag: 当前谐波U2通道虚部。
+ *   s_u1_mag: 当前谐波U1幅值。
+ *   s_u2_mag: 当前谐波U2幅值。
+ *   s_u1_pct_x100: 当前谐波U1幅值占比，单位为百分比 x100。
+ *   s_u2_pct_x100: 当前谐波U2幅值占比，单位为百分比 x100。
  *   s_phase_vector_valid: 当前 dot/cross 相位向量是否有效。
- *   s_phase_dot: 当前谐波 U-I 相位差 atan2 的同相投影。
- *   s_phase_cross: 当前谐波 U-I 相位差 atan2 的正交投影。
+ *   s_phase_dot: 当前谐波 U1-U2 相位差 atan2 的同相投影。
+ *   s_phase_cross: 当前谐波 U1-U2 相位差 atan2 的正交投影。
  *   s_phase_diff_valid: 当前相位差角度是否有效。
- *   s_phase_diff_deg_x100: 当前谐波 U-I 相位差角度，单位为度 x100。
+ *   s_phase_diff_deg_x100: 当前谐波 U1-U2 相位差角度，单位为度 x100。
  *   m_harmonic_ready: 下游接收滤波后谐波结果的 ready。
  * 输出:
  *   s_harmonic_ready: 本模块对上游谐波结果的 ready。
@@ -33,19 +33,19 @@
  *   m_harmonic_last: 滤波后当前项是否为一帧最后一项。
  *   m_harmonic_order: 滤波后结果对应的谐波次数。
  *   m_harmonic_present: 滤波后结果是否有效。
- *   m_u_real: 滤波后的电压通道实部。
- *   m_u_imag: 滤波后的电压通道虚部。
- *   m_i_real: 滤波后的电流通道实部。
- *   m_i_imag: 滤波后的电流通道虚部。
- *   m_u_mag: 滤波后的电压幅值。
- *   m_i_mag: 滤波后的电流幅值。
- *   m_u_pct_x100: 滤波后的电压幅值占比。
- *   m_i_pct_x100: 滤波后的电流幅值占比。
+ *   m_u1_real: 滤波后的U1通道实部。
+ *   m_u1_imag: 滤波后的U1通道虚部。
+ *   m_u2_real: 滤波后的U2通道实部。
+ *   m_u2_imag: 滤波后的U2通道虚部。
+ *   m_u1_mag: 滤波后的U1幅值。
+ *   m_u2_mag: 滤波后的U2幅值。
+ *   m_u1_pct_x100: 滤波后的U1幅值占比。
+ *   m_u2_pct_x100: 滤波后的U2幅值占比。
  *   m_phase_vector_valid: 滤波后 dot/cross 是否有效。
  *   m_phase_dot: 滤波后的同相投影。
  *   m_phase_cross: 滤波后的正交投影。
  *   m_phase_diff_valid: 滤波后相位差角度是否有效。
- *   m_phase_diff_deg_x100: 滤波后的 U-I 相位差角度。
+ *   m_phase_diff_deg_x100: 滤波后的 U1-U2 相位差角度。
  *   filtered_frame_count: 已输出完整滤波帧计数。
  */
 module freq_harmonic_iir_filter (
@@ -57,14 +57,14 @@ module freq_harmonic_iir_filter (
     input  wire               s_harmonic_last,
     input  wire [8:0]         s_harmonic_order,
     input  wire               s_harmonic_present,
-    input  wire signed [15:0] s_u_real,
-    input  wire signed [15:0] s_u_imag,
-    input  wire signed [15:0] s_i_real,
-    input  wire signed [15:0] s_i_imag,
-    input  wire [16:0]        s_u_mag,
-    input  wire [16:0]        s_i_mag,
-    input  wire [15:0]        s_u_pct_x100,
-    input  wire [15:0]        s_i_pct_x100,
+    input  wire signed [15:0] s_u1_real,
+    input  wire signed [15:0] s_u1_imag,
+    input  wire signed [15:0] s_u2_real,
+    input  wire signed [15:0] s_u2_imag,
+    input  wire [16:0]        s_u1_mag,
+    input  wire [16:0]        s_u2_mag,
+    input  wire [15:0]        s_u1_pct_x100,
+    input  wire [15:0]        s_u2_pct_x100,
     input  wire               s_phase_vector_valid,
     input  wire signed [32:0] s_phase_dot,
     input  wire signed [32:0] s_phase_cross,
@@ -75,14 +75,14 @@ module freq_harmonic_iir_filter (
     output wire               m_harmonic_last,
     output wire [8:0]         m_harmonic_order,
     output wire               m_harmonic_present,
-    output wire signed [15:0] m_u_real,
-    output wire signed [15:0] m_u_imag,
-    output wire signed [15:0] m_i_real,
-    output wire signed [15:0] m_i_imag,
-    output wire [16:0]        m_u_mag,
-    output wire [16:0]        m_i_mag,
-    output wire [15:0]        m_u_pct_x100,
-    output wire [15:0]        m_i_pct_x100,
+    output wire signed [15:0] m_u1_real,
+    output wire signed [15:0] m_u1_imag,
+    output wire signed [15:0] m_u2_real,
+    output wire signed [15:0] m_u2_imag,
+    output wire [16:0]        m_u1_mag,
+    output wire [16:0]        m_u2_mag,
+    output wire [15:0]        m_u1_pct_x100,
+    output wire [15:0]        m_u2_pct_x100,
     output wire               m_phase_vector_valid,
     output wire signed [32:0] m_phase_dot,
     output wire signed [32:0] m_phase_cross,
@@ -98,22 +98,22 @@ localparam signed [17:0] PHASE_360_X100 = 18'sd36000;
 localparam signed [18:0] PHASE_180_X100_WIDE = 19'sd18000;
 localparam signed [18:0] PHASE_360_X100_WIDE = 19'sd36000;
 
-localparam integer WORD_U_REAL_LSB = 0;
-localparam integer WORD_U_REAL_MSB = 15;
-localparam integer WORD_U_IMAG_LSB = 16;
-localparam integer WORD_U_IMAG_MSB = 31;
-localparam integer WORD_I_REAL_LSB = 32;
-localparam integer WORD_I_REAL_MSB = 47;
-localparam integer WORD_I_IMAG_LSB = 48;
-localparam integer WORD_I_IMAG_MSB = 63;
-localparam integer WORD_U_MAG_LSB = 64;
-localparam integer WORD_U_MAG_MSB = 80;
-localparam integer WORD_I_MAG_LSB = 81;
-localparam integer WORD_I_MAG_MSB = 97;
-localparam integer WORD_U_PCT_LSB = 98;
-localparam integer WORD_U_PCT_MSB = 113;
-localparam integer WORD_I_PCT_LSB = 114;
-localparam integer WORD_I_PCT_MSB = 129;
+localparam integer WORD_U1_REAL_LSB = 0;
+localparam integer WORD_U1_REAL_MSB = 15;
+localparam integer WORD_U1_IMAG_LSB = 16;
+localparam integer WORD_U1_IMAG_MSB = 31;
+localparam integer WORD_U2_REAL_LSB = 32;
+localparam integer WORD_U2_REAL_MSB = 47;
+localparam integer WORD_U2_IMAG_LSB = 48;
+localparam integer WORD_U2_IMAG_MSB = 63;
+localparam integer WORD_U1_MAG_LSB = 64;
+localparam integer WORD_U1_MAG_MSB = 80;
+localparam integer WORD_U2_MAG_LSB = 81;
+localparam integer WORD_U2_MAG_MSB = 97;
+localparam integer WORD_U1_PCT_LSB = 98;
+localparam integer WORD_U1_PCT_MSB = 113;
+localparam integer WORD_U2_PCT_LSB = 114;
+localparam integer WORD_U2_PCT_MSB = 129;
 localparam integer WORD_PHASE_DOT_LSB = 130;
 localparam integer WORD_PHASE_DOT_MSB = 162;
 localparam integer WORD_PHASE_CROSS_LSB = 163;
@@ -134,14 +134,14 @@ reg               stage_last;
 reg [8:0]         stage_order;
 reg               stage_in_range;
 reg               stage_present;
-reg signed [15:0] stage_u_real;
-reg signed [15:0] stage_u_imag;
-reg signed [15:0] stage_i_real;
-reg signed [15:0] stage_i_imag;
-reg [16:0]        stage_u_mag;
-reg [16:0]        stage_i_mag;
-reg [15:0]        stage_u_pct_x100;
-reg [15:0]        stage_i_pct_x100;
+reg signed [15:0] stage_u1_real;
+reg signed [15:0] stage_u1_imag;
+reg signed [15:0] stage_u2_real;
+reg signed [15:0] stage_u2_imag;
+reg [16:0]        stage_u1_mag;
+reg [16:0]        stage_u2_mag;
+reg [15:0]        stage_u1_pct_x100;
+reg [15:0]        stage_u2_pct_x100;
 reg               stage_phase_vector_valid;
 reg signed [32:0] stage_phase_dot;
 reg signed [32:0] stage_phase_cross;
@@ -153,14 +153,14 @@ reg               m_harmonic_valid_reg;
 reg               m_harmonic_last_reg;
 reg [8:0]         m_harmonic_order_reg;
 reg               m_harmonic_present_reg;
-reg signed [15:0] m_u_real_reg;
-reg signed [15:0] m_u_imag_reg;
-reg signed [15:0] m_i_real_reg;
-reg signed [15:0] m_i_imag_reg;
-reg [16:0]        m_u_mag_reg;
-reg [16:0]        m_i_mag_reg;
-reg [15:0]        m_u_pct_x100_reg;
-reg [15:0]        m_i_pct_x100_reg;
+reg signed [15:0] m_u1_real_reg;
+reg signed [15:0] m_u1_imag_reg;
+reg signed [15:0] m_u2_real_reg;
+reg signed [15:0] m_u2_imag_reg;
+reg [16:0]        m_u1_mag_reg;
+reg [16:0]        m_u2_mag_reg;
+reg [15:0]        m_u1_pct_x100_reg;
+reg [15:0]        m_u2_pct_x100_reg;
 reg               m_phase_vector_valid_reg;
 reg signed [32:0] m_phase_dot_reg;
 reg signed [32:0] m_phase_cross_reg;
@@ -179,38 +179,38 @@ wire              old_init;
 wire              old_vector_state_valid;
 wire              old_phase_state_valid;
 wire              clean_present;
-wire signed [15:0] clean_u_real;
-wire signed [15:0] clean_u_imag;
-wire signed [15:0] clean_i_real;
-wire signed [15:0] clean_i_imag;
-wire [16:0]       clean_u_mag;
-wire [16:0]       clean_i_mag;
-wire [15:0]       clean_u_pct_x100;
-wire [15:0]       clean_i_pct_x100;
+wire signed [15:0] clean_u1_real;
+wire signed [15:0] clean_u1_imag;
+wire signed [15:0] clean_u2_real;
+wire signed [15:0] clean_u2_imag;
+wire [16:0]       clean_u1_mag;
+wire [16:0]       clean_u2_mag;
+wire [15:0]       clean_u1_pct_x100;
+wire [15:0]       clean_u2_pct_x100;
 wire              clean_phase_vector_valid;
 wire signed [32:0] clean_phase_dot;
 wire signed [32:0] clean_phase_cross;
 wire              clean_phase_valid;
 wire signed [15:0] clean_phase_x100;
-wire signed [15:0] old_u_real;
-wire signed [15:0] old_u_imag;
-wire signed [15:0] old_i_real;
-wire signed [15:0] old_i_imag;
-wire [16:0]       old_u_mag;
-wire [16:0]       old_i_mag;
-wire [15:0]       old_u_pct_x100;
-wire [15:0]       old_i_pct_x100;
+wire signed [15:0] old_u1_real;
+wire signed [15:0] old_u1_imag;
+wire signed [15:0] old_u2_real;
+wire signed [15:0] old_u2_imag;
+wire [16:0]       old_u1_mag;
+wire [16:0]       old_u2_mag;
+wire [15:0]       old_u1_pct_x100;
+wire [15:0]       old_u2_pct_x100;
 wire signed [32:0] old_phase_dot;
 wire signed [32:0] old_phase_cross;
 wire signed [15:0] old_phase_x100;
-wire signed [15:0] next_u_real;
-wire signed [15:0] next_u_imag;
-wire signed [15:0] next_i_real;
-wire signed [15:0] next_i_imag;
-wire [16:0]       next_u_mag;
-wire [16:0]       next_i_mag;
-wire [15:0]       next_u_pct_x100;
-wire [15:0]       next_i_pct_x100;
+wire signed [15:0] next_u1_real;
+wire signed [15:0] next_u1_imag;
+wire signed [15:0] next_u2_real;
+wire signed [15:0] next_u2_imag;
+wire [16:0]       next_u1_mag;
+wire [16:0]       next_u2_mag;
+wire [15:0]       next_u1_pct_x100;
+wire [15:0]       next_u2_pct_x100;
 wire signed [32:0] next_phase_dot;
 wire signed [32:0] next_phase_cross;
 wire signed [17:0] unwrapped_phase_x100;
@@ -354,27 +354,27 @@ assign mem_read_addr    = input_index;
 assign old_init              = state_word_reg[WORD_INIT_BIT];
 assign old_vector_state_valid = old_init && state_word_reg[WORD_VECTOR_VALID_BIT];
 assign old_phase_state_valid = old_init && state_word_reg[WORD_PHASE_VALID_BIT];
-assign old_u_real            = state_word_reg[WORD_U_REAL_MSB:WORD_U_REAL_LSB];
-assign old_u_imag            = state_word_reg[WORD_U_IMAG_MSB:WORD_U_IMAG_LSB];
-assign old_i_real            = state_word_reg[WORD_I_REAL_MSB:WORD_I_REAL_LSB];
-assign old_i_imag            = state_word_reg[WORD_I_IMAG_MSB:WORD_I_IMAG_LSB];
-assign old_u_mag             = state_word_reg[WORD_U_MAG_MSB:WORD_U_MAG_LSB];
-assign old_i_mag             = state_word_reg[WORD_I_MAG_MSB:WORD_I_MAG_LSB];
-assign old_u_pct_x100        = state_word_reg[WORD_U_PCT_MSB:WORD_U_PCT_LSB];
-assign old_i_pct_x100        = state_word_reg[WORD_I_PCT_MSB:WORD_I_PCT_LSB];
+assign old_u1_real            = state_word_reg[WORD_U1_REAL_MSB:WORD_U1_REAL_LSB];
+assign old_u1_imag            = state_word_reg[WORD_U1_IMAG_MSB:WORD_U1_IMAG_LSB];
+assign old_u2_real            = state_word_reg[WORD_U2_REAL_MSB:WORD_U2_REAL_LSB];
+assign old_u2_imag            = state_word_reg[WORD_U2_IMAG_MSB:WORD_U2_IMAG_LSB];
+assign old_u1_mag             = state_word_reg[WORD_U1_MAG_MSB:WORD_U1_MAG_LSB];
+assign old_u2_mag             = state_word_reg[WORD_U2_MAG_MSB:WORD_U2_MAG_LSB];
+assign old_u1_pct_x100        = state_word_reg[WORD_U1_PCT_MSB:WORD_U1_PCT_LSB];
+assign old_u2_pct_x100        = state_word_reg[WORD_U2_PCT_MSB:WORD_U2_PCT_LSB];
 assign old_phase_dot         = state_word_reg[WORD_PHASE_DOT_MSB:WORD_PHASE_DOT_LSB];
 assign old_phase_cross       = state_word_reg[WORD_PHASE_CROSS_MSB:WORD_PHASE_CROSS_LSB];
 assign old_phase_x100        = state_word_reg[WORD_PHASE_MSB:WORD_PHASE_LSB];
 
 assign clean_present            = stage_present && stage_in_range;
-assign clean_u_real             = clean_present ? stage_u_real : 16'sd0;
-assign clean_u_imag             = clean_present ? stage_u_imag : 16'sd0;
-assign clean_i_real             = clean_present ? stage_i_real : 16'sd0;
-assign clean_i_imag             = clean_present ? stage_i_imag : 16'sd0;
-assign clean_u_mag              = clean_present ? stage_u_mag : 17'd0;
-assign clean_i_mag              = clean_present ? stage_i_mag : 17'd0;
-assign clean_u_pct_x100         = clean_present ? stage_u_pct_x100 : 16'd0;
-assign clean_i_pct_x100         = clean_present ? stage_i_pct_x100 : 16'd0;
+assign clean_u1_real             = clean_present ? stage_u1_real : 16'sd0;
+assign clean_u1_imag             = clean_present ? stage_u1_imag : 16'sd0;
+assign clean_u2_real             = clean_present ? stage_u2_real : 16'sd0;
+assign clean_u2_imag             = clean_present ? stage_u2_imag : 16'sd0;
+assign clean_u1_mag              = clean_present ? stage_u1_mag : 17'd0;
+assign clean_u2_mag              = clean_present ? stage_u2_mag : 17'd0;
+assign clean_u1_pct_x100         = clean_present ? stage_u1_pct_x100 : 16'd0;
+assign clean_u2_pct_x100         = clean_present ? stage_u2_pct_x100 : 16'd0;
 assign clean_phase_vector_valid = clean_present && stage_phase_vector_valid;
 assign clean_phase_dot          = clean_phase_vector_valid ? stage_phase_dot : 33'sd0;
 assign clean_phase_cross        = clean_phase_vector_valid ? stage_phase_cross : 33'sd0;
@@ -382,14 +382,14 @@ assign clean_phase_valid        = clean_present && stage_phase_diff_valid;
 assign clean_phase_x100         = clean_phase_valid ? stage_phase_diff_deg_x100 : 16'sd0;
 
 // 组合计算各字段下一次 IIR 状态；相位无效时保留上一有效相位状态。
-assign next_u_real      = smooth_signed16(old_init, old_u_real, clean_u_real);
-assign next_u_imag      = smooth_signed16(old_init, old_u_imag, clean_u_imag);
-assign next_i_real      = smooth_signed16(old_init, old_i_real, clean_i_real);
-assign next_i_imag      = smooth_signed16(old_init, old_i_imag, clean_i_imag);
-assign next_u_mag       = smooth_unsigned17(old_init, old_u_mag, clean_u_mag);
-assign next_i_mag       = smooth_unsigned17(old_init, old_i_mag, clean_i_mag);
-assign next_u_pct_x100  = smooth_unsigned16(old_init, old_u_pct_x100, clean_u_pct_x100);
-assign next_i_pct_x100  = smooth_unsigned16(old_init, old_i_pct_x100, clean_i_pct_x100);
+assign next_u1_real      = smooth_signed16(old_init, old_u1_real, clean_u1_real);
+assign next_u1_imag      = smooth_signed16(old_init, old_u1_imag, clean_u1_imag);
+assign next_u2_real      = smooth_signed16(old_init, old_u2_real, clean_u2_real);
+assign next_u2_imag      = smooth_signed16(old_init, old_u2_imag, clean_u2_imag);
+assign next_u1_mag       = smooth_unsigned17(old_init, old_u1_mag, clean_u1_mag);
+assign next_u2_mag       = smooth_unsigned17(old_init, old_u2_mag, clean_u2_mag);
+assign next_u1_pct_x100  = smooth_unsigned16(old_init, old_u1_pct_x100, clean_u1_pct_x100);
+assign next_u2_pct_x100  = smooth_unsigned16(old_init, old_u2_pct_x100, clean_u2_pct_x100);
 assign next_phase_dot   = clean_phase_vector_valid ? smooth_signed33(old_vector_state_valid, old_phase_dot, clean_phase_dot) : old_phase_dot;
 assign next_phase_cross = clean_phase_vector_valid ? smooth_signed33(old_vector_state_valid, old_phase_cross, clean_phase_cross) : old_phase_cross;
 
@@ -410,14 +410,14 @@ assign next_state_word          = {
     next_phase_x100,
     next_phase_cross,
     next_phase_dot,
-    next_i_pct_x100,
-    next_u_pct_x100,
-    next_i_mag,
-    next_u_mag,
-    next_i_imag,
-    next_i_real,
-    next_u_imag,
-    next_u_real
+    next_u2_pct_x100,
+    next_u1_pct_x100,
+    next_u2_mag,
+    next_u1_mag,
+    next_u2_imag,
+    next_u2_real,
+    next_u1_imag,
+    next_u1_real
 };
 
 // 对外导出滤波后的谐波流寄存器。
@@ -425,14 +425,14 @@ assign m_harmonic_valid      = m_harmonic_valid_reg;
 assign m_harmonic_last       = m_harmonic_last_reg;
 assign m_harmonic_order      = m_harmonic_order_reg;
 assign m_harmonic_present    = m_harmonic_present_reg;
-assign m_u_real              = m_u_real_reg;
-assign m_u_imag              = m_u_imag_reg;
-assign m_i_real              = m_i_real_reg;
-assign m_i_imag              = m_i_imag_reg;
-assign m_u_mag               = m_u_mag_reg;
-assign m_i_mag               = m_i_mag_reg;
-assign m_u_pct_x100          = m_u_pct_x100_reg;
-assign m_i_pct_x100          = m_i_pct_x100_reg;
+assign m_u1_real              = m_u1_real_reg;
+assign m_u1_imag              = m_u1_imag_reg;
+assign m_u2_real              = m_u2_real_reg;
+assign m_u2_imag              = m_u2_imag_reg;
+assign m_u1_mag               = m_u1_mag_reg;
+assign m_u2_mag               = m_u2_mag_reg;
+assign m_u1_pct_x100          = m_u1_pct_x100_reg;
+assign m_u2_pct_x100          = m_u2_pct_x100_reg;
 assign m_phase_vector_valid  = m_phase_vector_valid_reg;
 assign m_phase_dot           = m_phase_dot_reg;
 assign m_phase_cross         = m_phase_cross_reg;
@@ -458,14 +458,14 @@ always @(posedge clk or negedge rst_n) begin
         stage_order                 <= 9'd0;
         stage_in_range              <= 1'b0;
         stage_present               <= 1'b0;
-        stage_u_real                <= 16'sd0;
-        stage_u_imag                <= 16'sd0;
-        stage_i_real                <= 16'sd0;
-        stage_i_imag                <= 16'sd0;
-        stage_u_mag                 <= 17'd0;
-        stage_i_mag                 <= 17'd0;
-        stage_u_pct_x100            <= 16'd0;
-        stage_i_pct_x100            <= 16'd0;
+        stage_u1_real                <= 16'sd0;
+        stage_u1_imag                <= 16'sd0;
+        stage_u2_real                <= 16'sd0;
+        stage_u2_imag                <= 16'sd0;
+        stage_u1_mag                 <= 17'd0;
+        stage_u2_mag                 <= 17'd0;
+        stage_u1_pct_x100            <= 16'd0;
+        stage_u2_pct_x100            <= 16'd0;
         stage_phase_vector_valid    <= 1'b0;
         stage_phase_dot             <= 33'sd0;
         stage_phase_cross           <= 33'sd0;
@@ -475,14 +475,14 @@ always @(posedge clk or negedge rst_n) begin
         m_harmonic_last_reg         <= 1'b0;
         m_harmonic_order_reg        <= 9'd0;
         m_harmonic_present_reg      <= 1'b0;
-        m_u_real_reg                <= 16'sd0;
-        m_u_imag_reg                <= 16'sd0;
-        m_i_real_reg                <= 16'sd0;
-        m_i_imag_reg                <= 16'sd0;
-        m_u_mag_reg                 <= 17'd0;
-        m_i_mag_reg                 <= 17'd0;
-        m_u_pct_x100_reg            <= 16'd0;
-        m_i_pct_x100_reg            <= 16'd0;
+        m_u1_real_reg                <= 16'sd0;
+        m_u1_imag_reg                <= 16'sd0;
+        m_u2_real_reg                <= 16'sd0;
+        m_u2_imag_reg                <= 16'sd0;
+        m_u1_mag_reg                 <= 17'd0;
+        m_u2_mag_reg                 <= 17'd0;
+        m_u1_pct_x100_reg            <= 16'd0;
+        m_u2_pct_x100_reg            <= 16'd0;
         m_phase_vector_valid_reg    <= 1'b0;
         m_phase_dot_reg             <= 33'sd0;
         m_phase_cross_reg           <= 33'sd0;
@@ -510,14 +510,14 @@ always @(posedge clk or negedge rst_n) begin
                 m_harmonic_last_reg         <= stage_last;
                 m_harmonic_order_reg        <= stage_order;
                 m_harmonic_present_reg      <= clean_present;
-                m_u_real_reg                <= next_u_real;
-                m_u_imag_reg                <= next_u_imag;
-                m_i_real_reg                <= next_i_real;
-                m_i_imag_reg                <= next_i_imag;
-                m_u_mag_reg                 <= next_u_mag;
-                m_i_mag_reg                 <= next_i_mag;
-                m_u_pct_x100_reg            <= next_u_pct_x100;
-                m_i_pct_x100_reg            <= next_i_pct_x100;
+                m_u1_real_reg                <= next_u1_real;
+                m_u1_imag_reg                <= next_u1_imag;
+                m_u2_real_reg                <= next_u2_real;
+                m_u2_imag_reg                <= next_u2_imag;
+                m_u1_mag_reg                 <= next_u1_mag;
+                m_u2_mag_reg                 <= next_u2_mag;
+                m_u1_pct_x100_reg            <= next_u1_pct_x100;
+                m_u2_pct_x100_reg            <= next_u2_pct_x100;
                 m_phase_vector_valid_reg    <= clean_phase_vector_valid;
                 m_phase_dot_reg             <= clean_phase_vector_valid ? next_phase_dot : 33'sd0;
                 m_phase_cross_reg           <= clean_phase_vector_valid ? next_phase_cross : 33'sd0;
@@ -532,14 +532,14 @@ always @(posedge clk or negedge rst_n) begin
                 stage_order               <= input_index;
                 stage_in_range            <= (s_harmonic_order <= LAST_HARMONIC_ORDER);
                 stage_present             <= s_harmonic_present;
-                stage_u_real              <= s_u_real;
-                stage_u_imag              <= s_u_imag;
-                stage_i_real              <= s_i_real;
-                stage_i_imag              <= s_i_imag;
-                stage_u_mag               <= s_u_mag;
-                stage_i_mag               <= s_i_mag;
-                stage_u_pct_x100          <= s_u_pct_x100;
-                stage_i_pct_x100          <= s_i_pct_x100;
+                stage_u1_real              <= s_u1_real;
+                stage_u1_imag              <= s_u1_imag;
+                stage_u2_real              <= s_u2_real;
+                stage_u2_imag              <= s_u2_imag;
+                stage_u1_mag               <= s_u1_mag;
+                stage_u2_mag               <= s_u2_mag;
+                stage_u1_pct_x100          <= s_u1_pct_x100;
+                stage_u2_pct_x100          <= s_u2_pct_x100;
                 stage_phase_vector_valid  <= s_phase_vector_valid;
                 stage_phase_dot           <= s_phase_dot;
                 stage_phase_cross         <= s_phase_cross;

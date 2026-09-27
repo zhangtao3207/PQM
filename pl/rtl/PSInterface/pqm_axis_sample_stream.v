@@ -8,14 +8,14 @@
  * 输入端口：
  *   clk：AXI 样本流时钟。
  *   rst_n：低有效同步逻辑复位。
- *   sample_valid：ADC 电压和电流样本有效脉冲。
- *   u_sample：16 位电压原始样本。
- *   i_sample：16 位电流原始样本。
+ *   sample_valid：ADC U1 和 U2样本有效脉冲。
+ *   u1_sample：16 位U1原始样本。
+ *   u2_sample：16 位U2原始样本。
  *   m_axis_tready：下游允许接收当前 AXI 数据。
  * 输出端口：
  *   source_sequence：下一个源样本的递增序号。
  *   drop_count：因下游反压而丢弃的饱和计数。
- *   m_axis_tdata：源序号、电流和电压组成的 64 位数据。
+ *   m_axis_tdata：源序号、U2和U1组成的 64 位数据。
  *   m_axis_tvalid：当前 AXI 数据有效标志。
  *   m_axis_tlast：每 FRAME_SAMPLES 个已接收样本产生的帧尾标志。
  * 双向端口：无。
@@ -26,8 +26,8 @@ module pqm_axis_sample_stream #(
     input  wire        clk,
     input  wire        rst_n,
     input  wire        sample_valid,
-    input  wire [15:0] u_sample,
-    input  wire [15:0] i_sample,
+    input  wire [15:0] u1_sample,
+    input  wire [15:0] u2_sample,
     output reg  [31:0] source_sequence,
     output reg  [31:0] drop_count,
     output reg  [63:0] m_axis_tdata,
@@ -87,7 +87,7 @@ always @(posedge clk) begin
         end
 
         if (sample_valid && output_available) begin
-            m_axis_tdata  <= {source_sequence, i_sample, u_sample};
+            m_axis_tdata  <= {source_sequence, u2_sample, u1_sample};
             m_axis_tvalid <= 1'b1;
             m_axis_tlast  <= load_tlast;
         end else if (axis_transfer) begin

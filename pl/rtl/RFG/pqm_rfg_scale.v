@@ -39,10 +39,10 @@ module pqm_rfg_scale #(
     input  wire               i_item_valid,
     output wire               o_item_ready,
     input  wire [8:0]         i_order,
-    input  wire signed [31:0] i_u_real,
-    input  wire signed [31:0] i_u_imag,
-    input  wire signed [31:0] i_i_real,
-    input  wire signed [31:0] i_i_imag,
+    input  wire signed [31:0] i_u1_real,
+    input  wire signed [31:0] i_u1_imag,
+    input  wire signed [31:0] i_u2_real,
+    input  wire signed [31:0] i_u2_imag,
     input  wire               i_item_last,
 
     // 下游：与 fft_result_receiver 的输出同名同形
@@ -50,10 +50,10 @@ module pqm_rfg_scale #(
     input  wire               m_bin_ready,
     output wire               m_bin_last,
     output wire [10:0]        m_bin_index,
-    output wire signed [15:0] m_u_real,
-    output wire signed [15:0] m_u_imag,
-    output wire signed [15:0] m_i_real,
-    output wire signed [15:0] m_i_imag,
+    output wire signed [15:0] m_u1_real,
+    output wire signed [15:0] m_u1_imag,
+    output wire signed [15:0] m_u2_real,
+    output wire signed [15:0] m_u2_imag,
     output wire               o_frame_done
 );
 
@@ -66,10 +66,10 @@ module pqm_rfg_scale #(
     // （每个静默次的负残差都朝 -inf 舍），而静默次噪声会抬高"总幅值"、
     // 从而把所有占比整体压低。四舍五入把该偏置大致砍半。
     localparam signed [31:0] ROUND_BIAS = 32'sd1 <<< (SHIFT - 1);
-    assign m_u_real = (i_u_real + ROUND_BIAS) >>> SHIFT;
-    assign m_u_imag = (i_u_imag + ROUND_BIAS) >>> SHIFT;
-    assign m_i_real = (i_i_real + ROUND_BIAS) >>> SHIFT;
-    assign m_i_imag = (i_i_imag + ROUND_BIAS) >>> SHIFT;
+    assign m_u1_real = (i_u1_real + ROUND_BIAS) >>> SHIFT;
+    assign m_u1_imag = (i_u1_imag + ROUND_BIAS) >>> SHIFT;
+    assign m_u2_real = (i_u2_real + ROUND_BIAS) >>> SHIFT;
+    assign m_u2_imag = (i_u2_imag + ROUND_BIAS) >>> SHIFT;
 
     // 末项握手完成即一帧结束
     reg frame_done_reg;

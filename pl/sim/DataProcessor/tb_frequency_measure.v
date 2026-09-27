@@ -3,7 +3,7 @@
 /*
  * 模块: tb_frequency_measure
  * 功能:
- *   frequency_measure 的单元测试平台：在采样窗口内检测电压正向峰值，
+ *   frequency_measure 的单元测试平台：在采样窗口内检测U1正向峰值，
  *   输出相邻两次峰值之间的时钟计数。
  *
  *   计数约定：sample_clk_cnt 在进入采集后每拍加一，第 k 个采样时可见值为 k-1；

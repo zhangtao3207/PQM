@@ -3,10 +3,10 @@
 /*
  * 模块: tb_power_metrics_calc
  * 功能:
- *   power_metrics_calc 的单元测试平台：由 U/I 的 RMS raw、同窗口平均有功功率 raw
+ *   power_metrics_calc 的单元测试平台：由 U1/U2 的 RMS raw、同窗口平均有功功率 raw
  *   和时域相位 raw 算出视在功率、无功功率与功率因数。
  *
- *   激励选取：u_rms=1000、i_rms=500 时 S=500000；取 P=400000 则
+ *   激励选取：u1_rms=1000、u2_rms=500 时 S=500000；取 P=400000 则
  *     PF = |P|/S = 0.8，量纲 x10000 即 8000；
  *     Q  = sqrt(S^2 - P^2) = sqrt(500000^2 - 400000^2) = 300000。
  *   全是整数，可以精确手算。
@@ -18,7 +18,7 @@
  *     2) 滞后（offset=800/period=1000）  -> Q=-300000，其余同场景 1
  *     3) 有功为负 P=-400000             -> PF=-8000, P=-400000, Q=+300000
  *     4) PF 超过 1（P=600000 > S）       -> PF 裁到 +10000，Q=0
- *     5) S=0（i_rms=0）                 -> PF=0, Q=0, S=0
+ *     5) S=0（u2_rms=0）                 -> PF=0, Q=0, S=0
  *     6) 有效标志缺失                    -> 只给 done，不给 valid
  */
 
@@ -32,8 +32,8 @@ module tb_power_metrics_calc;
     reg start = 1'b0;
     reg rms_valid = 1'b1;
     reg active_p_valid = 1'b1;
-    reg signed [15:0] u_rms_code = 16'sd0;
-    reg signed [15:0] i_rms_code = 16'sd0;
+    reg signed [15:0] u1_rms_code = 16'sd0;
+    reg signed [15:0] u2_rms_code = 16'sd0;
     reg signed [31:0] active_p_input_raw = 32'sd0;
     reg signed [31:0] phase_offset_raw = 32'sd0;
     reg signed [31:0] phase_period_raw = 32'sd1000;
@@ -60,8 +60,8 @@ module tb_power_metrics_calc;
         .start(start),
         .rms_valid(rms_valid),
         .active_p_valid(active_p_valid),
-        .u_rms_code(u_rms_code),
-        .i_rms_code(i_rms_code),
+        .u1_rms_code(u1_rms_code),
+        .u2_rms_code(u2_rms_code),
         .active_p_input_raw(active_p_input_raw),
         .phase_offset_raw(phase_offset_raw),
         .phase_period_raw(phase_period_raw),
@@ -77,8 +77,8 @@ module tb_power_metrics_calc;
 
     // 在时钟低电平期间改变激励，避免与 posedge 采样撞在同一个时间步里
     task issue_start;
-        input signed [15:0] u_code;
-        input signed [15:0] i_code;
+        input signed [15:0] u1_code;
+        input signed [15:0] u2_code;
         input signed [31:0] p_raw;
         input signed [31:0] off_raw;
         input signed [31:0] per_raw;
@@ -87,8 +87,8 @@ module tb_power_metrics_calc;
         input ph_v;
         begin
             @(negedge clk);
-            u_rms_code          = u_code;
-            i_rms_code          = i_code;
+            u1_rms_code          = u1_code;
+            u2_rms_code          = u2_code;
             active_p_input_raw  = p_raw;
             phase_offset_raw    = off_raw;
             phase_period_raw    = per_raw;
