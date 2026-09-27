@@ -192,14 +192,14 @@ initial begin
     @(negedge clk);
     harmonic_frame_start = 1'b0;
     wait (!harmonic_start_ready);
-    for (check_index = 0; check_index <= 64; check_index = check_index + 1) begin
+    for (check_index = 0; check_index <= 63; check_index = check_index + 1) begin
         send_harmonic_entry(check_index[8:0]);
     end
     wait (harmonic_start_ready);
     @(negedge clk);
 
     if (bram[`PQM_SHM_HARMONIC_BANK1_WORD] != 32'h10000000) $fatal(1, "harmonic bank first entry mismatch");
-    if (bram[`PQM_SHM_HARMONIC_BANK1_WORD + (64 << 2) + 3] != 32'h40000040) $fatal(1, "harmonic bank last entry mismatch");
+    if (bram[`PQM_SHM_HARMONIC_BANK1_WORD + (63 << 2) + 3] != 32'h4000003F) $fatal(1, "harmonic bank last entry mismatch");
     if (bram[`PQM_SHM_HARMONIC_GENERATION_WORD] != 32'd1) $fatal(1, "harmonic generation mismatch");
     if (!active_harmonic_bank) $fatal(1, "harmonic bank did not switch");
 

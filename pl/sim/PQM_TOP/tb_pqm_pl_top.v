@@ -16,7 +16,7 @@
  *     2b 零点跟踪收敛到中心码 0x8000 附近且 zero_valid 拉高
  *   第 3 环 RFG 频域链
  *     3a RFG 取样口出现（样本由测量核心直接送入，一致性见 3in）
- *     3b 每帧产出 65 个谐波条目，帧尾 index = 64
+ *     3b 每帧产出 64 个谐波条目，帧尾 index = 63
  *     3c 1 次谐波 present，u 占比落在解析值 7142 附近
  *   第 4 环 时域链 + 快照
  *     4a 快照提交 toggle 翻转
@@ -430,10 +430,10 @@ module tb_pqm_pl_top;
             $display("FAIL: 3a 谐波帧数=%0d，期望 >= 2", harm_frames);
             err = err + 1;
         end
-        // ABI 收敛后核心每帧固定输出 0..64 共 65 条（harmonic_stats 的 MAX_ORDER=64，
-        // 与 RFG 取点 C_K=64 一致）。这里判"帧尾 index = 64"。
-        if (harm_last_index_seen != 64) begin
-            $display("FAIL: 3b 帧尾 index=%0d，期望 64", harm_last_index_seen);
+        // ABI 收敛后核心每帧固定输出 0..63 共 64 条（harmonic_stats 的 MAX_ORDER=63，
+        // 与 RFG 取点 C_K=64 一致）。这里判"帧尾 index = 63"。
+        if (harm_last_index_seen != 63) begin
+            $display("FAIL: 3b 帧尾 index=%0d，期望 63", harm_last_index_seen);
             err = err + 1;
         end
         if (harm_h1_present != 1) begin
@@ -514,10 +514,10 @@ module tb_pqm_pl_top;
             $display("FAIL: 5abi 1 次谐波 present 位=0");
             err = err + 1;
         end
-        // ABI 条目收敛为 0..64 共 65 条；RFG 取点 C_K=64，所以窗口内有值（present=1）的
-        // 最大 index 恰为 64。这里仍按两家 bank 全窗口扫描，确认没有越窗写入。
-        if (rb_max_idx != 64) begin
-            $display("FAIL: 5abi 共享内存里最大 present index=%0d，期望 64", rb_max_idx);
+        // ABI 条目为 0..63 共 64 条；RFG 取点 C_K=64，所以窗口内有值（present=1）的
+        // 最大 index 恰为 63。这里仍按两家 bank 全窗口扫描，确认没有越窗写入。
+        if (rb_max_idx != 63) begin
+            $display("FAIL: 5abi 共享内存里最大 present index=%0d，期望 63", rb_max_idx);
             err = err + 1;
         end
 

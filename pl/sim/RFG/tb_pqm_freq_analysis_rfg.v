@@ -20,7 +20,7 @@ module tb_pqm_freq_analysis_rfg;
     localparam integer WATCHDOG_NS = 20000000;
     localparam integer C_N         = 512;
     localparam integer C_K         = 64;
-    localparam integer HARM_ORDERS = 65;     // harmonic_stats 输出 0..64
+    localparam integer HARM_ORDERS = 64;     // harmonic_stats 输出 0..63
     localparam integer FRAMES      = 2;
 
     reg clk = 1'b0;

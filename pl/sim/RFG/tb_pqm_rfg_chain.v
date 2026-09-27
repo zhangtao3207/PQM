@@ -17,7 +17,7 @@
  *     u 1 次 = 1000/1400*10000 = 7142.9 -> 缩放截断后约 7139
  *     u 3 次 =  400/1400*10000 = 2857.1 -> 约 2861
  *     i 1 次 = 100%（单一谐波）
- *     0 次 = 0（零均值）；ABI 收敛后只输出 0..64 共 65 条，65 次以上不再出现在窗口内
+ *     0 次 = 0（零均值）；ABI 收敛后只输出 0..63 共 64 条，64 次以上不再出现在窗口内
  */
 
 module tb_pqm_rfg_chain;
@@ -29,7 +29,7 @@ module tb_pqm_rfg_chain;
     localparam integer C_L         = 4;
     localparam integer C_D         = 1;
     localparam integer SHIFT       = 10;
-    localparam integer HARM_ORDERS = 65;       // harmonic_stats 输出 0..64（ABI 条目 65 条）
+    localparam integer HARM_ORDERS = 64;       // harmonic_stats 输出 0..63（ABI 条目 64 条）
     localparam integer FUND_BIN    = 1;        // 与 freq_analysis_top 一致
 
     reg clk = 1'b0;
@@ -241,8 +241,8 @@ module tb_pqm_rfg_chain;
         $display("次数 :  u_pct  i_pct  present");
         for (i = 0; i <= 5; i = i + 1)
             $display("  %0d  : %6d %6d     %0d", i, upct[i], ipct[i], upres[i]);
-        $display("  64 : %6d %6d     %0d", upct[64], ipct[64], upres[64]);
-        $display("  帧尾 order = %0d（期望 64）", hs_last_order);
+        $display("  63 : %6d %6d     %0d", upct[63], ipct[63], upres[63]);
+        $display("  帧尾 order = %0d（期望 63）", hs_last_order);
         $display("u_total_mag = %0d，i_total_mag = %0d", hs_u_total, hs_i_total);
 
         // 结构
@@ -265,15 +265,15 @@ module tb_pqm_rfg_chain;
         check_val(upct[1], 7139,  60, "1 次 u_pct");
         check_val(upct[3], 2861,  60, "3 次 u_pct");
         check_val(ipct[1], 9999,  20, "1 次 i_pct（单一谐波应≈10000）");
-        for (i = 2; i <= C_K; i = i + 1) begin
+        for (i = 2; i < HARM_ORDERS; i = i + 1) begin
             if (i == 3) continue;
             // RFG 的量化噪声底约 = 1 LSB（>>10 之后），单次占比 1*10000/total(~401) ≈ 24，
             // 所以静默次的门限放到 30（即允许 1 LSB 残留），这是精度特性不是缺陷。
             check_val(upct[i], 0, 30, "静默次 u_pct");
             check_val(ipct[i], 0, 30, "静默次 i_pct");
         end
-        // ABI 收敛后不再输出 65..500 次条目，改为确认帧尾标志恰落在 64 次。
-        check_val(hs_last_order, 64, 0, "帧尾 order");
+        // ABI 收敛后不再输出 64..500 次条目，改为确认帧尾标志恰落在 63 次。
+        check_val(hs_last_order, 63, 0, "帧尾 order");
 
         if (errors == 0) begin
             $display("");

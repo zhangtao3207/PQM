@@ -49,11 +49,11 @@
 `define PQM_SHM_COUNTER_SAMPLE_DROP_WORD     32'h000000A0
 
 // 双 bank 谐波窗口，每项依次为 U、I、相位和标志四个 word。
-// ABI 条目数收敛为 65 条（0..64）：帧尾 index = PQM_SHM_HARMONIC_LAST_INDEX = 64，
+// ABI 条目数为 64 条（0..63）：帧尾 index = PQM_SHM_HARMONIC_LAST_INDEX = 63，
 // 与 harmonic_stats 的 MAX_ORDER、RFG 取点 C_K=64 一致。
 `define PQM_SHM_HARMONIC_BANK0_WORD          32'h00000400
 `define PQM_SHM_HARMONIC_BANK1_WORD          32'h00000C00
 `define PQM_SHM_HARMONIC_ENTRY_WORDS         32'h00000004
-`define PQM_SHM_HARMONIC_LAST_INDEX          32'h00000040
+`define PQM_SHM_HARMONIC_LAST_INDEX          32'h0000003F
 
 `endif

@@ -4,7 +4,7 @@
  * 模块: harmonic_stats
  * 功能:
  *   接收一帧正半谱幅值结果，统计 0~500 次谐波的 U/I 幅值及其占总幅值百分比，
- *   并按 MAX_ORDER 输出 0~64 次条目（RFG 取点 C_K=64，65 次以上无信息量）。
+ *   并按 MAX_ORDER 输出 0~63 次条目（RFG 取点 C_K=64，64 次以上无信息量）。
  *   本模块同时用块 RAM 缓存每次谐波的 real/imag，供后续 U-I 相位差计算模块使用。
  *
  * 输入:
@@ -25,7 +25,7 @@
  * 输出:
  *   s_mag_ready: 本模块对上游幅值结果流的接收就绪标志。
  *   m_harmonic_valid: 谐波统计结果有效标志。
- *   m_harmonic_last: 0~MAX_ORDER（64）次谐波统计结果的最后一项标志。
+ *   m_harmonic_last: 0~MAX_ORDER（63）次谐波统计结果的最后一项标志。
  *   m_harmonic_order: 当前输出的谐波次数。
  *   m_harmonic_present: 当前谐波在本帧中是否被捕获。
  *   m_u_real: 当前谐波电压通道实部。
@@ -38,7 +38,7 @@
  *   m_i_pct_x100: 当前谐波电流幅值占本帧电流总幅值的百分比，100.00% 表示为 10000。
  *   stats_busy: 当前正在接收、归一化或输出一帧谐波统计结果。
  *   capture_frame_done: 已捕获一帧上游幅值结果的单周期脉冲。
- *   harmonic_frame_done: 0~MAX_ORDER（64）次谐波统计结果已输出完毕的单周期脉冲。
+ *   harmonic_frame_done: 0~MAX_ORDER（63）次谐波统计结果已输出完毕的单周期脉冲。
  *   harmonic_frame_count: 已输出完成的谐波统计帧计数。
  *   u_total_mag: 本帧 0~500 次谐波的电压幅值总和。
  *   i_total_mag: 本帧 0~500 次谐波的电流幅值总和。
@@ -87,7 +87,7 @@ localparam [2:0] ST_READ     = 3'd3;
 localparam [2:0] ST_LOAD     = 3'd4;
 localparam [2:0] ST_DIVIDE   = 3'd5;
 localparam [2:0] ST_OUTPUT   = 3'd6;
-localparam [8:0] MAX_ORDER   = 9'd64;
+localparam [8:0] MAX_ORDER   = 9'd63;
 localparam [10:0] MAX_BIN_FUND1 = 11'd500;
 localparam [10:0] MAX_BIN_FUND2 = 11'd1000;
 localparam signed [15:0] PERCENT_SCALE = 16'sd10000;
@@ -131,8 +131,8 @@ reg               u_pct_bypass_reg;
 reg               i_pct_bypass_reg;
 
 // 缓存按 bin 号索引（FUND_BIN=1 时最大 bin = MAX_BIN_FUND1 = 500），因此深度必须保持 501；
-// 与输出条目数 MAX_ORDER 无关，MAX_ORDER 只约束输出扫描范围 0..64；
-// 因此 ST_CLEAR 只清 0..64（65 拍），65..500 的残留不会被读（输出只扫 0..64）。
+// 与输出条目数 MAX_ORDER 无关，MAX_ORDER 只约束输出扫描范围 0..63；
+// 因此 ST_CLEAR 只清 0..63（64 拍），64..500 的残留不会被读（输出只扫 0..63）。
 (* ram_style = "block" *) reg [HARMONIC_WORD_WIDTH-1:0] harmonic_mem [0:500];
 reg [HARMONIC_WORD_WIDTH-1:0] harmonic_read_data;
 
