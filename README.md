@@ -88,6 +88,12 @@ powershell -ExecutionPolicy Bypass -File scripts\run_xsim.ps1 -All
 
 # 4. 烧录并读值（板子通电、JTAG 接着）
 & 'D:\zt\Xilinx\Vitis\2022.2\bin\xsdb.bat' scripts\flash_meas.tcl
+
+# 5. SD 卡启动镜像（可选）：FSBL + 比特流 + 应用 ELF -> BOOT.BIN
+#    前提：1 与 2 都已产出（vivado/pqm2_meas.bit、平台自带的 fsbl.elf、pqm2_app.elf）
+#    -CopyTo <盘符>\ 会把 BOOT.BIN 拷过去，并先备份同名旧文件、拷完校验 SHA256
+powershell -ExecutionPolicy Bypass -File scripts\build_boot_image.ps1
+powershell -ExecutionPolicy Bypass -File scripts\build_boot_image.ps1 -CopyTo F:\
 ```
 
 USB 线接开发板 JTAG 口，板子供电；运行前需确保没有别的进程占着 hw_target。上板逐步验证清单见 `docs/BOARD_VERIFY.md`。
