@@ -31,9 +31,9 @@
 #define PQMUI_HARMONIC_POINTS   16
 #define PQMUI_HARMONIC_STEP     16
 #define PQMUI_HARMONIC_MAX_START 48
-/* 频域图的横坐标刻度：每 4 根标一次，写绝对谐波号。
- * 第 1 页 0/4/8/12，第 2 页 16/20/24/28，依此类推，共 4 个标签。 */
-#define PQMUI_HARMONIC_TICK_STEP  4
+/* 频域图的横坐标刻度：每 2 根标一次，写绝对谐波号。
+ * 第 1 页 0/2/4/…/14，第 2 页 16/18/…/30，依此类推，共 8 个标签。 */
+#define PQMUI_HARMONIC_TICK_STEP  2
 #define PQMUI_HARMONIC_TICK_COUNT (PQMUI_HARMONIC_POINTS / PQMUI_HARMONIC_TICK_STEP)
 
 /* 时域图表纵轴满刻度：波形按“占本通道满量程的百分比”绘制。
