@@ -87,6 +87,9 @@ foreach ($e in $names) {
     Write-Host ("  [{0}] {1} = {2}   (raw {3})" -f $ok, $e.n, (Fmt-X100 $raw), $raw)
 }
 Write-Host ("  validity word0x1F = 0x{0:X8} ; alarm word0x1E = 0x{1:X8} (bit0 alarm_active={2})" -f $valid, $alarm, ($alarm -band 1))
+# 缺陷 3：饱和/溢出可见位（bit15..12，ABI 偏移未变）
+Write-Host ("    数据可信度位： bit12 去零点饱和={0}  bit13 RFG 溢出={1}  bit14 FIFO 溢出={2}（三者皆为粘滞位，复位后置 1 保持）" -f `
+    (($valid -shr 12) -band 1), (($valid -shr 13) -band 1), (($valid -shr 14) -band 1))
 
 foreach ($bank in @( @{ i = 0; base = 0x400 }, @{ i = 1; base = 0xC00 } )) {
     $base = $bank.base

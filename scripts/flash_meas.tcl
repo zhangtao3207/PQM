@@ -17,6 +17,11 @@
 #     对照实验：scripts/probe_mrd_count.tcl（count=1/2/4/16/64 全 OK，-bin 全 FAIL）。
 #     所以这里用 64 字一拍的 `mrd -force <addr> <n>`，自己解析 "addr: value" 行。
 #  3) 抓两次（间隔 1 秒）：两个计数器必须推进，否则说明读到的不是活数据。
+#  4) 冷启动时 DAP 会停在错误态，必须先解锁；但**解锁用的 `rst -system` 之后要留足时间**，
+#     否则紧跟的 ps7_init 会在 DDR 寄存器（0xF8006078）报
+#       "Memory read error ... Blocked address ... Access can hang PS interconnect"
+#     （实测：同一地址在 DAP 稳定后、任何复位方式下都读得通，当前值 0x00455111）。
+#     所以这里把 ps7_init 包成「失败→系统复位→重试」的循环。
 # ============================================================================
 set repo_dir {C:/Users/zhangtao/Desktop/PQM2}
 set bit_file [file join $repo_dir build vitis_ws_meas pqm2_hw hw pqm2_meas.bit]
@@ -76,23 +81,82 @@ connect
 #   DAP (AHB AP transaction error, DAP status 0x30000021)
 # 此时 APU target 不可见、直接 targets -set APU* 会 "no targets found"。
 # 恢复办法：先在 DAP 上发一次系统复位把 DAP 解锁，APU/Cortex-A9 就会回来。
-if {[catch {targets -set -filter {name =~ "APU*"}} e]} {
-    plog "APU target 不可见（$e），经 DAP 发系统复位解锁"
+proc ensure_apu {} {
+    if {[catch {targets -set -filter {name =~ "APU*"}} e]} {
+        plog "APU target 不可见（$e），经 DAP 发系统复位解锁"
+        catch {targets -set -filter {name =~ "DAP*"}}
+        catch {rst -system}
+        after 2500
+        targets -set -filter {name =~ "APU*"}
+        plog "DAP 已解锁，APU target 可见"
+        return 1
+    }
+    return 0
+}
+
+# 探测 PS 寄存器是否可读（ps7_init 失败的先行指标）
+proc ps_reg_readable {} {
+    if {[catch {mrd -force 0xF8006078} v]} { return 0 }
+    return 1
+}
+
+# 不管 DAP 是否健康，ps7_init 之前都必须把 PS 复位一次。
+#   原因（实测踩到）：上一次烧的应用如果还在跑，它的 SCU 定时器和 GIC 使能位仍然有效。
+#   直接盖上一遍 ps7_init 会把这套残留中断留给新应用 —— 新应用在 timer_init() 里注册
+#   XIL_EXCEPTION_ID_INT *之前* 就吃到 IRQ，直接落到 Xil_ExceptionNullHandler
+#   （实测 PC = 0x001a0d1c、CPSR 停在 IRQ 模式），显示通路一行都跑不到
+#   （VDMA CR=0x00010002、VTC=0x00000000，画面里只剩被 ELF 覆盖一半的旧残像）。
+#   现场对比：冷启动那次因 DAP 错误态已经复位过，所以正常；DAP 健康那次没复位，就中招。
+if {[ensure_apu]} {
+    after 1500
+} else {
     catch {targets -set -filter {name =~ "DAP*"}}
     catch {rst -system}
-    after 1500
+    after 2500
     targets -set -filter {name =~ "APU*"}
-    plog "DAP 已解锁，APU target 可见"
 }
-catch {rst -system}
-after 1000
 if {[catch {fpga -file $bit_file} e]} { plog "fpga 失败: $e" } else { plog "PL 已配置" }
+
+# ps7_init：DAP 刚复位完时可能还没稳，会以 "Blocked address" 报错中止；中途失败的 PS
+# 处于半初始化态，必须整段重来。最多试 4 次。
+set ps7_ok 0
+for {set attempt 1} {$attempt <= 4} {incr attempt} {
+    targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}
+    catch {stop}
+    after 300
+    if {![ps_reg_readable]} {
+        plog "第 $attempt 次：0xF8006078 暂不可读，先系统复位"
+        catch {targets -set -filter {name =~ "DAP*"}}
+        catch {rst -system}
+        after 3000
+        ensure_apu
+        after 1500
+        continue
+    }
+    source $ps7_init
+    if {![catch {ps7_init} e]} {
+        if {![catch {ps7_post_config} e2]} {
+            set ps7_ok 1
+            plog "ps7 init 完成（第 $attempt 次）"
+            break
+        }
+        plog "第 $attempt 次 ps7_post_config 失败: $e2"
+    } else {
+        plog "第 $attempt 次 ps7_init 失败: $e"
+    }
+    catch {targets -set -filter {name =~ "DAP*"}}
+    catch {rst -system}
+    after 3000
+    ensure_apu
+    after 1500
+}
+if {!$ps7_ok} { plog "ERROR: ps7_init 连续 4 次失败，中止"; close $::fh; return }
+
+# 下载 ELF 前把核复位一次：清掉 CPSR 的 I 位（上一次应用可能留着中断使能）与残留挂起中断，
+# 让新应用从复位状态起步。
 targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}
-catch {stop}
-source $ps7_init
-ps7_init
-ps7_post_config
-plog "ps7 init 完成"
+catch {rst -processor}
+after 300
 if {[catch {dow $elf_file} e]} { plog "dow 失败: $e" } else { plog "ELF 已下载" }
 catch {con}
 

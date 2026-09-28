@@ -3,6 +3,8 @@ export/
 build/
 generated/
 sdk_workspace/
+# XSCT 每次运行都会在仓库根建一个 .Xil/XSCT-<pid>-<host>/ 临时目录（本次会话就攒了 14 个）
+.Xil/
 # xsim 在仓库根异常退出时留下的产物（构建产物应落在 pl/sim/build/）
 xsim.dir/
 *.jou

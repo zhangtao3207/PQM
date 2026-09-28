@@ -29,7 +29,7 @@ function Resolve-Xsct {
 }
 
 $xsct = Resolve-Xsct
-$script = Join-Path $PSScriptRoot 'create_workspace.tcl'
+$script = Join-Path $PSScriptRoot 'create_workspace_meas.tcl'
 if (-not (Test-Path -LiteralPath $script)) {
     throw "Tcl script not found: $script"
 }
@@ -50,7 +50,7 @@ if ($exitCode -ne 0 -or (($output -join "`n") -match '(?m)^\s+while executing\s*
     throw "XSCT script failed: $script (exit $exitCode)"
 }
 
-$elf = Join-Path (Split-Path $PSScriptRoot -Parent) 'build\vitis_ws\pqm2_app\Debug\pqm2_app.elf'
+$elf = Join-Path (Split-Path $PSScriptRoot -Parent) 'build\vitis_ws_meas\pqm2_app\Debug\pqm2_app.elf'
 if (-not (Test-Path -LiteralPath $elf)) {
     throw "ELF not produced: $elf"
 }
