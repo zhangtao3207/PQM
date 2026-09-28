@@ -90,7 +90,8 @@ void PQMUI_FreqCreate(void)
     left = lv_obj_create(PQMUI_FrequencyPage);
     lv_obj_add_style(left, &PQMUI_StylePanel, LV_PART_MAIN);
     lv_obj_set_pos(left, 0, 20);
-    lv_obj_set_size(left, 486, 396);
+    /* 与时域页同宽（494，旧规格 486）：让两页切换时左面板右边界对齐。 */
+    lv_obj_set_size(left, 494, 396);
     lv_obj_clear_flag(left, LV_OBJ_FLAG_SCROLLABLE);
     PQMUI_CreateText(left, 18, 8, "Harmonic Spectrum", 0u);
 
@@ -210,10 +211,17 @@ void PQMUI_FreqRefreshHarmonics(void)
         if (harmonic < PQMUI_HARMONIC_ENTRIES &&
             (PQMUI_LatestHarmonics.entries[harmonic].flags &
              PQMUI_HARMONIC_FLAG_RATIO) != 0u) {
+            /* 占比为 0 的空槽（flags 里有 RATIO 位、占比却是 0，例如 H2/H4/H6）不画
+             * 0 高度小柱，否则幅度图底部会排出一行“梳齿”；与 H0「空槽不画」的口径一致。
+             * 两个通道各自判：某通道占比为 0 就只隐掉该通道那根柱。 */
             MagnitudePoints[0][point] =
-                PQMUI_LatestHarmonics.entries[harmonic].u_ratio_x100;
+                (PQMUI_LatestHarmonics.entries[harmonic].u_ratio_x100 != 0u)
+                    ? (lv_coord_t)PQMUI_LatestHarmonics.entries[harmonic].u_ratio_x100
+                    : LV_CHART_POINT_NONE;
             MagnitudePoints[1][point] =
-                PQMUI_LatestHarmonics.entries[harmonic].i_ratio_x100;
+                (PQMUI_LatestHarmonics.entries[harmonic].i_ratio_x100 != 0u)
+                    ? (lv_coord_t)PQMUI_LatestHarmonics.entries[harmonic].i_ratio_x100
+                    : LV_CHART_POINT_NONE;
             if ((PQMUI_LatestHarmonics.entries[harmonic].flags &
                  PQMUI_HARMONIC_FLAG_PHASE) != 0u &&
                 PQMUI_LatestHarmonics.entries[harmonic].phase_x100 > 0) {
@@ -245,16 +253,19 @@ void PQMUI_FreqRefreshHarmonics(void)
                                          (PQMUI_HARMONIC_STEP - 1u)));
 
     /* 谐波详情块显示「本页第一条 present 的谐波」，而不是窗口起点本身：
-     * 第 1 页的窗口起点是 H0（直流空槽，flags = 0x00，按已确认口径不 present），
-     * 直接取起点会永远落到兜底分支、三行都显示 --。这里在
-     * [窗口起点, 窗口起点 + 本页条数) 内向后扫第一个 present 的条目；
-     * 上界同时夹住 PQMUI_HARMONIC_ENTRIES，避免越界读。整页都无 present 时
+     * H0 是直流槽，本轮 PL 修好 DC 后它也会 present（flags 0x00 -> 0x01）。
+     * 详情块要的是谐波，所以扫描时跳过 order 0（直流），优先落到基波 H1。
+     * 扫描范围是 [窗口起点, 窗口起点 + 本页条数)，上界同时夹住
+     * PQMUI_HARMONIC_ENTRIES，避免越界读。整页都无 present 时
      * 退回窗口起点并沿用 -- 兜底。 */
     selected = (u32)PQMUI_HarmonicWindowStart;
     for (probe = selected;
          (probe < (u32)PQMUI_HARMONIC_ENTRIES) &&
          (probe < (selected + (u32)PQMUI_HARMONIC_POINTS));
          ++probe) {
+        if (probe == 0u) {
+            continue;   /* 跳过 H0（直流），基波 H1 起算 */
+        }
         if ((PQMUI_LatestHarmonics.entries[probe].flags &
              PQMUI_HARMONIC_FLAG_RATIO) != 0u) {
             selected = probe;

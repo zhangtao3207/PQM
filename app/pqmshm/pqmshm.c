@@ -31,9 +31,15 @@
  *     A_k = 基波峰值 * 占比_k / 10000
  *     u(t) = Σ A_k^u * sin(k*theta)                 （U 作为相位参考）
  *     i(t) = Σ A_k^i * sin(k*theta + φ_k)           （φ_k = ABI 里的 U-I 相位差）
- *   全量程随当前量程取值：大量程 U 350.00 V / I 30.00 A，小量程 U 10.00 V / I 3.00 A
- *   （与 pqm_measurement_core.v 的 U/I_FULL_SCALE_*_X100 一致）。ABI 里没有量程字，
+ *   真值口径：信号源直连 AD7606（±10 V，无衰减），U1/U2 是同一颗 ADC 的两路电压输入，
+ *   前端相同，所以两路真实满量程都是 10.00 V；PL 把 U2 报成电压，PS 把 U2 电压直接当
+ *   电流显示，折算系数 = 1。
+ *   量程口径：PL 侧固定用 10.00 V 满量程、不再做量程切换，ABI 里也没有量程字，
  *   所以 PS 侧自己维护「已被 PL 受理的当前量程」，见 PqmshmPollRange。
+ *   大量程 = 把真值按模拟市电系数 K = 220/8 = 27.5 放大（220 V ↔ 8 V，电流同理），
+ *   数值、满量程与纵轴同倍缩放；小量程 K = 1，显示真值。换算集中在 pqmui 层的
+ *   PQMUI_ApplySimScale()（按字段查表），本文件读到 ABI 值后只换算这一次，
+ *   界面各处不再重复乘 —— 数值与纵轴不同倍正是上一版把波形压成平线的原因。
  *   最后把 AD 码换算成「占本通道满量程的百分比 x100」，两路共用 ±100.00% 的归一化纵轴。
  *   谐波占比是"占本帧该通道总幅值的百分比"，纯正弦下基波占比≈100%，所以
  *   ΣA_k ≈ 基波峰值，幅度尺度与 RMS 读数自洽。
@@ -58,15 +64,23 @@
 #define PQMSHM_POLL_PERIOD_MS      50u    /* 两次读共享内存之间的最小间隔 */
 #define PQMSHM_RANGE_TIMEOUT_MS    2000u  /* 量程命令应答超时 */
 
-/* ---------------- 量程换算常数（与 pqm_measurement_core.v 一致） ----------------
- * PL 内部按 full_scale_low_range_active 在这两组常数之间切换，但**不往共享内存
- * 发布满量程**（ABI 里没有这个字段），所以 PS 侧必须自己维护当前量程，否则小量程下
- * 波形换算会继续用大量程常数，幅度被压到 1/35。
+/* ---------------- 量程满量程常数 ----------------
+ * 信号源直连 AD7606（±10 V，无衰减），U1/U2 接同一颗 ADC 的两路电压输入，前端相同，
+ * 所以两路真实满量程都是 10.00 V（x100 = 1000）。
+ *
+ * 大量程不是真的改量程，而是把真值按模拟市电系数放大：口径是 220 V（440 Vpp）对应
+ * 8 V（16 Vpp），K = 220 / 8 = 27.5 → ADC 端 ±10 V 满量程对应 ±275 V，
+ * 故大量程 U/I 满量程都是 27500（275.00 = 10.00 × 27.5）。电流同理，与电压用同一个 K。
+ *
+ * 满量程与数值必须同倍：纵轴按满量程归一化，只放大满量程会把波形压成平线。
+ *
+ * 注意：PL 已不再按 full_scale_low_range_active 切换常数，ABI 里也没有满量程字段，
+ * 所以 PS 侧维护的"当前量程"只影响数值显示、波形重建的幅度尺度与纵轴刻度文字。
  */
-#define PQMSHM_U_FULL_SCALE_HIGH_X100   35000  /* 350.00 V 对应 AD 满量程 */
-#define PQMSHM_I_FULL_SCALE_HIGH_X100   3000   /* 30.00 A 对应 AD 满量程 */
-#define PQMSHM_U_FULL_SCALE_LOW_X100    1000   /* 10.00 V 对应 AD 满量程 */
-#define PQMSHM_I_FULL_SCALE_LOW_X100    300    /* 3.00 A 对应 AD 满量程 */
+#define PQMSHM_U_FULL_SCALE_HIGH_X100   27500  /* 275.00 = 10.00 × 27.5 */
+#define PQMSHM_I_FULL_SCALE_HIGH_X100   27500  /* 同 U1：电流也乘 27.5 */
+#define PQMSHM_U_FULL_SCALE_LOW_X100    1000   /* 10.00 V 真满量程 */
+#define PQMSHM_I_FULL_SCALE_LOW_X100    1000   /* 10.00 V 真满量程 */
 #define PQMSHM_SQRT2_X1E5               141421 /* sqrt(2) x 1e5 */
 
 /* ---------------- 诊断量 ---------------- */
@@ -230,8 +244,11 @@ static u32 PqmshmReadMeasurement(void)
     for (index = 0u; index < (u32)PQMUI_FIELD_COUNT; ++index) {
         s32 raw = (s32)PQMSHM_W(ShmFieldWord[index]);
 
+        /* 真值先按字段量程限幅，再换算成当前量程的显示值：大量程乘模拟市电系数
+         * （有效值/峰峰值 ×27.5，功率 ×756.25），小量程原样返回。 */
+        raw = PQMUI_FieldClampX100((pqmui_field_t)index, raw);
         ShmMeasurement.value[index].x100 =
-            PQMUI_FieldClampX100((pqmui_field_t)index, raw);
+            PQMUI_ApplySimScale((pqmui_field_t)index, raw, ShmLowRange);
         ShmMeasurement.value[index].valid =
             ((validity & ShmFieldValid[index]) != 0u) ? 1u : 0u;
     }
@@ -286,7 +303,8 @@ static u32 PqmshmReadHarmonics(void)
 }
 
 /*
- * 用实测频谱重建一屏时域波形（400 列，覆盖一个基波周期），
+ * 用实测频谱重建一屏时域波形（400 列，铺满 PQMUI_WAVE_PERIODS 个基波周期，
+ * 50 Hz 下即 60 ms，与横轴右端标签一致），
  * 并按「占本通道满量程的百分比」归一化，两路共用 ±100.00% 的纵轴。
  *
  *   theta = 2*pi*column/400
@@ -325,8 +343,12 @@ static void PqmshmRebuildWaveform(void)
                 continue;
             }
 
-            /* 相位以 1/256 周期为单位：k*theta，加上 ABI 的 phi_k（x100 度）。 */
-            base_phase = (s32)((column * 256u * order) /
+            /* 相位以 1/256 周期为单位：一屏要铺满 PQMUI_WAVE_PERIODS 个基波周期，
+             * k 次谐波再乘 k，所以 column 0..399 跨 order × PQMUI_WAVE_PERIODS 个周期；
+             * 再加上 ABI 的 phi_k（x100 度）。
+             * 采样密度边界：400 列 / 3 周期 ≈ 133 点/周期，可无混叠表示的最高谐波
+             * 约 66 次；本工程到 H63，刚好够、余量很小。 */
+            base_phase = (s32)((column * 256u * order * PQMUI_WAVE_PERIODS) /
                                (u32)PQMUI_WAVE_COLUMNS);
             phase_offset = ((entry->flags & PQMUI_HARMONIC_FLAG_PHASE) != 0u)
                                ? (s32)(((s32)entry->phase_x100 * 256) / 36000)

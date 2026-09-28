@@ -31,10 +31,12 @@ u16 PQMUI_HarmonicWindowStart;
 
 pqmui_range_request_fn PQMUI_RangeRequest;
 
-/* 当前量程下 U/I 的满量程（工程量 x100）。上电默认按大量程（350 V / 30 A）
- * 取值，PL 复位后也是大量程；量程被受理后由数据源立即下发真实值。 */
-u32 PQMUI_UMaxX100 = 35000u;
-u32 PQMUI_IMaxX100 = 3000u;
+/* 当前量程下 U/I 的满量程（工程量 x100）。上电默认大量程：大量程不是真的改量程，
+ * 而是把真值按模拟市电系数 K = 220/8 = 27.5 放大（U1 电压 / U2 当电流都乘 27.5），
+ * 故 10.00 V 真满量程对应 275.00；PL 复位后 PS 也按大量程上报；
+ * 量程被受理后由数据源立即下发真实值。 */
+u32 PQMUI_UMaxX100 = 27500u;
+u32 PQMUI_IMaxX100 = 27500u;
 /* 按当前页面状态切换两页的可见性，并同步标题与翻页按钮文字。 */
 static void PQMUI_SetPageVisible(void)
 {
@@ -229,8 +231,10 @@ void PQMUI_SetRangeResult(u8 success, u8 low_range)
         PQMUI_LowRange = low_range;
     }
     if (PQMUI_RangeButtonLabel != NULL) {
+        /* 量程按钮文案与满量程一致：大量程是“真值 ×27.5”的模拟市电显示，
+         * U1 是电压、U2 当电流，两路满量程都是 10 V / 275，所以两路都写同一个数。 */
         lv_label_set_text(PQMUI_RangeButtonLabel,
-                          PQMUI_LowRange ? "10 V / 3 A" : "350 V / 30 A");
+                          PQMUI_LowRange ? "10 V / 10 A" : "275 V / 275 A");
     }
     PQMUI_UpdateStatus();
 }
