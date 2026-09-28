@@ -39,10 +39,18 @@ module pqm_rfg_dc_sum #(
     output reg  [15:0]        o_frame_count
 );
 
-    // 与 fft_stream_adapter 的去直流写法保持一致：两路都零扩展到 17 位再相减，
-    // 取低 16 位作为有符号 Q2.14 样本（交变成分默认不超过 ±32767）。
-    wire signed [16:0] centered_diff = $signed({1'b0, i_sample}) - $signed({1'b0, i_zero_code});
-    wire signed [15:0] centered      = centered_diff[15:0];
+    // 去直流的位宽契约：两个 16 位输入必须**按两补码有符号相减**，不能零扩展后取低 16 位。
+    // 零扩展相减 + 取低位只是“把位型重新解释成两补码”的偏方，且一旦改成饱和
+    // （本轮修复要求饱和而非回绕）就会把负样本钳到 +32767，直流分量当场失真
+    //（实测 tb_pqm_rfg_chain：DC 占比从 0% 跳到 95.95%）。
+    // 饱和限取满 16 位有符号范围：对 16 位操作数永不触发（zero_code=0 时是精确直通），
+    // 而万一被当成偏移码调用（i_zero_code 非 0、真差可达 ±65535）也是钳位而不是回绕。
+    localparam signed [16:0] CENTER_MAX =  17'sd32767;
+    localparam signed [16:0] CENTER_MIN = -17'sd32768;
+    wire signed [16:0] centered_diff = $signed(i_sample) - $signed(i_zero_code);
+    wire               center_sat    = (centered_diff > CENTER_MAX) || (centered_diff < CENTER_MIN);
+    wire signed [15:0] centered      = center_sat ? (centered_diff[16] ? 16'sh8000 : 16'sh7FFF)
+                                                : centered_diff[15:0];
     wire signed [31:0] centered_ext  = {{16{centered[15]}}, centered};
 
     reg  signed [31:0] acc;

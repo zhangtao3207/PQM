@@ -76,6 +76,16 @@
 #define PQM_SHM_VALID_DC_U1        0x00000200u
 #define PQM_SHM_VALID_DC_U2        0x00000400u
 
+/* 缺陷 3：饱和/溢出可见位（validity 字 bit15..12，粘滞位）。
+ * 与 pl/rtl/PSInterface/pqm_shared_memory_map.vh 保持一致；ABI 偏移未变。
+ * 这三位置 1 表示“去零点发生饱和 / RFG 溢出 / 取样 FIFO 溢出”，
+ * 此时频域那几项（THD、DC）不可信，PS 侧把它们按无效处理（界面显示 --）。 */
+#define PQM_SHM_VALIDITY_CENTER_SAT     0x00001000u
+#define PQM_SHM_VALIDITY_RFG_OVERFLOW   0x00002000u
+#define PQM_SHM_VALIDITY_FIFO_OVERFLOW  0x00004000u
+#define PQM_SHM_VALIDITY_TRUST_MASK     (PQM_SHM_VALIDITY_CENTER_SAT | \
+                                         PQM_SHM_VALIDITY_RFG_OVERFLOW | \
+                                         PQM_SHM_VALIDITY_FIFO_OVERFLOW)
 /* PS 命令区与 PL 响应区 */
 #define PQM_SHM_COMMAND_BASE_WORD           0x00000080u
 #define PQM_SHM_COMMAND_REQUEST_WORD        0x00000080u

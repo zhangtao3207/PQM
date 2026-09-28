@@ -36,6 +36,17 @@ module tb_time_zero_code_tracker;
     integer errors = 0;
     integer i;
 
+    // ---- 场景 6 专用：生产参数实例的激励与统计 ----
+    reg  [15:0] z6_sample_code  = 16'h8000;
+    reg         z6_sample_valid = 1'b0;
+    wire [15:0] z6_zero_code;
+    wire        z6_zero_valid;
+    integer     sine_lut6 [0:511];
+    integer     n6;
+    integer     acc6;
+    integer     avg6;
+    integer     z6_code_i;
+
     always #(CLK_PERIOD / 2) clk = ~clk;
 
     time_zero_code_tracker dut (
@@ -45,6 +56,17 @@ module tb_time_zero_code_tracker;
         .sample_code(sample_code),
         .zero_code(zero_code),
         .zero_valid(zero_valid)
+    );
+
+    // 生产参数（与 pqm_pl_top 的 u_zero_tracker_u1/u2 完全一致）：
+    // 默认参数（EST_SHIFT=8）下跟踪器纹波高达 ±0.32×幅值，与最小步长规则耦合后
+    // 会长时间单向漂移，不适合做“平衡点”判据，所以场景 6 必须用这组参数。
+    time_zero_code_tracker #(
+        .WIDTH(16), .EST_SHIFT(14), .WARMUP_SHIFT(10), .WARMUP_SAMPLES(4096)
+    ) dut_prod (
+        .clk(clk), .rst_n(rst_n),
+        .sample_valid(z6_sample_valid), .sample_code(z6_sample_code),
+        .zero_code(z6_zero_code), .zero_valid(z6_zero_valid)
     );
 
     task do_reset;
@@ -169,6 +191,53 @@ module tb_time_zero_code_tracker;
         check_code(16'h0000, "恒定 0x0000");
         if (zero_valid !== 1'b1) begin
             $display("FAIL: 场景 5 第 256 拍 zero_valid 应拉高");
+            errors = errors + 1;
+        end
+
+        // ---------------- 场景 6：生产参数下"纯交流"零点必须收敛到真实均值 ----------------
+        // 回归缺陷 2（"去零点后恒有 ~29% 直流"的根因）：
+        //   原实现 zero_step = delta >>> SHIFT，`>>>` 对负数等价于向下取整（floor），
+        //   同样幅度的 delta 负方向步长恒比正方向大 1 LSB；配合下面的"最小步长 ±1"
+        //   规则，step(delta) 不再是奇函数 → 纯交流输入下 E[step] < 0，
+        //   zero_code 稳定偏低，直到偏移把不对称补偿掉才停。
+        //   板上实测：14.05 Vpp 纯正弦下 DC-U2 = 28.68%、H1 = 70.97%。
+        // 本场景用 pqm_pl_top 的生产参数（EST_SHIFT=14 / WARMUP_SHIFT=10 / 4096），
+        // 喂 0x8000 零直流 + 23020 码幅值（= 14.05 Vpp）的正弦，跑 120000 个样本，
+        // 在平衡点取一整周期（512 点）zero_code 平均，必须落在 0x8000 ± 500 码内。
+        // 离线定点复算：修复后 = 32705（偏离 63）；未修复 = 28196（偏离 4572）。
+        for (i = 0; i < 512; i = i + 1)
+            sine_lut6[i] = $rtoi($sin(2.0 * 3.14159265358979 * i / 512.0) * 1000.0);
+
+        do_reset;
+        acc6 = 0;
+        for (n6 = 0; n6 < 120000; n6 = n6 + 1) begin
+            @(negedge clk);
+            // 注意：必须经过 integer 中间量。若直接写
+            //   z6_sample_code = 16'h8000 + ((23020*lut)/1000);
+            // 整个 RHS 会因为 LHS 是无符号 reg 而被当成无符号表达式，
+            // 负半周的除法变成大无符号商，截到 16 位后是一个彻底畸变的波形
+            // （实测谷值处 code 从应有的 9748 变成 44875）。
+            z6_code_i = 16'sh8000 + ((23020 * sine_lut6[n6 % 512]) / 1000);
+            z6_sample_code  = z6_code_i[15:0];
+            z6_sample_valid = 1'b1;
+            if (n6 >= (120000 - 512)) acc6 = acc6 + z6_zero_code;
+        end
+        @(negedge clk);
+        z6_sample_valid = 1'b0;
+        avg6 = acc6 / 512;
+
+        $display("INFO: 场景 6 纯交流（幅值 23020 码、零直流）平衡点 zero_code 均值 = %0d（0x%04h），偏离 0x8000 共 %0d 码",
+                 avg6, avg6[15:0], (avg6 > 32768) ? (avg6 - 32768) : (32768 - avg6));
+        if (z6_zero_valid !== 1'b1) begin
+            $display("FAIL: 场景 6 预热结束后 zero_valid 应为 1");
+            errors = errors + 1;
+        end
+        if (^avg6 === 1'bx) begin
+            $display("FAIL: 场景 6 zero_code 均值为 X（未初始化/未驱动）");
+            errors = errors + 1;
+        end else if ((avg6 > 32768 + 500) || (avg6 < 32768 - 500)) begin
+            $display("FAIL: 场景 6 纯交流下 zero_code 平衡点 = %0d，偏离真实均值 0x8000 超过 500 码（去零点后会凭空多出直流）",
+                     avg6);
             errors = errors + 1;
         end
 

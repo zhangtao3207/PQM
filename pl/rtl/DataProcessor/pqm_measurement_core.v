@@ -209,14 +209,32 @@ assign u1_full_scale_x100 = U1_FULL_SCALE_X100;
 assign u2_full_scale_x100 = U2_FULL_SCALE_X100;
 
 // 频域链的样本契约：pqm_freq_analysis_rfg 只接受**已去直流的中心化样本**
-// （它内部把 frontend 的 u2_zero_code 硬编码为 16'd0，说明它的样本必须已经是
-//  centered 形式）。所以这里必须先减零点码，不能直接把原始偏移码送进去。
+// （核心把它的零码硬编码为 0，说明样本必须已经是 centered 形式）。
 // 踩过的坑：直接送原始码会让整条频域链骑在一个 ~32768 的直流台阶上，
 // 表现为 bin0 巨大（实测 20362）以及奇次频点严格按 1/n 泄漏（直流台阶的频谱）。
+//
+// 17 位差值 → 16 位必须**饱和**（钳到 ±32767），不能取低 16 位。
+// 取低 16 位的后果：一旦 |sample - zero_code| > 32767 就回绕成反号，
+// 样本序列出现 ~65536 的跳变，频谱变成"每个谐波都有份、平缓衰减"的冲击谱
+//（同一纯正弦，板上实测 18.06 Vpp：H1 10.99%、H2 11.10%、H3 9.77%、THD-U 180.67%；
+//  未越界的 14.05 Vpp：H1 70.97%、THD-U 0.06%）。
+// 越界条件 = 去零点后的峰值 = 幅值 + 零点估计残差 > 32767：
+//   - 零点跟踪器取整偏差修好之前，残差 ≈ 0.2×幅值，越界起点 ≈15.5 Vpp；
+//   - 修好之后残差只剩 ~1 个码，正常 10 V 满量程内不越界，但 ADC 削顶、
+//     输入直流/幅度突变（跟踪器 τ≈0.64 s 追不上）依旧会越界，
+//     所以这层饱和必须保留，并用 freq_center_sat 把它变成可见标志。
 wire signed [16:0] freq_u1_centered_ext = $signed({1'b0, u1_sample_code}) - $signed({1'b0, u1_zero_code});
 wire signed [16:0] freq_u2_centered_ext = $signed({1'b0, u2_sample_code}) - $signed({1'b0, u2_zero_code});
-wire signed [15:0] freq_u1_centered = freq_u1_centered_ext[15:0];
-wire signed [15:0] freq_u2_centered = freq_u2_centered_ext[15:0];
+localparam signed [16:0] FREQ_CENTER_MAX =  17'sd32767;
+localparam signed [16:0] FREQ_CENTER_MIN = -17'sd32767;
+wire freq_u1_center_sat = (freq_u1_centered_ext > FREQ_CENTER_MAX) || (freq_u1_centered_ext < FREQ_CENTER_MIN);
+wire freq_u2_center_sat = (freq_u2_centered_ext > FREQ_CENTER_MAX) || (freq_u2_centered_ext < FREQ_CENTER_MIN);
+wire signed [15:0] freq_u1_centered = freq_u1_center_sat
+                                   ? (freq_u1_centered_ext[16] ? -16'sd32767 : 16'sd32767)
+                                   : freq_u1_centered_ext[15:0];
+wire signed [15:0] freq_u2_centered = freq_u2_center_sat
+                                   ? (freq_u2_centered_ext[16] ? -16'sd32767 : 16'sd32767)
+                                   : freq_u2_centered_ext[15:0];
 
 // 仅在 U1/U2 同拍有效时把样本送入频域分析，保持通道帧严格对齐。
 wire freq_sample_valid_raw = u1_sample_valid && u2_sample_valid;
@@ -224,17 +242,40 @@ reg  freq_sample_valid;
 reg  signed [15:0] freq_sample_u1;
 reg  signed [15:0] freq_sample_u2;
 
+// 缺陷 3：饱和/溢出必须可见。三个都做成粘滞位（置 1 后保持到复位），
+// 语义 = "自复位以来发生过"，与 RFG 内部 o_overflow 的粘滞约定一致。
+reg  freq_center_sat_sticky;
+reg  freq_rfg_overflow_sticky;
+reg  freq_fifo_overflow_sticky;
+wire freq_center_sat;       // 核心自己这层去零点饱和（u1|u2），见下方 assign
+wire freq_fe_center_sat;    // 来自 pqm_freq_analysis_rfg.o_center_sat
+wire freq_rfg_overflow;     // 来自 pqm_freq_analysis_rfg.o_rfg_overflow（RFG 内部溢出粘滞）
+wire freq_fifo_overflow;    // 来自 pqm_freq_analysis_rfg.o_fifo_overflow
+
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        freq_sample_valid <= 1'b0;
-        freq_sample_u1     <= 16'sd0;
-        freq_sample_u2     <= 16'sd0;
+        freq_sample_valid        <= 1'b0;
+        freq_sample_u1           <= 16'sd0;
+        freq_sample_u2           <= 16'sd0;
+        freq_center_sat_sticky   <= 1'b0;
+        freq_rfg_overflow_sticky <= 1'b0;
+        freq_fifo_overflow_sticky<= 1'b0;
     end else begin
         freq_sample_valid <= freq_sample_valid_raw;
-        freq_sample_u1     <= freq_u1_centered;
-        freq_sample_u2     <= freq_u2_centered;
+        freq_sample_u1    <= freq_u1_centered;
+        freq_sample_u2    <= freq_u2_centered;
+
+        // 与样本同拍记录：本拍的去零点饱和来自核心自己的钳位，
+        // fe_center_sat 来自 RFG 顶层内部的同一处钳位（当前零码给 0，恒为 0）。
+        if (freq_sample_valid_raw && (freq_center_sat | freq_fe_center_sat))
+            freq_center_sat_sticky <= 1'b1;
+        if (freq_rfg_overflow)
+            freq_rfg_overflow_sticky <= 1'b1;
+        if (freq_fifo_overflow)
+            freq_fifo_overflow_sticky <= 1'b1;
     end
 end
+assign freq_center_sat = freq_u1_center_sat | freq_u2_center_sat;
 
 // 用频域基波相位的符号修正无功功率方向，同时保持其绝对值不变。
 assign reactive_q_raw_abs_wire = reactive_q_raw_wire[31]
@@ -295,7 +336,16 @@ assign alarm_active = sharp_alarm_active;
 
 // 按共享内存 ABI 固定顺序组合标量值、告警和逐字段有效位。
 assign ps_snapshot_words = {
-    {16'd0, 4'd0, freq_metrics_valid, freq_dc_u2_valid, freq_dc_u1_valid,
+    // validity 字（shm 0x1F）：bit11..0 是原有逐字段有效位，ABI 一个都没动；
+    // bit15..12 原本恒 0，现把三个"数据还能不能信"的标志放进去（缺陷 3）：
+    //   bit12 = 去零点 17→16 位饱和（freq_center_sat_sticky）
+    //   bit13 = RFG 引擎内部溢出粘滞（freq_rfg_overflow_sticky）
+    //   bit14 = 取样 FIFO 溢出粘滞（freq_fifo_overflow_sticky）
+    //   bit15 = 保留 0
+    // 选位理由：validity 字本身就是"这些数是否可信"的语义位，且 bit15..12 空闲，
+    // 比去占 0x20/0x21 两个空闲字更自然（那两个字留给后续真正的标量字段）。
+    {16'd0, 1'b0, freq_fifo_overflow_sticky, freq_rfg_overflow_sticky,
+     freq_center_sat_sticky, freq_metrics_valid, freq_dc_u2_valid, freq_dc_u1_valid,
      freq_thd_u2_valid, freq_thd_u1_valid, power_metrics_valid_reg,
      freq_valid_reg, phase_valid_reg, u2_pp_valid_reg, u1_pp_valid_reg,
      rms_valid_reg, rms_valid_reg},
@@ -404,7 +454,10 @@ pqm_freq_analysis_rfg u_freq_analysis (
     .m_phase_vector_valid(), .m_phase_dot(), .m_phase_cross(),
     .m_phase_diff_valid(freq_phase_diff_valid),
     .m_phase_diff_deg_x100(freq_phase_diff_deg_x100),
-    .filtered_frame_count()
+    .filtered_frame_count(),
+    .o_center_sat(freq_fe_center_sat),
+    .o_rfg_overflow(freq_rfg_overflow),
+    .o_fifo_overflow(freq_fifo_overflow)
 );
 
 // 聚合已完成握手的谐波条目，生成 THD、基波相位和直流分量等标量。

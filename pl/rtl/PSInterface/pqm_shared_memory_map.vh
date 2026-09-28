@@ -36,6 +36,16 @@
 `define PQM_SHM_SCALAR_ALARM_WORD             32'h0000001E
 `define PQM_SHM_SCALAR_VALIDITY_WORD          32'h0000001F
 
+// validity 字（word 0x1F）里新增的“数据可信度”粘滞位（缺陷 3：饱和/溢出必须可见）。
+// 原有 bit11..0 的逐字段有效位一个都没动，ABI 偏移也没有任何变化。
+//   bit12 = 去零点 17→16 位发生饱和（pqm_measurement_core 的 freq_center_sat_sticky）
+//   bit13 = RFG 引擎内部溢出（pqm_rfg_frontend.o_overflow 粘滞）
+//   bit14 = 频域取样 FIFO 溢出（pqm_sample_fifo.o_overflow 粘滞）
+//   bit15 = 保留 0
+`define PQM_SHM_VALIDITY_CENTER_SAT          32'h00001000
+`define PQM_SHM_VALIDITY_RFG_OVERFLOW        32'h00002000
+`define PQM_SHM_VALIDITY_FIFO_OVERFLOW       32'h00004000
+
 // PS 命令和 PL 响应固定 word 偏移。
 `define PQM_SHM_COMMAND_BASE_WORD            32'h00000080
 `define PQM_SHM_COMMAND_REQUEST_WORD         32'h00000080

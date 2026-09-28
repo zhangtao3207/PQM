@@ -67,7 +67,12 @@ module pqm_freq_analysis_rfg #(
     output wire signed [32:0] m_phase_cross,
     output wire        m_phase_diff_valid,
     output wire signed [15:0] m_phase_diff_deg_x100,
-    output wire [15:0] filtered_frame_count
+    output wire [15:0] filtered_frame_count,
+    // 缺陷 3：饱和/溢出可见性。这三个信号本模块内部早就有（fe_overflow、
+    // fifo_u*_ovf），但全工程没有任何消费者，溢出发生时界面只会显示错数据。
+    output wire        o_center_sat,     // 去零点 17→16 位发生饱和（任一通道，组合）
+    output wire        o_rfg_overflow,   // RFG 引擎内部溢出粘滞（U1|U2）
+    output wire        o_fifo_overflow   // 取样 FIFO 溢出粘滞（U1|U2）
 );
 
     localparam [15:0] CENTER_DEFAULT = 16'h8000;
@@ -76,10 +81,27 @@ module pqm_freq_analysis_rfg #(
     wire [15:0] u1_zero_ref = i_u1_zero_valid ? i_u1_zero_code : CENTER_DEFAULT;
     wire [15:0] u2_zero_ref = i_u2_zero_valid ? i_u2_zero_code : CENTER_DEFAULT;
 
-    wire signed [16:0] u1_centered_ext = $signed({1'b0, i_sample_u1}) - $signed({1'b0, u1_zero_ref});
-    wire signed [16:0] u2_centered_ext = $signed({1'b0, i_sample_u2}) - $signed({1'b0, u2_zero_ref});
-    wire signed [15:0] u1_centered     = u1_centered_ext[15:0];
-    wire signed [15:0] u2_centered     = u2_centered_ext[15:0];
+// 去直流的位宽契约（踩过，写清楚）：
+//   两个输入都是 16 位，但**只能按有符号（两补码）相减**，不能零扩展成 17 位无符号再相减。
+//   原因：本模块被 pqm_measurement_core 以"已中心化样本 + zero_code = 0"调用，
+//   那里送进来的样本本身就是**两补码**；零扩展相减得到的 0..65535 再取低 16 位，
+//   实际上是"把位型重新解释成两补码"，靠取低位才碰巧成立，
+//   而一旦改成饱和（本轮修复）就会把负样本钳到 +32767，整条频域链当场变成巨直流。
+//   （实测：tb_pqm_rfg_chain 立刻从 H1≈71% 变成 DC 95.95%，正好暴露这一点。）
+//   写成 $signed 相减后：zero_code=0 时是精确直通；
+//   文档契约"原始偏移码 - 零点码"也同样正确（两个偏移码同域的差等于真差）。
+//   饱和限取满 16 位有符号范围 ±32768/+32767：对 16 位操作数永不触发（精确直通），
+//   而万一被当成偏移码调用（真差可达 ±65535）也是钳位而不是回绕。
+localparam signed [16:0] CENTER_MAX =  17'sd32767;
+localparam signed [16:0] CENTER_MIN = -17'sd32768;
+wire signed [16:0] u1_centered_ext = $signed(i_sample_u1) - $signed(u1_zero_ref);
+wire signed [16:0] u2_centered_ext = $signed(i_sample_u2) - $signed(u2_zero_ref);
+wire u1_center_sat = (u1_centered_ext > CENTER_MAX) || (u1_centered_ext < CENTER_MIN);
+wire u2_center_sat = (u2_centered_ext > CENTER_MAX) || (u2_centered_ext < CENTER_MIN);
+wire signed [15:0] u1_centered = u1_center_sat ? (u1_centered_ext[16] ? 16'sh8000 : 16'sh7FFF)
+                                             : u1_centered_ext[15:0];
+wire signed [15:0] u2_centered = u2_center_sat ? (u2_centered_ext[16] ? 16'sh8000 : 16'sh7FFF)
+                                             : u2_centered_ext[15:0];
 
     // ---------------- 帧控制：上一帧收完立刻开下一帧 ----------------
     wire fe_frame_done;      // 提前声明：FSM 要先用它
@@ -159,6 +181,11 @@ module pqm_freq_analysis_rfg #(
         .o_item_last(fe_item_last), .o_frame_done(fe_frame_done),
         .o_overflow(fe_overflow), .o_channel_error(fe_channel_error)
     );
+
+    // 把内部三个"没人看"的异常标志接到端口上，供测量核心写进快照 validity 字。
+    assign o_center_sat    = u1_center_sat | u2_center_sat;
+    assign o_rfg_overflow  = fe_overflow;
+    assign o_fifo_overflow = fifo_u1_ovf | fifo_u2_ovf;
 
     wire        sc_bin_valid, sc_bin_ready, sc_bin_last;
     wire [10:0] sc_bin_index;
