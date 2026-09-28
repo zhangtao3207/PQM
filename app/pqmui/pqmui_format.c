@@ -22,26 +22,26 @@ typedef struct {
 } pqmui_field_spec_t;
 
 /* 显示域的取值上限：真值上限 × 模拟市电系数。
- * ABI/PL 把真值统一限幅在 99999（999.99）以内，但大量程要按 K=27.5、K²=756.25 放大，
+ * ABI/PL 把真值统一限幅在 99999（999.99）以内，但大量程要按 K=38.89、K²=1512.43 放大，
  * 所以显示域上限取“大量程满量程”这一物理上限：
- *   U/I 有效值 275.00 V = 10.00 × 27.5；峰峰值 550.00 = 20.00 × 27.5；
- *   有功/无功/视在 75625.00 = 275 × 275。
- * 注意：若这里沿用真值域的 99999，大量程下 P=1.48 W（×756.25 = 1119.65 W）会被
+ *   U/I 有效值 388.90 = 10.00 × 38.89；峰峰值 777.80 = 20.00 × 38.89；
+ *   有功/无功/视在 151243.00 = 388.90 × 388.90。
+ * 注意：若这里沿用真值域的 99999，大量程下 P=1.48 W（×1512.43 = 2238.40 W）会被
  * 截成 999.99 W，数值就与纵轴不同倍了。小量程真值远小于这些上限，不受影响。 */
-#define PQMUI_FIELD_MAX_RMS_X100    ((s32)(1000u * PQMUI_SIM_SCALE_X100 / 100u))         /* 27500 = 275.00 */
-#define PQMUI_FIELD_MAX_P2P_X100    ((s32)(2000u * PQMUI_SIM_SCALE_X100 / 100u))         /* 55000 = 550.00 */
-#define PQMUI_FIELD_MAX_POWER_X100  ((s32)(10000u * PQMUI_SIM_POWER_SCALE_X100 / 100u))  /* 7562500 = 75625.00 */
+#define PQMUI_FIELD_MAX_RMS_X100    ((s32)(1000u * PQMUI_SIM_SCALE_X100 / 100u))         /* 38890 = 388.90 */
+#define PQMUI_FIELD_MAX_P2P_X100    ((s32)(2000u * PQMUI_SIM_SCALE_X100 / 100u))         /* 77780 = 777.80 */
+#define PQMUI_FIELD_MAX_POWER_X100  ((s32)(10000u * PQMUI_SIM_POWER_SCALE_X100 / 100u))  /* 15124300 = 151243.00 */
 
 static const pqmui_field_spec_t FieldSpec[PQMUI_FIELD_COUNT] = {
     {0, 99999, "Hz", 0},                        /* PQMUI_FIELD_FREQUENCY（不缩放） */
-    {0, PQMUI_FIELD_MAX_RMS_X100, "V", 0},      /* PQMUI_FIELD_U_RMS（×27.5） */
-    {0, PQMUI_FIELD_MAX_RMS_X100, "A", 0},      /* PQMUI_FIELD_I_RMS（×27.5，U2 当电流） */
-    {0, PQMUI_FIELD_MAX_P2P_X100, "V", 0},      /* PQMUI_FIELD_U_P2P（×27.5） */
-    {0, PQMUI_FIELD_MAX_P2P_X100, "A", 0},      /* PQMUI_FIELD_I_P2P（×27.5） */
+    {0, PQMUI_FIELD_MAX_RMS_X100, "V", 0},      /* PQMUI_FIELD_U_RMS（×38.89） */
+    {0, PQMUI_FIELD_MAX_RMS_X100, "A", 0},      /* PQMUI_FIELD_I_RMS（×38.89，U2 当电流） */
+    {0, PQMUI_FIELD_MAX_P2P_X100, "V", 0},      /* PQMUI_FIELD_U_P2P（×38.89） */
+    {0, PQMUI_FIELD_MAX_P2P_X100, "A", 0},      /* PQMUI_FIELD_I_P2P（×38.89） */
     {-99999, 99999, "deg", 1},                  /* PQMUI_FIELD_PHASE（不缩放） */
-    {-PQMUI_FIELD_MAX_POWER_X100, PQMUI_FIELD_MAX_POWER_X100, "W", 0},   /* PQMUI_FIELD_ACTIVE_POWER（×756.25） */
-    {-PQMUI_FIELD_MAX_POWER_X100, PQMUI_FIELD_MAX_POWER_X100, "var", 1}, /* PQMUI_FIELD_REACTIVE_POWER（×756.25） */
-    {0, PQMUI_FIELD_MAX_POWER_X100, "VA", 0},   /* PQMUI_FIELD_APPARENT_POWER（×756.25） */
+    {-PQMUI_FIELD_MAX_POWER_X100, PQMUI_FIELD_MAX_POWER_X100, "W", 0},   /* PQMUI_FIELD_ACTIVE_POWER（×1512.43） */
+    {-PQMUI_FIELD_MAX_POWER_X100, PQMUI_FIELD_MAX_POWER_X100, "var", 1}, /* PQMUI_FIELD_REACTIVE_POWER（×1512.43） */
+    {0, PQMUI_FIELD_MAX_POWER_X100, "VA", 0},   /* PQMUI_FIELD_APPARENT_POWER（×1512.43） */
     {-999, 999, "", 0},                         /* PQMUI_FIELD_POWER_FACTOR（不缩放） */
     {0, 99999, "%", 0},                         /* PQMUI_FIELD_THD_U（百分比不缩放） */
     {0, 99999, "%", 0},                         /* PQMUI_FIELD_THD_I（百分比不缩放） */
@@ -67,9 +67,9 @@ s32 PQMUI_FieldClampX100(pqmui_field_t field, s32 x100)
 }
 
 /* 每个字段的「真值 → 模拟市电显示值」缩放系数，x100 定点：
- *   100   = ×1.00（频率、相位、功率因数、THD、DC 都是比例或角度，不缩放）
- *   2750  = ×27.50（有效值、峰峰值）
- *   75625 = ×756.25（有功/无功/视在，P = U × I 的量纲是 K 的平方） */
+ *   100    = ×1.00（频率、相位、功率因数、THD、DC 都是比例或角度，不缩放）
+ *   3889   = ×38.89（有效值、峰峰值）
+ *   151243 = ×1512.43（有功/无功/视在，P = U × I 的量纲是 K 的平方） */
 static const u32 SimScaleX100[PQMUI_FIELD_COUNT] = {
     100u,                              /* PQMUI_FIELD_FREQUENCY */
     PQMUI_SIM_SCALE_X100,              /* PQMUI_FIELD_U_RMS */
@@ -96,8 +96,8 @@ s32 PQMUI_ApplySimScale(pqmui_field_t field, s32 x100, u8 low_range)
         return x100;
     }
 
-    /* 先乘后除，中间积用 s64：s32 上限 2.1e9，而 99999 × 75625 已经到 7.6e9，
-     * 用 s32 承载会回绕。结果本身不会超 s32（÷100 后最大 7.6e7），下面的饱和是兜底。 */
+    /* 先乘后除，中间积用 s64：s32 上限 2.1e9，而 99999 × 151243 已经到 1.5e10，
+     * 用 s32 承载会回绕。结果本身不会超 s32（÷100 后最大 1.5e8），下面的饱和是兜底。 */
     scaled = (((s64)x100) * ((s64)SimScaleX100[field])) / 100LL;
     if (scaled > (s64)INT32_MAX) {
         return INT32_MAX;

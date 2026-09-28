@@ -36,7 +36,7 @@
  *   电流显示，折算系数 = 1。
  *   量程口径：PL 侧固定用 10.00 V 满量程、不再做量程切换，ABI 里也没有量程字，
  *   所以 PS 侧自己维护「已被 PL 受理的当前量程」，见 PqmshmPollRange。
- *   大量程 = 把真值按模拟市电系数 K = 220/8 = 27.5 放大（220 V ↔ 8 V，电流同理），
+ *   大量程 = 把真值按模拟市电系数 K = 220√2 / 8 = 38.89 放大（市电 220 V 有效值 ↔ 16 Vpp），
  *   数值、满量程与纵轴同倍缩放；小量程 K = 1，显示真值。换算集中在 pqmui 层的
  *   PQMUI_ApplySimScale()（按字段查表），本文件读到 ABI 值后只换算这一次，
  *   界面各处不再重复乘 —— 数值与纵轴不同倍正是上一版把波形压成平线的原因。
@@ -68,17 +68,18 @@
  * 信号源直连 AD7606（±10 V，无衰减），U1/U2 接同一颗 ADC 的两路电压输入，前端相同，
  * 所以两路真实满量程都是 10.00 V（x100 = 1000）。
  *
- * 大量程不是真的改量程，而是把真值按模拟市电系数放大：口径是 220 V（440 Vpp）对应
- * 8 V（16 Vpp），K = 220 / 8 = 27.5 → ADC 端 ±10 V 满量程对应 ±275 V，
- * 故大量程 U/I 满量程都是 27500（275.00 = 10.00 × 27.5）。电流同理，与电压用同一个 K。
+ * 大量程不是真的改量程，而是把真值按模拟市电系数放大：口径是市电 220 V（有效值）
+ * 对应 16 Vpp（峰值 8 V），K = 220√2 / 8 = 38.89 → ADC 端 ±10 V（峰值）对应 ±388.90 V，
+ * 满量程有效值恰为 275.00 V。故大量程 U/I 满量程都是 38890（388.90 = 10.00 × 38.89）。
+ * 电流同理，与电压用同一个 K。
  *
  * 满量程与数值必须同倍：纵轴按满量程归一化，只放大满量程会把波形压成平线。
  *
  * 注意：PL 已不再按 full_scale_low_range_active 切换常数，ABI 里也没有满量程字段，
  * 所以 PS 侧维护的"当前量程"只影响数值显示、波形重建的幅度尺度与纵轴刻度文字。
  */
-#define PQMSHM_U_FULL_SCALE_HIGH_X100   27500  /* 275.00 = 10.00 × 27.5 */
-#define PQMSHM_I_FULL_SCALE_HIGH_X100   27500  /* 同 U1：电流也乘 27.5 */
+#define PQMSHM_U_FULL_SCALE_HIGH_X100   38890  /* 388.90 = 10.00 × 38.89（峰值口径） */
+#define PQMSHM_I_FULL_SCALE_HIGH_X100   38890  /* 同 U1：电流也乘 38.89 */
 #define PQMSHM_U_FULL_SCALE_LOW_X100    1000   /* 10.00 V 真满量程 */
 #define PQMSHM_I_FULL_SCALE_LOW_X100    1000   /* 10.00 V 真满量程 */
 #define PQMSHM_SQRT2_X1E5               141421 /* sqrt(2) x 1e5 */
@@ -245,12 +246,26 @@ static u32 PqmshmReadMeasurement(void)
         s32 raw = (s32)PQMSHM_W(ShmFieldWord[index]);
 
         /* 真值先按字段量程限幅，再换算成当前量程的显示值：大量程乘模拟市电系数
-         * （有效值/峰峰值 ×27.5，功率 ×756.25），小量程原样返回。 */
+         * （有效值/峰峰值 ×38.89，功率 ×1512.43），小量程原样返回。 */
         raw = PQMUI_FieldClampX100((pqmui_field_t)index, raw);
         ShmMeasurement.value[index].x100 =
             PQMUI_ApplySimScale((pqmui_field_t)index, raw, ShmLowRange);
         ShmMeasurement.value[index].valid =
             ((validity & ShmFieldValid[index]) != 0u) ? 1u : 0u;
+    }
+    /* 缺陷 3：PL 报出“去零点饱和 / RFG 溢出 / FIFO 溢出”时，频域的 THD 与 DC
+     * 不可信。宁可在界面上显示 --，也不要把静默错误的数字当成测量结果。
+     * 标志位是粘滞的（复位后保持），便于事后判断是否发生过饱和；
+     * 10 V 满量程内的正常正弦不会把它置起。 */
+    if ((validity & PQM_SHM_VALIDITY_TRUST_MASK) != 0u) {
+        const u32 trust_freq_mask = PQM_SHM_VALID_THD_U1 | PQM_SHM_VALID_THD_U2 |
+                                    PQM_SHM_VALID_DC_U1 | PQM_SHM_VALID_DC_U2;
+
+        for (index = 0u; index < (u32)PQMUI_FIELD_COUNT; ++index) {
+            if ((ShmFieldValid[index] & trust_freq_mask) != 0u) {
+                ShmMeasurement.value[index].valid = 0u;
+            }
+        }
     }
     ShmMeasurement.sequence = PQMUI_ShmSnapshotSequence;
     ShmMeasurement.alarm =

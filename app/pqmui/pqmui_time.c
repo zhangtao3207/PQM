@@ -99,8 +99,8 @@ void PQMUI_TimeCreate(void)
     left = lv_obj_create(PQMUI_TimePage);
     lv_obj_add_style(left, &PQMUI_StylePanel, LV_PART_MAIN);
     lv_obj_set_pos(left, 0, 20);
-    /* 面板宽 494（旧规格是 486）：纵轴右刻度要写“275 / -275”三个字符，
-     * montserrat_14 下 “275” 的墨迹宽 24.44 px（每字 adv_w = 141/16），
+    /* 面板宽 494（旧规格是 486）：纵轴右刻度要写“389 / -389”三个字符，
+     * montserrat_14 下 “389” 的墨迹宽 24.44 px（每字 adv_w = 141/16），
      * 标签 x=462 起算，面板 486 宽时只剩 24 px，末位数字会压在面板边框上；
      * 加宽 8 px 后右刻度有 32 px，左右两边都留出余量。 */
     lv_obj_set_size(left, 494, 396);
@@ -143,19 +143,19 @@ void PQMUI_TimeCreate(void)
     }
 
     /* 纵轴双刻度（用户口径）：左侧标电压满量程、右侧标电流满量程，
-     * 数值随量程切换更新（大量程 ±275、小量程 ±10）。
+     * 数值随量程切换更新（大量程 ±389、小量程 ±10）。
      * 单位由标题行的图例 U/V、I/A 给出。右侧顶端省略 "+" 前缀：顶端位置本身即
-     * 表示正值，而 “+275” 在 montserrat_14 下墨迹宽 32.56 px，会超出右刻度可用宽度。 */
-    TimeScaleLabels[0] = PQMUI_CreateText(left, 8, 54, "+275", 1u);
+     * 表示正值，而 “+389” 在 montserrat_14 下墨迹宽 32.56 px，会超出右刻度可用宽度。 */
+    TimeScaleLabels[0] = PQMUI_CreateText(left, 8, 54, "+389", 1u);
     PQMUI_CreateText(left, 14, 184, "0", 1u);
-    TimeScaleLabels[1] = PQMUI_CreateText(left, 8, 310, "-275", 1u);
-    TimeScaleLabels[2] = PQMUI_CreateText(left, 462, 54, "275", 1u);
-    TimeScaleLabels[3] = PQMUI_CreateText(left, 462, 310, "-275", 1u);
+    TimeScaleLabels[1] = PQMUI_CreateText(left, 8, 310, "-389", 1u);
+    TimeScaleLabels[2] = PQMUI_CreateText(left, 462, 54, "389", 1u);
+    TimeScaleLabels[3] = PQMUI_CreateText(left, 462, 310, "-389", 1u);
     PQMUI_CreateText(left, 48, 338, "0", 1u);
     TimeSpanLabel = PQMUI_CreateText(left, 420, 338, PQMUI_TIME_AXIS_SPAN_TEXT, 1u);
 
     button = PQMUI_CreateButton(left, 145, 354, 196, 32,
-                                "275 V / 275 A", &PQMUI_RangeButtonLabel);
+                                "389 V / 389 A", &PQMUI_RangeButtonLabel);
     lv_obj_add_event_cb(button, PQMUI_RangeEvent, LV_EVENT_CLICKED, NULL);
 
     right = lv_obj_create(PQMUI_TimePage);
@@ -215,8 +215,8 @@ void PQMUI_TimeRefreshWaveform(const pqmui_wave_column_t *columns)
 /*
  * 按当前满量程刷新纵轴双刻度：左侧电压、右侧电流。
  * 纵轴是 ±100.00% 的归一化坐标，所以刻度值就是各通道的满量程本身；
- * 两种量程的满量程都是整数值（大量程 275/275，小量程 10/10），
- * 这里按 x100 取整到工程量单位。数值与满量程同倍缩放，所以波形在两种量程下形状一致。
+ * 满量程换算到工程量单位显示：大量程 388.90/388.90、小量程 10.00/10.00，
+ * 这里四舍五入对齐到整数（388.90 → 389）。数值与满量程同倍缩放，波形在两种量程下形状一致。
  */
 void PQMUI_TimeRefreshScale(void)
 {
@@ -225,13 +225,15 @@ void PQMUI_TimeRefreshScale(void)
         return;
     }
 
+    /* 满量程换算成工程量整数：四舍五入（大量程 388.90 → 389，小量程 10.00 → 10）。
+     * 用截断会把 388.90 写成 388，与纵轴的实际刻度不符。 */
     lv_label_set_text_fmt(TimeScaleLabels[0], "+%u",
-                          (unsigned int)(PQMUI_UMaxX100 / 100u));
+                          (unsigned int)((PQMUI_UMaxX100 + 50u) / 100u));
     lv_label_set_text_fmt(TimeScaleLabels[1], "-%u",
-                          (unsigned int)(PQMUI_UMaxX100 / 100u));
+                          (unsigned int)((PQMUI_UMaxX100 + 50u) / 100u));
     /* 右侧顶端省略 "+" 前缀，理由见 PQMUI_TimeCreate 中的刻度说明。 */
     lv_label_set_text_fmt(TimeScaleLabels[2], "%u",
-                          (unsigned int)(PQMUI_IMaxX100 / 100u));
+                          (unsigned int)((PQMUI_IMaxX100 + 50u) / 100u));
     lv_label_set_text_fmt(TimeScaleLabels[3], "-%u",
-                          (unsigned int)(PQMUI_IMaxX100 / 100u));
+                          (unsigned int)((PQMUI_IMaxX100 + 50u) / 100u));
 }
