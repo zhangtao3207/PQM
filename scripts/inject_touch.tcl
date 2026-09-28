@@ -19,8 +19,8 @@
 #        arm-none-eabi-nm -S build\vitis_ws_meas\pqm2_app\Debug\pqm2_app.elf | findstr /R " tp_dev Xil_DCacheFlush FT5206_Scan"
 
 set TP_DEV      0x001e67b8   ;# tp_dev
-set STUB_SCAN   0x001a0c74   ;# Xil_DCacheFlush
-set REAL_SCAN   0x00106ca8   ;# FT5206_Scan
+set STUB_SCAN   0x001a0c6c   ;# Xil_DCacheFlush
+set REAL_SCAN   0x00106ca0   ;# FT5206_Scan
 
 set tx 0
 set ty 0
