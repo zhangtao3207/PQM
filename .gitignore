@@ -14,10 +14,39 @@ xsim.dir/
 *.bit
 *.bin
 
-# Vivado 工程（vivado/ 下提交脚本、源码、约束、IP 源、报告与 XSA）
-# 注意：vivado/build/ 是可再生的工程生成物，忽略；
-# 但 XSA 是重建 Vitis 平台必需的交付产物，必须提交，不能忽略。
-vivado/build/
+# Vivado 工程（vivado/ 下提交脚本、源码、约束、BD 源、IP 源、ip_repo 与报告）
+# 注意：工程生成目录必须忽略 —— 实际目录名是 build_meas/ build_official/，
+# 早先只写 vivado/build/ 是漏的，会导致 366 MB 生成物被提交。用通配覆盖所有 build*。
+# XSA/bit 是可从源码重建的产物（且 *.bit 已被全局忽略），也一并排除。
+vivado/build*/
+vivado/*.xsa
+vivado/*.bit
+
+# BD 的生成物：BD 的源只有 .bd/.bda 与 ip/*.xci 三样，其余（ipshared 下的加密
+# 网表、各 IP 的 sim_netlist/xml/dcp/veo/vho、OOC 约束）都是 Vivado 从 IP 重新
+# 生成的。不忽略会带进 156 MB（单个 ipshared 网表就 14.9 MB）。
+vivado/bd/**/ipshared/
+vivado/bd/**/*.xml
+vivado/bd/**/*.vhd
+vivado/bd/**/*.vhdl
+vivado/bd/**/*.v
+vivado/bd/**/*.dcp
+vivado/bd/**/*.veo
+vivado/bd/**/*.vho
+vivado/bd/**/*.xdc
+vivado/bd/**/sim/
+vivado/bd/**/simulation/
+vivado/src/bd/**/ipshared/
+vivado/src/bd/**/*.xml
+vivado/src/bd/**/*.vhd
+vivado/bd/**/hw_handoff/
+vivado/**/ps7_init.html
+vivado/src/bd/**/*.vhd
+vivado/src/bd/**/*.vhdl
+vivado/src/bd/**/*.v
+vivado/src/bd/**/*.dcp
+vivado/src/bd/**/*.veo
+vivado/src/bd/**/*.vho
 
 # IP 生成物（.xci / .coe 是源，要提交）
 vivado/ip/**/sim/

@@ -71,7 +71,19 @@ proc dump_shm {path} {
 }
 
 connect
-targets -set -filter {name =~ "APU*"}
+
+# 冷启动（板子刚上电）时 DAP 可能停在错误态：
+#   DAP (AHB AP transaction error, DAP status 0x30000021)
+# 此时 APU target 不可见、直接 targets -set APU* 会 "no targets found"。
+# 恢复办法：先在 DAP 上发一次系统复位把 DAP 解锁，APU/Cortex-A9 就会回来。
+if {[catch {targets -set -filter {name =~ "APU*"}} e]} {
+    plog "APU target 不可见（$e），经 DAP 发系统复位解锁"
+    catch {targets -set -filter {name =~ "DAP*"}}
+    catch {rst -system}
+    after 1500
+    targets -set -filter {name =~ "APU*"}
+    plog "DAP 已解锁，APU target 可见"
+}
 catch {rst -system}
 after 1000
 if {[catch {fpga -file $bit_file} e]} { plog "fpga 失败: $e" } else { plog "PL 已配置" }

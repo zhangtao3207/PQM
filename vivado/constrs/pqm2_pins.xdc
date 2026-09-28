@@ -1,0 +1,91 @@
+# ============================================================================
+# PQM2 板级物理约束
+#   来源：只读参考 C:\Users\zhangtao\Desktop\PQM\FPGA\data\PQM.xdc
+#   改动：仅按 PQM2 顶层端口名整理（端口名与参考一致，故引脚映射逐条照搬）；
+#         删除了参考文件里被注释掉的旧 AD7606 引脚块（Convst_A/Convst_B 那一段），
+#         只保留未注释的那一段。
+# ============================================================================
+
+# ---------------- Timing ----------------
+create_clock -period 20.000 -name sys_clk [get_ports sys_clk]
+
+# ---------------- Core IO ----------------
+set_property -dict {PACKAGE_PIN U18 IOSTANDARD LVCMOS33} [get_ports sys_clk]
+set_property -dict {PACKAGE_PIN N16 IOSTANDARD LVCMOS33} [get_ports sys_rst_n]
+set_property PULLUP true [get_ports sys_rst_n]
+set_property -dict {PACKAGE_PIN L14 IOSTANDARD LVCMOS33} [get_ports key0]
+set_property PULLUP true [get_ports key0]
+set_property -dict {PACKAGE_PIN H15 IOSTANDARD LVCMOS33} [get_ports led]
+set_property -dict {PACKAGE_PIN M14 IOSTANDARD LVCMOS33} [get_ports buzzer]
+
+# ---------------- UART ----------------
+set_property -dict {PACKAGE_PIN T19 IOSTANDARD LVCMOS33} [get_ports uart_rxd]
+set_property -dict {PACKAGE_PIN J15 IOSTANDARD LVCMOS33} [get_ports uart_txd]
+
+# ---------------- LCD ----------------
+set_property -dict {PACKAGE_PIN W18 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[0]}]
+set_property -dict {PACKAGE_PIN W19 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[1]}]
+set_property -dict {PACKAGE_PIN R16 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[2]}]
+set_property -dict {PACKAGE_PIN R17 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[3]}]
+set_property -dict {PACKAGE_PIN W20 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[4]}]
+set_property -dict {PACKAGE_PIN V20 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[5]}]
+set_property -dict {PACKAGE_PIN P18 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[6]}]
+set_property -dict {PACKAGE_PIN N17 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[7]}]
+set_property -dict {PACKAGE_PIN V17 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[8]}]
+set_property -dict {PACKAGE_PIN V18 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[9]}]
+set_property -dict {PACKAGE_PIN T17 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[10]}]
+set_property -dict {PACKAGE_PIN R18 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[11]}]
+set_property -dict {PACKAGE_PIN Y18 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[12]}]
+set_property -dict {PACKAGE_PIN Y19 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[13]}]
+set_property -dict {PACKAGE_PIN P15 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[14]}]
+set_property -dict {PACKAGE_PIN P16 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[15]}]
+set_property -dict {PACKAGE_PIN V16 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[16]}]
+set_property -dict {PACKAGE_PIN W16 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[17]}]
+set_property -dict {PACKAGE_PIN T14 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[18]}]
+set_property -dict {PACKAGE_PIN T15 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[19]}]
+set_property -dict {PACKAGE_PIN Y17 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[20]}]
+set_property -dict {PACKAGE_PIN Y16 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[21]}]
+set_property -dict {PACKAGE_PIN T16 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[22]}]
+set_property -dict {PACKAGE_PIN U17 IOSTANDARD LVCMOS33} [get_ports {lcd_rgb[23]}]
+set_property -dict {PACKAGE_PIN N18 IOSTANDARD LVCMOS33} [get_ports lcd_hs]
+set_property -dict {PACKAGE_PIN T20 IOSTANDARD LVCMOS33} [get_ports lcd_vs]
+set_property -dict {PACKAGE_PIN U20 IOSTANDARD LVCMOS33} [get_ports lcd_de]
+set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports lcd_bl]
+set_property -dict {PACKAGE_PIN P19 IOSTANDARD LVCMOS33} [get_ports lcd_clk]
+set_property -dict {PACKAGE_PIN L17 IOSTANDARD LVCMOS33} [get_ports lcd_rst_n]
+
+# ---------------- Touch ----------------
+set_property -dict {PACKAGE_PIN R19 IOSTANDARD LVCMOS33} [get_ports touch_scl]
+set_property -dict {PACKAGE_PIN P20 IOSTANDARD LVCMOS33} [get_ports touch_sda]
+set_property -dict {PACKAGE_PIN U19 IOSTANDARD LVCMOS33} [get_ports touch_int]
+set_property -dict {PACKAGE_PIN M19 IOSTANDARD LVCMOS33} [get_ports touch_rst_n]
+
+# ---------------- AD7606 parallel ADC ----------------
+set_property -dict {PACKAGE_PIN V15 IOSTANDARD LVCMOS33} [get_ports OS1]
+set_property -dict {PACKAGE_PIN W15 IOSTANDARD LVCMOS33} [get_ports OS0]
+set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports OS2]
+set_property -dict {PACKAGE_PIN W13 IOSTANDARD LVCMOS33} [get_ports Convst]
+set_property -dict {PACKAGE_PIN U15 IOSTANDARD LVCMOS33} [get_ports RD]
+set_property -dict {PACKAGE_PIN V12 IOSTANDARD LVCMOS33} [get_ports RESET]
+set_property -dict {PACKAGE_PIN U13 IOSTANDARD LVCMOS33} [get_ports Busy]
+set_property -dict {PACKAGE_PIN U14 IOSTANDARD LVCMOS33} [get_ports cs]
+set_property -dict {PACKAGE_PIN V13 IOSTANDARD LVCMOS33} [get_ports Frstdata]
+set_property -dict {PACKAGE_PIN W14 IOSTANDARD LVCMOS33} [get_ports Range]
+set_property PULLDOWN true [get_ports Frstdata]
+
+set_property -dict {PACKAGE_PIN W11 IOSTANDARD LVCMOS33} [get_ports DB0]
+set_property -dict {PACKAGE_PIN Y11 IOSTANDARD LVCMOS33} [get_ports DB1]
+set_property -dict {PACKAGE_PIN Y12 IOSTANDARD LVCMOS33} [get_ports DB2]
+set_property -dict {PACKAGE_PIN Y13 IOSTANDARD LVCMOS33} [get_ports DB3]
+set_property -dict {PACKAGE_PIN V10 IOSTANDARD LVCMOS33} [get_ports DB4]
+set_property -dict {PACKAGE_PIN V11 IOSTANDARD LVCMOS33} [get_ports DB5]
+set_property -dict {PACKAGE_PIN W9 IOSTANDARD LVCMOS33} [get_ports DB6]
+set_property -dict {PACKAGE_PIN W10 IOSTANDARD LVCMOS33} [get_ports DB7]
+set_property -dict {PACKAGE_PIN Y8 IOSTANDARD LVCMOS33} [get_ports DB8]
+set_property -dict {PACKAGE_PIN Y9 IOSTANDARD LVCMOS33} [get_ports DB9]
+set_property -dict {PACKAGE_PIN Y6 IOSTANDARD LVCMOS33} [get_ports DB10]
+set_property -dict {PACKAGE_PIN Y7 IOSTANDARD LVCMOS33} [get_ports DB11]
+set_property -dict {PACKAGE_PIN V6 IOSTANDARD LVCMOS33} [get_ports DB12]
+set_property -dict {PACKAGE_PIN W6 IOSTANDARD LVCMOS33} [get_ports DB13]
+set_property -dict {PACKAGE_PIN T9 IOSTANDARD LVCMOS33} [get_ports DB14]
+set_property -dict {PACKAGE_PIN U10 IOSTANDARD LVCMOS33} [get_ports DB15]
