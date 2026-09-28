@@ -62,6 +62,14 @@ module tb_pqm_pl_top;
     //   350 V 档（761.577*35000/32767 = 813.9），恰好落在 ±20% 内才一直 PASS。）
     // 容差仍为 ±20%，未放宽。
     localparam integer U1_RMS_EXPECT = 23;
+    // 期望的 U2 有效值（x100 工程量）：U2 只有 1 次谐波（U2_1ST = 800），
+    // 交流 RMS 码值 = 800 / sqrt(2) = 565.685...
+    // U2 与 U1 是同一颗直连 ±10 V ADC 的两路电压，满量程同为 10.00 V（U2_FULL_SCALE_X100 = 1000），
+    // 故 x100 = 565.685 * 1000 / 32767 = 17.26 -> 17。
+    // 新旧关系：改前 U2 满量程沿用旧电流档的 300（3.00 V），同一激励下旧期望
+    // 应为 565.685 * 300 / 32767 = 5.18 -> 5；新值 = 旧值 × 1000/300 ≈ 3.33 倍。
+    // 容差同样为 ±20%（整数运算下窗口 14..20），未放宽。
+    localparam integer U2_RMS_EXPECT = 17;
     // 零点跟踪预热样本数 = pqm_pl_top 两个 tracker 实例的 WARMUP_SAMPLES；
     // 阶段 1 必须至少跑这么多个样本，否则 zero_valid 判据本身就不成立。
     localparam integer ZERO_WARMUP    = 4096;
@@ -346,6 +354,7 @@ module tb_pqm_pl_top;
     // 主流程
     // ------------------------------------------------------------------
     integer u1_rms_now;
+    integer u2_rms_now;
 
     initial begin
         for (k = 0; k < LUT_N; k = k + 1) begin
@@ -515,6 +524,13 @@ module tb_pqm_pl_top;
         if ((u1_rms_now < U1_RMS_EXPECT - U1_RMS_EXPECT / 5) ||
             (u1_rms_now > U1_RMS_EXPECT + U1_RMS_EXPECT / 5)) begin
             $display("FAIL: 4b u_rms=%0d 偏离期望 %0d 超过 20%%", u1_rms_now, U1_RMS_EXPECT);
+            err = err + 1;
+        end
+        u2_rms_now = $signed(snap_words[63:32]);
+        $display("INFO: 4c u2_rms=%0d（期望约 %0d）", u2_rms_now, U2_RMS_EXPECT);
+        if ((u2_rms_now < U2_RMS_EXPECT - U2_RMS_EXPECT / 5) ||
+            (u2_rms_now > U2_RMS_EXPECT + U2_RMS_EXPECT / 5)) begin
+            $display("FAIL: 4c u2_rms=%0d 偏离期望 %0d 超过 20%%", u2_rms_now, U2_RMS_EXPECT);
             err = err + 1;
         end
         if (bram_wr_count < 1) begin

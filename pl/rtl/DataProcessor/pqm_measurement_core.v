@@ -65,10 +65,14 @@ localparam [2:0] ST_INTERVAL   = 3'd0;
 localparam [2:0] ST_WAIT_RAW   = 3'd1;
 localparam [2:0] ST_START_X100 = 3'd2;
 localparam [2:0] ST_WAIT_X100  = 3'd3;
-// U1/U2 两路U1的真实（小量程）满量程，PL 固定使用这一组，不再做量程选择。
+// 信号源直连 AD7606 输入、无衰减：AD7606 为 ±10 V 满量程，U1/U2 接的是同一颗
+// ADC 的两路电压输入，前端完全相同 → 两路真实满量程相同 = 10.00 V（x100 = 1000）。
+// PL 固定使用这一组，不再做量程选择（用户确认口径：PS 侧把 U2 电压直接当电流显示，折算系数 = 1）。
 localparam integer U1_FULL_SCALE_X100 = 1000;        // U1 = 10.00 V
-localparam integer U2_FULL_SCALE_X100 = 300;         // U2 = 3.00 V
-// 以下大U1量程常量仅供 PS 侧显示换算参考，PL 不再使用。
+// U2 原为 300（3.00 V），那是从旧"电流"档（30 A 量程）继承下来的错值；
+// 两路前端相同，若沿用 300 会让 U2 读数偏大 1000/300 = 3.333 倍，故改为 1000。
+localparam integer U2_FULL_SCALE_X100 = 1000;        // U2 = 10.00 V（修正前为 3.00 V）
+// 以下大量程常量仅供 PS 侧显示换算参考，PL 不再使用。
 localparam integer U1_FULL_SCALE_HIGH_X100 = 35000;  // 350.00 V（PS 参考）
 localparam integer U2_FULL_SCALE_HIGH_X100 = 3000;   // 30.00（PS 参考）
 localparam integer SHARP_MONITOR_WINDOW_CYCLES = 50_000_000;
