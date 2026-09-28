@@ -31,9 +31,10 @@
 #define PQMUI_HARMONIC_POINTS   16
 #define PQMUI_HARMONIC_STEP     16
 #define PQMUI_HARMONIC_MAX_START 48
-/* 频域图的横坐标刻度：每 2 根标一次，写绝对谐波号。
- * 第 1 页 0/2/4/…/14，第 2 页 16/18/…/30，依此类推，共 8 个标签。 */
-#define PQMUI_HARMONIC_TICK_STEP  2
+/* 频域图的横坐标刻度：每根谐波都标，写绝对谐波号。
+ * 第 1 页 0..15，第 2 页 16..31，依此类推，共 16 个标签。
+ * 柱间距约 25 px，montserrat_14 两位数墨迹宽约 17.6 px，间隙仍有 7 px 左右。 */
+#define PQMUI_HARMONIC_TICK_STEP  1
 #define PQMUI_HARMONIC_TICK_COUNT (PQMUI_HARMONIC_POINTS / PQMUI_HARMONIC_TICK_STEP)
 
 /* 时域图表纵轴满刻度：波形按“占本通道满量程的百分比”绘制。
